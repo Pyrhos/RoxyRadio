@@ -1,8 +1,8 @@
 import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
+import segmentsData from './data/segments.json';
 
 // ======== CONFIG ========
-const SEGMENTS_URL = new URL('../segments.json', import.meta.url).href;
 const TICK_MS = 200;
 
 // ======== STATE ========
@@ -87,10 +87,11 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ======== LOAD SEGMENTS ========
-fetch(SEGMENTS_URL, { cache: 'no-cache' })
-    .then(r => r.json())
-    .then(data => {
-        core.init(data); // Core handles the filtering logic
+initializePlaylist();
+
+function initializePlaylist() {
+    try {
+        core.init(segmentsData); // Core handles the filtering logic
 
         if (!core.playlist.length) throw new Error('Empty playlist');
 
@@ -128,8 +129,10 @@ fetch(SEGMENTS_URL, { cache: 'no-cache' })
         playlistReady = true;
         setStatus('Ready. Click Start.');
         maybeStartPlayback();
-    })
-    .catch(err => setStatus('Failed to load segments: ' + err.message));
+    } catch (err) {
+        setStatus('Failed to load segments: ' + err.message);
+    }
+}
 
 // ======== YT API READY HOOK ========
 window.onYouTubeIframeAPIReady = function () {

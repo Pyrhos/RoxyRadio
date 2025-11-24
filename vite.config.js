@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
   const isProd = mode === 'production';
 
   return {
+    base: isProd ? './' : '/',
     plugins: isProd ? buildCompressors : [],
     build: {
       minify: 'esbuild',
