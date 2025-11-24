@@ -18,6 +18,40 @@ let fuse = null;
 let searchResults = [];
 let searchSelIdx = 0;
 
+// Duplicate Song State
+const duplicateNameIndex = new Map();
+let duplicateSearchName = '';
+
+function normalizeSongBaseName(name) {
+    if (!name) return '';
+    let base = String(name).trim();
+    // Strip a single trailing parenthesized suffix, e.g. "Track (Live)" -> "Track"
+    base = base.replace(/\s*\([^)]*\)\s*$/u, '');
+    return base;
+}
+
+function buildDuplicateNameIndex(items) {
+    duplicateNameIndex.clear();
+    for (const item of items) {
+        const rawName = item.name || '';
+        const baseName = normalizeSongBaseName(rawName);
+        if (!baseName) continue;
+        const key = baseName.toLocaleLowerCase('en-US');
+        const existing = duplicateNameIndex.get(key);
+        if (existing) {
+            existing.count += 1;
+            existing.items.push(item);
+        } else {
+            duplicateNameIndex.set(key, {
+                key,
+                baseName,
+                count: 1,
+                items: [item]
+            });
+        }
+    }
+}
+
 const loopLabels = ['None', 'Track', 'Stream'];
 
 // Core Logic Instance
@@ -120,6 +154,8 @@ function initializePlaylist() {
             }
         });
 
+        buildDuplicateNameIndex(searchIndex);
+
         fuse = new Fuse(searchIndex, {
             keys: ['name'],
             threshold: 0.3,
@@ -175,6 +211,7 @@ function updateStatus() {
     const t = player.getCurrentTime();
     const msg = core.getStatusText(t);
     setStatus(msg);
+    updateDuplicateButtonForCurrentSong();
 }
 
 function updateButtons() {
@@ -315,9 +352,25 @@ document.getElementById('shuffle-btn').addEventListener('click', () => {
 });
 
 const searchBtn = document.getElementById('search-btn');
+const duplicatesBtn = document.getElementById('duplicates-btn');
 if (searchBtn) {
     searchBtn.addEventListener('click', () => {
         toggleModal();
+    });
+}
+
+if (duplicatesBtn && fuse) {
+    duplicatesBtn.addEventListener('click', () => {
+        if (!duplicateSearchName) return;
+        if (!modal.classList.contains('open')) {
+            toggleModal();
+        }
+
+        searchInput.value = duplicateSearchName;
+        if (fuse) {
+            const results = fuse.search(duplicateSearchName, { limit: 20 });
+            renderResults(results.map(r => r.item));
+        }
     });
 }
 
@@ -370,6 +423,15 @@ function updateSearchButtonFullscreenVisibility() {
         document.msFullscreenElement;
 
     searchBtn.style.display = isFullscreen ? 'none' : 'flex';
+
+    if (duplicatesBtn) {
+        if (isFullscreen) {
+            duplicatesBtn.style.display = 'none';
+        } else {
+            // Restore visibility based on current song / duplicate state
+            updateDuplicateButtonForCurrentSong();
+        }
+    }
 }
 
 document.addEventListener('fullscreenchange', updateSearchButtonFullscreenVisibility);
@@ -473,5 +535,38 @@ function selectResult(item) {
     core.rIdx = item.songId;
     loadCurrentContent(true);
     toggleModal();
+}
+
+function updateDuplicateButtonForCurrentSong() {
+    if (!duplicatesBtn || !playlistReady) return;
+
+    const stream = core.getCurrentStream();
+    const song = core.getCurrentSong();
+
+    if (!stream || !song || !song.name) {
+        duplicatesBtn.style.display = 'none';
+        duplicateSearchName = '';
+        return;
+    }
+
+    const baseName = normalizeSongBaseName(song.name);
+    const key = baseName.toLocaleLowerCase('en-US');
+    const entry = duplicateNameIndex.get(key);
+
+    if (!entry || entry.count <= 1) {
+        duplicatesBtn.style.display = 'none';
+        duplicateSearchName = '';
+        return;
+    }
+
+    const otherCount = entry.count - 1;
+
+    duplicateSearchName = entry.baseName || baseName;
+    duplicatesBtn.style.display = 'flex';
+    const countSpan = duplicatesBtn.querySelector('.note-count');
+    if (countSpan) {
+        countSpan.textContent = String(otherCount);
+    }
+    duplicatesBtn.title = `Search other versions of "${duplicateSearchName}"`;
 }
 

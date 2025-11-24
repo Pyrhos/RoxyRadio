@@ -127,17 +127,60 @@ button.active {
   z-index: 900; /* Below modal overlay */
 }
 
+/* Duplicate-song note button, sits to the left of the search icon */
+#duplicates-btn {
+  position: fixed;
+  bottom: 16px;
+  right: 72px; /* Search (16px) + button width (48px) + small gap (8px) */
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 0;
+  font-size: 20px;
+  display: none; /* Only shown when duplicates exist */
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+}
+
+#duplicates-btn .note-icon {
+  display: inline-block;
+}
+
+#duplicates-btn .note-count {
+  display: inline-block;
+  font-size: 0.6em;
+  line-height: 1;
+  transform: translate(-1px, -10px); /* Nudge up and slightly right for a superscript feel */
+}
+
 @media (max-width: 600px) {
   #search-btn {
     bottom: 12px;
     right: 12px;
   }
+
+  #duplicates-btn {
+    bottom: 12px;
+    right: 68px; /* 12px + 48px + 8px gap */
+  }
 }
 
-/* On larger screens, float the icon higher so it lines up with the control buttons row */
+/* On larger screens, float the icons higher so they line up with the control buttons row */
 @media (min-width: 768px) {
   #search-btn {
     bottom: 61px;
+  }
+
+  #duplicates-btn {
+    bottom: 61px;
+  }
+
+  /* Reserve some horizontal breathing room so the main button bar wraps to 2 rows
+     about 100px before it would otherwise hit the viewport edge (for floating buttons). */
+  #buttons {
+    max-width: calc(100% - 220px);
   }
 }
 
@@ -159,6 +202,17 @@ button.active {
     display: block; 
     margin-left: auto;
     margin-right: auto;
+}
+
+/* On small/mobile viewports, left-align the bottom status text bar
+   and pin it closer to the left edge instead of centering. */
+@media (max-width: 600px) {
+  #status {
+    text-align: left;
+    margin-left: 16px;
+    margin-right: 16px;
+    max-width: 100%;
+  }
 }
 
 /* Modal / Comic Style */
