@@ -314,6 +314,13 @@ document.getElementById('shuffle-btn').addEventListener('click', () => {
     updateButtons();
 });
 
+const searchBtn = document.getElementById('search-btn');
+if (searchBtn) {
+    searchBtn.addEventListener('click', () => {
+        toggleModal();
+    });
+}
+
 document.getElementById('yap-btn').addEventListener('click', () => {
     core.toggleYap();
     updateButtons();
@@ -353,6 +360,22 @@ const modal = document.getElementById('modal-overlay');
 const searchInput = document.getElementById('search-input');
 const resultsContainer = document.getElementById('search-results');
 let lastShiftTime = 0;
+
+function updateSearchButtonFullscreenVisibility() {
+    if (!searchBtn) return;
+    const isFullscreen =
+        document.fullscreenElement ||
+        document.webkitFullscreenElement ||
+        document.mozFullScreenElement ||
+        document.msFullscreenElement;
+
+    searchBtn.style.display = isFullscreen ? 'none' : 'flex';
+}
+
+document.addEventListener('fullscreenchange', updateSearchButtonFullscreenVisibility);
+document.addEventListener('webkitfullscreenchange', updateSearchButtonFullscreenVisibility);
+document.addEventListener('mozfullscreenchange', updateSearchButtonFullscreenVisibility);
+document.addEventListener('MSFullscreenChange', updateSearchButtonFullscreenVisibility);
 
 function toggleModal() {
     const isOpen = modal.classList.toggle('open');

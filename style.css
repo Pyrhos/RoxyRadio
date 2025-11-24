@@ -18,8 +18,10 @@ html, body, #app {
 
 .wrap { 
   display: flex; 
-  flex-direction: column; 
-  height: 100vh; 
+  flex-direction: column;
+  /*noinspection CssOverwrittenProperties*/
+  height: 100vh;
+  /*noinspection CssOverwrittenProperties*/
   height: 100dvh; /* Dynamic viewport height for mobile */
   width: 100vw; 
   max-width: none; 
@@ -106,6 +108,37 @@ button:active {
 button.active { 
     background: #FE77FE; /* Neon pink for active state */
     color: #0A0B0D;
+}
+
+/* Floating search icon button (bottom-right, desktop + mobile) */
+#search-btn {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 0;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900; /* Below modal overlay */
+}
+
+@media (max-width: 600px) {
+  #search-btn {
+    bottom: 12px;
+    right: 12px;
+  }
+}
+
+/* On larger screens, float the icon higher so it lines up with the control buttons row */
+@media (min-width: 768px) {
+  #search-btn {
+    bottom: 61px;
+  }
 }
 
 /* Status Text */
