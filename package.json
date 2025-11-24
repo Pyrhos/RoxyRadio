@@ -1,0 +1,22 @@
+{
+  "name": "roxyradio",
+  "private": true,
+  "version": "0.5.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "test": "vitest",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.13",
+    "happy-dom": "^20.0.10",
+    "vite": "^7.2.4",
+    "vite-plugin-compression": "^0.5.1",
+    "vitest": "^4.0.13"
+  },
+  "dependencies": {
+    "fuse.js": "^7.1.0"
+  }
+}

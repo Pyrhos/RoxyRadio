@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <title>Roxy Radio!</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+  </style>
+    
+  </head>
+  <body>
+  <div class="wrap">
+    <div id="player-container">
+        <div id="player"></div>
+        <div id="overlay"><button id="start">▶ Start</button></div>
+    </div>
+    
+    <div id="controls-container">
+      <div id="buttons">
+        <button id="prev-stream" title="Previous Stream">⏪ Stream</button>
+        <button id="prev-song" title="Previous Song">⏮ Song</button>
+        
+        <button id="loop-btn" title="Loop Mode: None">Loop: None</button>
+        <button id="shuffle-btn" title="Toggle Shuffle">Shuffle: Off</button>
+        <button id="yap-btn" title="Toggle Yap Mode">Yap: Off</button>
+        
+        <button id="next-song" title="Next Song">⏭ Song</button>
+        <button id="next-stream" title="Next Stream">⏩ Stream</button>
+      </div>
+    </div>
+
+    <div id="status">Loading…</div>
+  </div>
+
+  <!-- Search Modal -->
+  <div id="modal-overlay">
+    <div id="comic-box">
+      <div id="comic-title">Search-O-Matic!</div>
+        <label for="search-input">Song search</label><input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
+      <div id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  
+  <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
+
+
+

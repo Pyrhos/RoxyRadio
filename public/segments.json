@@ -1,0 +1,778 @@
+[
+  {
+    "videoId": "8TpVFW9qkkc",
+    "songs": [
+      { "name": "The Pretender", "range": [0.0, 270.0] }
+    ]
+  },
+  {
+    "videoId": "NHOEbfLCTjg",
+    "songs": [
+      { "name": "Anna Kendrick - Cup song", "range": [1175.0, 1301.0] },
+      { "name": "The Mills Brothers - You always hurt the one you love", "range": [1370.0, 1756.0] },
+      { "name": "Michael Bublé - Save the last dance for me", "range": [1756.0, 2243.0] },
+      { "name": "Amy Winehouse - You know I'm no Good", "range": [2243.0, 2586.0] },
+      { "name": "Michael Bublé - Quando Quando Quando", "range": [2586.0, 3066.0] },
+      { "name": "Nat King Cole - L-O-V-E", "range": [3669.0, 4029.0] },
+      { "name": "Peggy Lee - Fever", "range": [4029.0, 4348.0] },
+      { "name": "Etta James - At Last", "range": [4348.0, 4667.0] },
+      { "name": "Doris Day - Perhaps perhaps perhaps", "range": [4667.0, 4987.0] },
+      { "name": "Frank Sinatra - The way you look tonight", "range": [4987.0, 5239.0] },
+      { "name": "Frank Sinatra - Fly me to the moon", "range": [5239.0, 5577.0] },
+      { "name": "Nat King Cole - L-O-V-E (again)", "range": [5577.0, 5904.0] },
+      { "name": "Scorpions - Still loving you", "range": [5921.0, 6464.0] },
+      { "name": "Billy joel - Vienna", "range": [6464.0, 6919.0] }
+    ]
+  },
+  {
+    "videoId": "TYrwKWDeagA",
+    "songs": [
+      {
+        "name": "Song 01",
+        "range": [
+          457.0,
+          636.0
+        ]
+      },
+      {
+        "name": "Song 02",
+        "range": [
+          636.0,
+          1031.0
+        ]
+      },
+      {
+        "name": "Song 03",
+        "range": [
+          1031.0,
+          1240.0
+        ]
+      },
+      {
+        "name": "Song 04",
+        "range": [
+          1240.0,
+          1527.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "2BlyTHkWIfc",
+    "songs": [
+      {
+        "name": "Red hot chili peppers - Californication.",
+        "range": [
+          878.0,
+          1340.0
+        ]
+      },
+      {
+        "name": "Micheal Jackson - Man in the mirror.",
+        "range": [
+          1340.0,
+          1815.0
+        ]
+      },
+      {
+        "name": "4 non blondes - What's up?",
+        "range": [
+          1815.0,
+          1860.0
+        ]
+      },
+      {
+        "name": "George Benson - Nothing's gonna change my love for you.",
+        "range": [
+          1860.0,
+          2257.0
+        ]
+      },
+      {
+        "name": "Mary Mary - Shackles (praise you).",
+        "range": [
+          2257.0,
+          2608.0
+        ]
+      },
+      {
+        "name": "Bruno mars - That's what I like.",
+        "range": [
+          2608.0,
+          3016.0
+        ]
+      },
+      {
+        "name": "Maroon 5 - Payphone.",
+        "range": [
+          3016.0,
+          3510.0
+        ]
+      },
+      {
+        "name": "Frank Sinatra & Nancy Sinatra - Something stupid.",
+        "range": [
+          3510.0,
+          3795.0
+        ]
+      },
+      {
+        "name": "Alicia Keys - If I ain't got you.",
+        "range": [
+          3795.0,
+          4120.0
+        ]
+      },
+      {
+        "name": "Toni Braxton - Unbreak my heart.",
+        "range": [
+          4120.0,
+          4463.0
+        ]
+      },
+      {
+        "name": "Seal - Kiss from a rose.",
+        "range": [
+          4463.0,
+          4850.0
+        ]
+      },
+      {
+        "name": "Madonna - La Isla Bonita.",
+        "range": [
+          4850.0,
+          5168.0
+        ]
+      },
+      {
+        "name": "Police - Every breath you take.",
+        "range": [
+          5168.0,
+          5560.0
+        ]
+      },
+      {
+        "name": "Sabrina Carpenter - Please please please.",
+        "range": [
+          5560.0,
+          5880.0
+        ]
+      },
+      {
+        "name": "Cher - Believe (After love, ᵃᶠᵗᵉʳ ˡᵒᵛᵉ).",
+        "range": [
+          5880.0,
+          6215.0
+        ]
+      },
+      {
+        "name": "Sarah McLachlan - When she loved me.",
+        "range": [
+          6215.0,
+          6442.0
+        ]
+      },
+      {
+        "name": "Etta James - At last.",
+        "range": [
+          6442.0,
+          6731.0
+        ]
+      },
+      {
+        "name": "Spongebob - Campfire song song.",
+        "range": [
+          6731.0,
+          6956.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "w5r6bUthPeY",
+    "songs": [
+      {
+        "name": "I don't want to set the world on fire",
+        "range": [
+          1072.0,
+          1515.0
+        ]
+      },
+      {
+        "name": "Its been a long long time",
+        "range": [
+          1515.0,
+          1916.0
+        ]
+      },
+      {
+        "name": "You always hurt the ones you love",
+        "range": [
+          1916.0,
+          2209.0
+        ]
+      },
+      {
+        "name": "I can give you anything but love",
+        "range": [
+          2209.0,
+          2587.0
+        ]
+      },
+      {
+        "name": "Summertime and the Living is Easy",
+        "range": [
+          2587.0,
+          2936.0
+        ]
+      },
+      {
+        "name": "Moaning",
+        "range": [
+          2936.0,
+          3409.0
+        ]
+      },
+      {
+        "name": "My Favorite Things",
+        "range": [
+          3409.0,
+          3653.0
+        ]
+      },
+      {
+        "name": "I'm Making Believe",
+        "range": [
+          3653.0,
+          3950.0
+        ]
+      },
+      {
+        "name": "Where or when",
+        "range": [
+          3950.0,
+          4392.0
+        ]
+      },
+      {
+        "name": "Ain't Misbehavin'",
+        "range": [
+          4392.0,
+          4778.0
+        ]
+      },
+      {
+        "name": "Cry Me a River",
+        "range": [
+          4778.0,
+          5196.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "qCm_skWOnoY",
+    "songs": [
+      {
+        "name": "Song 01",
+        "range": [
+          1011.0,
+          1303.0
+        ]
+      },
+      {
+        "name": "Song 02",
+        "range": [
+          1303.0,
+          1731.0
+        ]
+      },
+      {
+        "name": "Song 03",
+        "range": [
+          1731.0,
+          2002.0
+        ]
+      },
+      {
+        "name": "Song 04",
+        "range": [
+          2002.0,
+          2306.0
+        ]
+      },
+      {
+        "name": "Song 05",
+        "range": [
+          2306.0,
+          2596.0
+        ]
+      },
+      {
+        "name": "Song 06",
+        "range": [
+          2596.0,
+          3040.0
+        ]
+      },
+      {
+        "name": "Song 07",
+        "range": [
+          3040.0,
+          3359.0
+        ]
+      },
+      {
+        "name": "Song 08",
+        "range": [
+          3359.0,
+          3819.0
+        ]
+      },
+      {
+        "name": "Song 09",
+        "range": [
+          3819.0,
+          4109.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "MXMz5Pn7vbo",
+    "songs": [
+      {
+        "name": "Rock and Roll - Led Zeppelin",
+        "range": [
+          372.0,
+          671.0
+        ]
+      },
+      {
+        "name": "Don't Stop Believin' - Journey",
+        "range": [
+          671.0,
+          996.0
+        ]
+      },
+      {
+        "name": "Nothing Else Matters - Metallica",
+        "range": [
+          996.0,
+          1425.0
+        ]
+      },
+      {
+        "name": "The Diary of Jane - Breaking Benjamin",
+        "range": [
+          1425.0,
+          1690.0
+        ]
+      },
+      {
+        "name": "The Beginning - One Ok Rock",
+        "range": [
+          1690.0,
+          2080.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "0__NZQNvpW8",
+    "songs": [
+      {
+        "name": "Song 01",
+        "range": [
+          832.0,
+          1145.0
+        ]
+      },
+      {
+        "name": "Song 02",
+        "range": [
+          1145.0,
+          1460.0
+        ]
+      },
+      {
+        "name": "Song 03",
+        "range": [
+          1460.0,
+          1734.0
+        ]
+      },
+      {
+        "name": "Song 04",
+        "range": [
+          1734.0,
+          2068.0
+        ]
+      },
+      {
+        "name": "Song 05",
+        "range": [
+          2068.0,
+          2330.0
+        ]
+      },
+      {
+        "name": "Song 06",
+        "range": [
+          2330.0,
+          2595.0
+        ]
+      },
+      {
+        "name": "Song 07",
+        "range": [
+          2595.0,
+          2933.0
+        ]
+      },
+      {
+        "name": "Song 08",
+        "range": [
+          2933.0,
+          3279.0
+        ]
+      },
+      {
+        "name": "Song 09",
+        "range": [
+          3279.0,
+          3596.0
+        ]
+      },
+      {
+        "name": "Song 10",
+        "range": [
+          3596.0,
+          3998.0
+        ]
+      },
+      {
+        "name": "Song 11",
+        "range": [
+          3998.0,
+          4284.0
+        ]
+      },
+      {
+        "name": "Song 12",
+        "range": [
+          4284.0,
+          4564.0
+        ]
+      },
+      {
+        "name": "Song 13",
+        "range": [
+          4564.0,
+          4946.0
+        ]
+      },
+      {
+        "name": "Song 14",
+        "range": [
+          4946.0,
+          5340.0
+        ]
+      },
+      {
+        "name": "Song 15",
+        "range": [
+          5340.0,
+          5748.0
+        ]
+      },
+      {
+        "name": "Song 16",
+        "range": [
+          5748.0,
+          6050.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "RHIzv6idu9M",
+    "songs": [
+      {
+        "name": "Almost there - Anika Noni Rose - Princess and the Frog",
+        "range": [
+          1103.0,
+          1370.0
+        ]
+      },
+      {
+        "name": "Careless Whisper (Jazz ver.) - Postmodern Jukebox",
+        "range": [
+          1370.0,
+          1799.0
+        ]
+      },
+      {
+        "name": "Viva La Vida - Coldplay",
+        "range": [
+          1799.0,
+          2304.0
+        ]
+      },
+      {
+        "name": "Jump Up, Super Star! - Super Mario Odyssey",
+        "range": [
+          2304.0,
+          2634.0
+        ]
+      },
+      {
+        "name": "Dreams - fleetwood Mac",
+        "range": [
+          2634.0,
+          3018.0
+        ]
+      },
+      {
+        "name": "Beneath the Mask - Lyn Inaizumi - Persona 5",
+        "range": [
+          3018.0,
+          3596.0
+        ]
+      },
+      {
+        "name": "The End of the World - Skeeter Davis",
+        "range": [
+          3596.0,
+          3984.0
+        ]
+      },
+      {
+        "name": "Plastic Love - Mariya Takeuchi",
+        "range": [
+          3984.0,
+          4361.0
+        ]
+      },
+      {
+        "name": "Sixteen tons - Tennessee Ernie Ford",
+        "range": [
+          4361.0,
+          4642.0
+        ]
+      },
+      {
+        "name": "Good Old Fashioned Lover Boy - Queen",
+        "range": [
+          4642.0,
+          4924.0
+        ]
+      },
+      {
+        "name": "La vie en rose - Louis Armstrong",
+        "range": [
+          4924.0,
+          5123.0
+        ]
+      },
+      {
+        "name": "Somebody to Love - Queen",
+        "range": [
+          5123.0,
+          5684.0
+        ]
+      },
+      {
+        "name": "My funny Valentine",
+        "range": [
+          5684.0,
+          6106.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "LkJ6YxjEqgE",
+    "songs": [
+      {
+        "name": "Fever - Peggy Lee",
+        "range": [
+          425.0,
+          679.0
+        ]
+      },
+      {
+        "name": "Dream a Little Dream of Me - Ella Fitzgerald, Louis Armstrong",
+        "range": [
+          679.0,
+          973.0
+        ]
+      },
+      {
+        "name": "I Don't Want to Set the World on Fire - The Ink Spots",
+        "range": [
+          973.0,
+          1206.0
+        ]
+      },
+      {
+        "name": "Diamond Are a Girl's Best Friend - Marilyn Monroe",
+        "range": [
+          1206.0,
+          1458.0
+        ]
+      },
+      {
+        "name": "Fly Me to the Moon - Frank sinatra",
+        "range": [
+          1458.0,
+          1641.0
+        ]
+      },
+      {
+        "name": "Feeling Good - Nina Simone",
+        "range": [
+          1641.0,
+          1892.0
+        ]
+      },
+      {
+        "name": "At Last - Etta James",
+        "range": [
+          1892.0,
+          2107.0
+        ]
+      }
+    ]
+  },
+  {
+    "videoId": "rwHFAO8I_EQ",
+    "songs": [
+      { "name": "Santa Claus is Comin' to Town", "range": [783.0, 1184.0] },
+      { "name": "Flappie", "range": [1184.0, 1502.0] },
+      { "name": "Rocking around the Christmas Tree", "range": [1502.0, 1929.0] },
+      { "name": "Here comes Santa Claus", "range": [1929.0, 2289.0] },
+      { "name": "Hip Hop Noel", "range": [2289.0, 3228.0] },
+      { "name": "Santa Baby", "range": [3228.0, 3617.0] },
+      { "name": "White Christmas", "range": [3617.0, 4122.0] },
+      { "name": "Last Christmas", "range": [4122.0, 4804.0] },
+      { "name": "Jingle Bell Rock", "range": [4804.0, 5139.0] },
+      { "name": "Oh Holy Night", "range": [5139.0, 5455.0] },
+      { "name": "Let it snow", "range": [5455.0, 5710.0] },
+      { "name": "Feliz Navidad", "range": [5710.0, 6263.0] },
+      { "name": "Please come Home for Christmas", "range": [6263.0, 6531.0] },
+      { "name": "Man with the Bag", "range": [6531.0, 7027.0] },
+      { "name": "Baby it's cold outside", "range": [7027.0, 8027.0] }
+    ]
+  },
+  {
+    "videoId": "OdR_LSQ-HOc",
+    "songs": [
+      { "name": "Ikanaide", "range": [1257.0, 1566.0] },
+      { "name": "Autumn leaves", "range": [1566.0, 1954.0] },
+      { "name": "Creep", "range": [1954.0, 2414.0] },
+      { "name": "The End Of The World", "range": [2414.0, 2751.0] },
+      { "name": "Un-Break My Heart", "range": [2751.0, 3105.0] },
+      { "name": "Hurt", "range": [3105.0, 3462.0] },
+      { "name": "Calc. (english ver.", "range": [3462.0, 3862.0] },
+      { "name": "Kainé/Salvation", "range": [3862.0, 4229.0] },
+      { "name": "Brothers", "range": [4229.0, 4656.0] },
+      { "name": "Last Regrets", "range": [4656.0, 5235.0] },
+      { "name": "Promise", "range": [5235.0, 5618.0] },
+      { "name": "Viva La Vida", "range": [5618.0, 5909.0] },
+      { "name": "Breaking The Habit", "range": [5909.0, 6406.0] }
+    ]
+  },
+  {
+    "videoId": "jM2tKSwg4gA",
+    "songs": [
+      { "name": "Heb je even voor mij", "range": [1136.0, 1525.0] },
+      { "name": "Roller Coaster", "range": [1525.0, 1996.0] },
+      { "name": "Zij gelooft in mij", "range": [1996.0, 2477.0] },
+      { "name": "Malle Babbe", "range": [2477.0, 2897.0] },
+      { "name": "Zoutelande", "range": [2897.0, 3212.0] },
+      { "name": "Stil in mij", "range": [3212.0, 3652.0] },
+      { "name": "Iedereen is van de wereld", "range": [3652.0, 4092.0] },
+      { "name": "Zoutelande (reprise)", "range": [4092.0, 4316.0] },
+      { "name": "Droom land", "range": [4316.0, 4731.0] },
+      { "name": "Leef", "range": [4731.0, 5124.0] },
+      { "name": "Eenzame Kerst", "range": [5124.0, 5500.0] },
+      { "name": "Viva Hollandia", "range": [5500.0, 5820.0] }
+    ]
+  },
+  {
+    "videoId": "NXPpkdtWAOQ",
+    "songs": [
+      { "name": "Lovefool", "range": [248.0, 518.0] },
+      { "name": "Stupid Cupid", "range": [518.0, 719.0] },
+      { "name": "Love of my life", "range": [719.0, 982.0] },
+      { "name": "Whole Lotta love", "range": [982.0, 1280.0] }
+    ]
+  },
+  {
+    "videoId": "ylZje3DyZYQ",
+    "songs": [
+      { "name": "Hotel California", "range": [950.0, 1585.0] },
+      { "name": "Drops of Jupiter,", "range": [1585.0, 1955.0] },
+      { "name": "Dani California", "range": [1955.0, 2349.0] },
+      { "name": "I can't give you anything but love", "range": [2349.0, 2636.0] },
+      { "name": "Desperado", "range": [2636.0, 2994.0] },
+      { "name": "At last", "range": [2994.0, 3229.0] },
+      { "name": "Habits", "range": [3229.0, 3612.0] },
+      { "name": "Blue", "range": [3612.0, 3935.0] },
+      { "name": "Take it Easy", "range": [3935.0, 4418.0] },
+      { "name": "This Love", "range": [4418.0, 4790.0] },
+      { "name": "BIKUSUNO SAKE", "range": [4790.0, 5218.0] }
+    ]
+  },
+  {
+    "videoId": "YZCGrD8Z-l4",
+    "songs": [
+      { "name": "Despacito", "range": [951.0, 1513.0] },
+      { "name": "KICK BACK", "range": [1513.0, 2104.0] },
+      { "name": "Suerte", "range": [2104.0, 2502.0] },
+      { "name": "Besame Mucho", "range": [2502.0, 3013.0] },
+      { "name": "Lamento Boliviano", "range": [3013.0, 3403.0] },
+      { "name": "L'Via L'Viaquez", "range": [3403.0, 3944.0] },
+      { "name": "De Música Ligera", "range": [4078.0, 4747.0] },
+      { "name": "La Bamba", "range": [4747.0, 5203.0] }
+    ]
+  },
+  {
+    "videoId": "RINnpvPnE68",
+    "songs": [
+      { "name": "Cry me a River", "range": [312.0, 490.0] },
+      { "name": "I'm still standing", "range": [490.0, 785.0] },
+      { "name": "What Is and What Should Never Be", "range": [785.0, 1156.0] },
+      { "name": "I surrender", "range": [1156.0, 1494.0] }
+    ]
+  },
+  {
+    "videoId": "DtDmnU4dRCk",
+    "songs": [
+      { "name": "Nessun Dorma", "range": [1543.0, 3939.0] },
+      { "name": "Con te partirò (Time to Say Goodbye)", "range": [3939.0, 5577.0] },
+      { "name": "Ode to Joy", "range": [5577.0, 8814.0] }
+    ]
+  },
+  {
+    "videoId": "qEvZh1vHC8o",
+    "songs": [
+      { "name": "Why Don't You Do Right", "range": [1259.0, 1700.0] },
+      { "name": "onds Are the Girls Best Friends", "range": [1700.0, 2134.0] },
+      { "name": "Beyond the Sea", "range": [2134.0, 2559.0] },
+      { "name": "Hello Dolly!", "range": [2559.0, 2819.0] },
+      { "name": "At Last", "range": [2819.0, 3065.0] },
+      { "name": "I am a good Girl", "range": [3065.0, 3337.0] },
+      { "name": "Say that you Love me", "range": [3337.0, 3685.0] },
+      { "name": "I can't give you anything but Love", "range": [3685.0, 3907.0] },
+      { "name": "Cry me a River", "range": [3907.0, 4173.0] },
+      { "name": "Fever", "range": [4173.0, 4448.0] },
+      { "name": "Love is a losing game", "range": [4448.0, 4734.0] },
+      { "name": "Master of Jazz (original)", "range": [4734.0, 5090.0] },
+      { "name": "At last", "range": [5090.0, 5367.0] },
+      { "name": "Blue", "range": [5367.0, 5728.0] },
+      { "name": "That Man", "range": [5728.0, 6626.0] }
+    ]
+  }
+]

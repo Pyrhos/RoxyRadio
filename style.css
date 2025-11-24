@@ -1,0 +1,200 @@
+html, body, #app { height: 100%; margin: 0; background: #000; font-family: system-ui, -apple-system, sans-serif; }
+/* COLORS */
+/* Very dark charcoal — #0A0B0D */
+/* Dark blue-grey — #1A1D23 */
+/* Slate blue-grey — #353947 */
+/* Medium purple — #7659B9 */
+/* Light peach-pink — #F4C2C1 */
+/* Dusty rose — #D97587 */
+/* Neon pink — #FE77FE */
+/* Magenta — #CE55CC */
+
+html, body, #app { 
+    height: 100%; 
+    margin: 0; 
+    background: #0A0B0D; /* Very dark charcoal base */
+    font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; /* Consistent comic font */
+}
+
+.wrap { 
+  display: flex; 
+  flex-direction: column; 
+  height: 100vh; 
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  width: 100vw; 
+  max-width: none; 
+  padding: 0;
+  margin: 0;
+  overflow: hidden; /* Prevent scrollbars */
+}
+
+/* Player fills available space */
+#player-container {
+  flex: 1 1 auto; /* Grow and shrink, basis auto */
+  width: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #0A0B0D;
+  overflow: hidden;
+  border-bottom: 4px solid #000; 
+  min-height: 0; /* Crucial for flex container to shrink below content size */
+}
+
+#player { 
+  width: 100%; 
+  height: 100%; 
+  position: absolute; 
+  inset: 0;
+}
+
+/* Controls bar at bottom */
+#controls-container { 
+  width: 100%; 
+  background: #7659B9; 
+  padding: 15px 20px; 
+  box-sizing: border-box; 
+  margin-top: 0;
+  border-top: 4px solid #000;
+  flex: 0 0 auto; /* Don't grow, don't shrink */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-height: 40vh; /* Prevent it from taking over too much */
+  overflow-y: auto; /* Scroll if buttons wrap too much on tiny screens */
+}
+
+/* Buttons */
+#buttons { 
+  display:flex; 
+  gap: 16px; 
+  justify-content:center; 
+  align-items: center; 
+  color:#0A0B0D; 
+  font-size: 16px; 
+  flex-wrap: wrap;
+}
+
+button { 
+  background: #F4C2C1; /* Light peach-pink */
+  color: #0A0B0D; 
+  border: 3px solid #000; 
+  border-radius: 0; 
+  padding: 10px 16px; 
+  cursor:pointer; 
+  font-size: 16px; 
+  min-width: 44px;
+  font-family: inherit;
+  font-weight: bold;
+  box-shadow: 4px 4px 0 #000;
+  text-transform: uppercase;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+button:hover { 
+    background: #fff; 
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #000;
+}
+
+button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 #000;
+}
+
+button.active { 
+    background: #FE77FE; /* Neon pink for active state */
+    color: #0A0B0D;
+}
+
+/* Status Text */
+#status { 
+    text-align:center; 
+    color: #F4C2C1; /* Light peach-pink text on purple */
+    font-size: 16px; 
+    margin-top: 12px; 
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000;
+    background: #0A0B0D;
+    border: 2px solid #000;
+    padding: 2px 12px 6px;
+    box-shadow: 4px 4px 0 #000;
+    max-width: 80%;
+    
+    /* Centering Fix */
+    display: block; 
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Modal / Comic Style */
+#modal-overlay {
+  position: fixed; inset: 0; background: rgba(10,11,13,0.8);
+  display: none; place-items: center; z-index: 1000;
+}
+#modal-overlay.open { display: grid; }
+
+#comic-box {
+  background: #F4C2C1; /* Light peach-pink bg */
+  border: 4px solid #000;
+  box-shadow: 12px 12px 0 #000;
+  padding: 20px;
+  width: min(90vw, 600px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+  position: relative;
+}
+
+/* Speech bubble tail */
+#comic-box::after {
+  content: ''; position: absolute; bottom: -24px; left: 40px;
+  border-width: 24px 24px 0; border-style: solid;
+  border-color: #000 transparent; display: block; width: 0;
+}
+#comic-box::before {
+  content: ''; position: absolute; bottom: -15px; left: 45px;
+  border-width: 19px 19px 0; border-style: solid;
+  border-color: #F4C2C1 transparent; display: block; width: 0; z-index: 1;
+}
+
+#comic-title {
+  font-size: 1.8em; font-weight: bold; text-transform: uppercase; margin-bottom: 15px;
+  text-align: center; border-bottom: 4px solid #000; padding-bottom: 5px;
+  color: #0A0B0D;
+  text-shadow: 2px 2px 0 #fff;
+}
+
+#search-input {
+  width: 100%; box-sizing: border-box; font-size: 1.4em; padding: 12px;
+  border: 3px solid #000; outline: none; font-family: inherit;
+  text-transform: uppercase; margin-bottom: 15px;
+  background: #fff;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+}
+
+#search-results {
+  flex-grow: 1; overflow-y: auto; border: 3px solid #000;
+  min-height: 100px; max-height: 300px;
+  background: #fff;
+}
+
+.result-item {
+  padding: 10px; border-bottom: 2px solid #000; cursor: pointer;
+  display: flex; flex-direction: column;
+  transition: background 0.1s;
+}
+.result-item:last-child { border-bottom: none; }
+
+.result-item.selected { background: #FE77FE; /* Neon pink selection */ }
+.result-item:hover { background: #D97587; /* Dusty rose hover */ }
+
+.result-title { font-weight: bold; font-size: 1.2em; color: #0A0B0D; }
+.result-sub { font-size: 0.9em; color: #353947; font-style: italic; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 12px; background: #0A0B0D; }
+::-webkit-scrollbar-thumb { background: #F4C2C1; border: 2px solid #000; }
+
