@@ -1,6 +1,7 @@
 import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
+import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex } from './search-helpers.js';
 
 // ======== CONFIG ========
 const TICK_MS = 200;
@@ -19,38 +20,8 @@ let searchResults = [];
 let searchSelIdx = 0;
 
 // Duplicate Song State
-const duplicateNameIndex = new Map();
+let duplicateNameIndex = new Map();
 let duplicateSearchName = '';
-
-function normalizeSongBaseName(name) {
-    if (!name) return '';
-    let base = String(name).trim();
-    // Strip a single trailing parenthesized suffix, e.g. "Track (Live)" -> "Track"
-    base = base.replace(/\s*\([^)]*\)\s*$/u, '');
-    return base;
-}
-
-function buildDuplicateNameIndex(items) {
-    duplicateNameIndex.clear();
-    for (const item of items) {
-        const rawName = item.name || '';
-        const baseName = normalizeSongBaseName(rawName);
-        if (!baseName) continue;
-        const key = baseName.toLocaleLowerCase('en-US');
-        const existing = duplicateNameIndex.get(key);
-        if (existing) {
-            existing.count += 1;
-            existing.items.push(item);
-        } else {
-            duplicateNameIndex.set(key, {
-                key,
-                baseName,
-                count: 1,
-                items: [item]
-            });
-        }
-    }
-}
 
 const loopLabels = ['None', 'Track', 'Stream'];
 
@@ -133,28 +104,9 @@ function initializePlaylist() {
         updateButtons();
 
         // Index for search
-        const searchIndex = [];
-        core.playlist.forEach((stream, sIdx) => {
-            if (stream.songs) {
-                stream.songs.forEach((song, songIdx) => {
-                    searchIndex.push({
-                        name: song.name || 'Unknown',
-                        streamId: sIdx,
-                        songId: songIdx,
-                        type: 'song'
-                    });
-                });
-            } else {
-                searchIndex.push({
-                    name: stream.title || 'Unknown Stream',
-                    streamId: sIdx,
-                    songId: 0,
-                    type: 'song' // Treat as song for unified search
-                });
-            }
-        });
+        const searchIndex = buildSearchIndexFromPlaylist(core.playlist);
 
-        buildDuplicateNameIndex(searchIndex);
+        duplicateNameIndex = buildDuplicateNameIndex(searchIndex);
 
         fuse = new Fuse(searchIndex, {
             keys: ['name'],
