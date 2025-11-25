@@ -241,13 +241,18 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
     if (!stream || !song) return;
 
     let startSeconds = song.range[0];
-    let endSeconds = song.range[1];
+    let endSeconds = undefined;
 
     if (core.yapMode && stream.songs) {
+        // Yap mode plays continuously from the first to the last segment.
         startSeconds = stream.songs[0].range[0];
         endSeconds = stream.songs[stream.songs.length - 1].range[1];
+    } else if (!core.yapMode && !stream.songs) {
+        // Rule 0: single-song video – keep a hard end bound.
+        endSeconds = song.range[1];
     } else if (core.yapMode && !stream.songs) {
-        // Single song video in yap mode behaves same as standard
+        // Single song video in yap mode behaves same as standard.
+        endSeconds = song.range[1];
     }
 
     if (core.yapMode && stream.songs && core.rIdx > 0 && startTimeOverride === null) {
@@ -346,8 +351,10 @@ document.getElementById('yap-btn').addEventListener('click', () => {
 
     let endSeconds = undefined;
     if (core.yapMode && stream.songs) {
+        // Switching into Yap: play continuously to the end of the last song.
         endSeconds = stream.songs[stream.songs.length - 1].range[1];
-    } else if (stream.songs) {
+    } else if (!core.yapMode && !stream.songs) {
+        // Switching out of Yap on a Rule 0 stream keeps a bounded end.
         endSeconds = song.range[1];
     }
 

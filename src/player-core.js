@@ -3,6 +3,7 @@ export const LOOP_TRACK = 1;
 export const LOOP_STREAM = 2;
 export const RESTART_THRESHOLD_SECONDS = 5;
 const HISTORY_LIMIT = 20;
+const SEAMLESS_GAP_SECONDS = 0.05; // Threshold to treat neighboring segments as seamless in Yap Off
 
 export class PlayerCore {
   constructor(callbacks = {}) {
@@ -432,7 +433,15 @@ export class PlayerCore {
           return; 
       }
 
-      if (currentTime >= currentSong.range[1] - 0.2) {
+      const nextSong = stream.songs[this.rIdx + 1];
+      const hasSeamlessNext =
+          !!nextSong &&
+          Math.abs((nextSong.range[0] ?? 0) - (currentSong.range[1] ?? 0)) <= SEAMLESS_GAP_SECONDS;
+
+      // In non-yap mode, if two segments neighbor each other seamlessly,
+      // we do not auto-advance at that internal boundary – we just let
+      // playback continue and rely on status text updating from rIdx tracking.
+      if (!hasSeamlessNext && currentTime >= currentSong.range[1] - 0.2) {
           this.advanceAuto();
       }
   }

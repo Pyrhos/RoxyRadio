@@ -336,6 +336,37 @@ describe('PlayerCore', () => {
       });
   });
 
+  describe('Seamless neighboring segments (Yap Off)', () => {
+      it('does not auto-advance when two segments are seamless neighbors', () => {
+          // Make first stream have seamlessly neighboring songs
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [0, 10] },
+              { name: 'S1T2', range: [10, 20] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 0;
+          core.yapMode = false;
+
+          callbacks.playVideo.mockClear();
+
+          // Tick just before the boundary – should NOT trigger auto-advance
+          core.checkTick(9.9);
+          expect(callbacks.playVideo).not.toHaveBeenCalled();
+          expect(core.vIdx).toBe(0);
+          expect(core.rIdx).toBe(0);
+
+          // Tick slightly after the boundary – we allow playback to continue,
+          // and we still should not have auto-advanced streams.
+          core.checkTick(10.5);
+          expect(callbacks.playVideo).not.toHaveBeenCalled();
+          expect(core.vIdx).toBe(0);
+
+          // Once sufficiently into the second segment, rIdx should catch up.
+          core.checkTick(11.5);
+          expect(core.rIdx).toBe(1);
+      });
+  });
+
   describe('Rule 0 - Reactive Duration', () => {
       it('updates current song range when duration is set', () => {
           core.vIdx = 1; // Video 2 (No segments)
