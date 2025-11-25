@@ -13,7 +13,7 @@
     ]
   },
   {
-    "name": "",
+    "name": "My first KARAOKE stream in months!",
     "videoId": "NHOEbfLCTjg",
     "songs": [
       {
@@ -2556,186 +2556,6 @@
     ]
   },
   {
-    "name": "Singing HARDROCK yeah!!!",
-    "videoId": "G-NIAzl_oIA",
-    "songs": [
-      {
-        "name": "Enter Sandman - Metallica",
-        "range": [
-          894,
-          1492
-        ]
-      },
-      {
-        "name": "Helter Skelter - Beatles",
-        "range": [
-          1492,
-          1862
-        ]
-      },
-      {
-        "name": "In the End - Linkin' Park",
-        "range": [
-          1862,
-          2247
-        ]
-      },
-      {
-        "name": "When The Levee Breaks - Led Zeppelin",
-        "range": [
-          2247,
-          2834
-        ]
-      },
-      {
-        "name": "Poundcake - Eddie van Halen",
-        "range": [
-          2834,
-          3296
-        ]
-      },
-      {
-        "name": "Sweet Child O' Mine - Guns N' Roses",
-        "range": [
-          3337,
-          3782
-        ]
-      },
-      {
-        "name": "Black Hole Sun - Soundgarden",
-        "range": [
-          3782,
-          4207
-        ]
-      },
-      {
-        "name": "A Hard Road - Black Sabbath",
-        "range": [
-          4207,
-          4801
-        ]
-      },
-      {
-        "name": "Savior - Rise Against",
-        "range": [
-          4801,
-          5276
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Singing some 80s bangers!!!",
-    "videoId": "eO0xIIGHbdY",
-    "songs": [
-      {
-        "name": "Song 01",
-        "range": [
-          952,
-          1296
-        ]
-      },
-      {
-        "name": "Song 02",
-        "range": [
-          1296,
-          1660
-        ]
-      },
-      {
-        "name": "Song 03",
-        "range": [
-          1660,
-          2020
-        ]
-      },
-      {
-        "name": "Song 04",
-        "range": [
-          2020,
-          2545
-        ]
-      },
-      {
-        "name": "Song 05",
-        "range": [
-          2545,
-          2880
-        ]
-      },
-      {
-        "name": "Song 06",
-        "range": [
-          2880,
-          3135
-        ]
-      },
-      {
-        "name": "Song 07",
-        "range": [
-          3135,
-          3508
-        ]
-      },
-      {
-        "name": "Song 08",
-        "range": [
-          3508,
-          3857
-        ]
-      },
-      {
-        "name": "Song 09",
-        "range": [
-          3857,
-          4116
-        ]
-      },
-      {
-        "name": "Song 10",
-        "range": [
-          4116,
-          4427
-        ]
-      },
-      {
-        "name": "Song 11",
-        "range": [
-          4427,
-          4669
-        ]
-      },
-      {
-        "name": "Song 12",
-        "range": [
-          4669,
-          4974
-        ]
-      },
-      {
-        "name": "Song 13",
-        "range": [
-          4974,
-          5252
-        ]
-      },
-      {
-        "name": "Song 14",
-        "range": [
-          5252,
-          5736
-        ]
-      },
-      {
-        "name": "Song 15",
-        "range": [
-          5736,
-          6194
-        ]
-      }
-    ]
-  },
-  {
     "name": "Singing Vocaloid Songs!",
     "videoId": "Rr8vKo7nGn4",
     "songs": [
@@ -3312,6 +3132,96 @@
         "range": [
           6211,
           6814
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Karaoke Night! Singing for you",
+    "videoId": "Ty9HyWqRdOw",
+    "songs": [
+      {
+        "name": "The Chain - Fleetwod Mac",
+        "range": [
+          1302.0,
+          1706.0
+        ]
+      },
+      {
+        "name": "Underdog - Kasabian",
+        "range": [
+          1706.0,
+          2102.0
+        ]
+      },
+      {
+        "name": "Dani California - Red Hot Chilli Peppers",
+        "range": [
+          2102.0,
+          2454.0
+        ]
+      },
+      {
+        "name": "Snow - RHCP",
+        "range": [
+          2454.0,
+          2849.0
+        ]
+      },
+      {
+        "name": "Daft Punk - Get Lucky",
+        "range": [
+          2849.0,
+          3356.0
+        ]
+      },
+      {
+        "name": "Fantasy - Earth Wind and Fire",
+        "range": [
+          3356.0,
+          3748.0
+        ]
+      },
+      {
+        "name": "American Boy - Estelle",
+        "range": [
+          3748.0,
+          4087.0
+        ]
+      },
+      {
+        "name": "Sunday Morning - Maroon 5",
+        "range": [
+          4087.0,
+          4448.0
+        ]
+      },
+      {
+        "name": "Carnival - The Cardigans",
+        "range": [
+          4448.0,
+          4735.0
+        ]
+      },
+      {
+        "name": "Son of a Preacher Man - Dusty Springfield",
+        "range": [
+          4735.0,
+          4930.0
+        ]
+      },
+      {
+        "name": "Blackbird - The Beatles",
+        "range": [
+          4930.0,
+          5347.0
+        ]
+      },
+      {
+        "name": "Careless Whisper - George Michael (no Saxophone Version)",
+        "range": [
+          5347.0,
+          5903.0
         ]
       }
     ]
