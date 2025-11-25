@@ -25,6 +25,12 @@
     ]
   },
   {
+    "videoId": "v2OKWq3mp2Q",
+    "songs": [
+      { "name": "Edge of Night (Pippin's Theme)", "range": [0.0, 73.0] }
+    ]
+  },
+  {
     "videoId": "TYrwKWDeagA",
     "songs": [
       {
@@ -58,17 +64,23 @@
     ]
   },
   {
+    "videoId": "aKMVJ1Awl_A",
+    "songs": [
+      { "name": "Roki / ロキ - Mikito-P", "range": [0.0, 229.0] }
+    ]
+  },
+  {
     "videoId": "2BlyTHkWIfc",
     "songs": [
       {
-        "name": "Red hot chili peppers - Californication.",
+        "name": "Red hot chili peppers - Californication",
         "range": [
           878.0,
           1340.0
         ]
       },
       {
-        "name": "Micheal Jackson - Man in the mirror.",
+        "name": "Micheal Jackson - Man in the mirror",
         "range": [
           1340.0,
           1815.0
@@ -82,110 +94,116 @@
         ]
       },
       {
-        "name": "George Benson - Nothing's gonna change my love for you.",
+        "name": "George Benson - Nothing's gonna change my love for you",
         "range": [
           1860.0,
           2257.0
         ]
       },
       {
-        "name": "Mary Mary - Shackles (praise you).",
+        "name": "Mary Mary - Shackles (praise you)",
         "range": [
           2257.0,
           2608.0
         ]
       },
       {
-        "name": "Bruno mars - That's what I like.",
+        "name": "Bruno mars - That's what I like",
         "range": [
           2608.0,
           3016.0
         ]
       },
       {
-        "name": "Maroon 5 - Payphone.",
+        "name": "Maroon 5 - Payphone",
         "range": [
           3016.0,
           3510.0
         ]
       },
       {
-        "name": "Frank Sinatra & Nancy Sinatra - Something stupid.",
+        "name": "Frank Sinatra & Nancy Sinatra - Something stupid",
         "range": [
           3510.0,
           3795.0
         ]
       },
       {
-        "name": "Alicia Keys - If I ain't got you.",
+        "name": "Alicia Keys - If I ain't got you",
         "range": [
           3795.0,
           4120.0
         ]
       },
       {
-        "name": "Toni Braxton - Unbreak my heart.",
+        "name": "Toni Braxton - Unbreak my heart",
         "range": [
           4120.0,
           4463.0
         ]
       },
       {
-        "name": "Seal - Kiss from a rose.",
+        "name": "Seal - Kiss from a rose",
         "range": [
           4463.0,
           4850.0
         ]
       },
       {
-        "name": "Madonna - La Isla Bonita.",
+        "name": "Madonna - La Isla Bonita",
         "range": [
           4850.0,
           5168.0
         ]
       },
       {
-        "name": "Police - Every breath you take.",
+        "name": "Police - Every breath you take",
         "range": [
           5168.0,
           5560.0
         ]
       },
       {
-        "name": "Sabrina Carpenter - Please please please.",
+        "name": "Sabrina Carpenter - Please please please",
         "range": [
           5560.0,
           5880.0
         ]
       },
       {
-        "name": "Cher - Believe (After love, ᵃᶠᵗᵉʳ ˡᵒᵛᵉ).",
+        "name": "Cher - Believe (After love, ᵃᶠᵗᵉʳ ˡᵒᵛᵉ)",
         "range": [
           5880.0,
           6215.0
         ]
       },
       {
-        "name": "Sarah McLachlan - When she loved me.",
+        "name": "Sarah McLachlan - When she loved me",
         "range": [
           6215.0,
           6442.0
         ]
       },
       {
-        "name": "Etta James - At last.",
+        "name": "Etta James - At last",
         "range": [
           6442.0,
           6731.0
         ]
       },
       {
-        "name": "Spongebob - Campfire song song.",
+        "name": "Spongebob - Campfire song song",
         "range": [
           6731.0,
           6956.0
         ]
       }
+    ]
+  },
+  {
+    "videoId": "ps0dCY1l_Xs",
+    "songs": [
+      { "name": "Backlight / 逆光", "range": [0.0, 241.0] }
     ]
   },
   {
@@ -268,6 +286,12 @@
           5196.0
         ]
       }
+    ]
+  },
+  {
+    "videoId": "rghnNC1lRXc",
+    "songs": [
+      { "name": "GHOST (Piano Version)", "range": [0.0, 239.0] }
     ]
   },
   {
@@ -674,7 +698,7 @@
       { "name": "The End Of The World", "range": [2414.0, 2751.0] },
       { "name": "Un-Break My Heart", "range": [2751.0, 3105.0] },
       { "name": "Hurt", "range": [3105.0, 3462.0] },
-      { "name": "Calc. (english ver.", "range": [3462.0, 3862.0] },
+      { "name": "Calc. (english ver.)", "range": [3462.0, 3862.0] },
       { "name": "Kainé/Salvation", "range": [3862.0, 4229.0] },
       { "name": "Brothers", "range": [4229.0, 4656.0] },
       { "name": "Last Regrets", "range": [4656.0, 5235.0] },
