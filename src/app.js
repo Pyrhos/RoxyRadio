@@ -481,7 +481,7 @@ function renderResults(items) {
 
         div.innerHTML = `
                 <span class="result-title">${item.name}</span>
-                <span class="result-sub">Stream ${item.streamId + 1} • Song ${item.songId + 1}</span>
+                <span class="result-sub">${item.streamName} • Song ${item.songId + 1}</span>
             `;
 
         div.addEventListener('click', () => selectResult(item));

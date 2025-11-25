@@ -10,19 +10,23 @@ export function buildSearchIndexFromPlaylist(playlist) {
   const searchIndex = [];
 
   playlist.forEach((stream, sIdx) => {
+    const streamDisplayName = stream.name || stream.title || `Stream ${sIdx + 1}`;
+
     if (stream.songs) {
       stream.songs.forEach((song, songIdx) => {
         searchIndex.push({
           name: song.name || 'Unknown',
           streamId: sIdx,
+          streamName: streamDisplayName,
           songId: songIdx,
           type: 'song'
         });
       });
     } else {
       searchIndex.push({
-        name: stream.title || 'Unknown Stream',
+        name: streamDisplayName,
         streamId: sIdx,
+        streamName: streamDisplayName,
         songId: 0,
         type: 'song' // Treat as song for unified search
       });
@@ -56,4 +60,3 @@ export function buildDuplicateNameIndex(items) {
 
   return map;
 }
-

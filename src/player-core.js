@@ -34,6 +34,7 @@ export class PlayerCore {
     // Preserve empty song lists so Rule 0 streams play as a single track.
     this.playlist = segmentData.map(v => ({
       videoId: v.videoId,
+      name: v.name || '',
       title: v.title || v.videoId, // Fallback title if provided or ID
       songs: (v.songs && v.songs.length > 0) ? v.songs : null
     }));
