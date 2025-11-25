@@ -301,7 +301,8 @@ document.getElementById('prev-song').addEventListener('click', () => {
 });
 
 document.getElementById('next-song').addEventListener('click', () => {
-    const action = core.nextSong();
+    const curTime = player.getCurrentTime();
+    const action = core.nextSong(curTime);
     if (action.type === 'load') loadCurrentContent(true);
     if (action.type === 'seek') core.cb.seekTo(action.time);
 });
@@ -344,6 +345,7 @@ document.getElementById('yap-btn').addEventListener('click', () => {
     updateButtons();
 
     const t = player.getCurrentTime();
+    core.syncToTime(t);
 
     if (!core.yapMode) { // Switched TO Standard
         const stream = core.getCurrentStream();

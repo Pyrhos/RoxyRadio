@@ -307,8 +307,9 @@ export class PlayerCore {
       return true;
   }
 
-  nextSong() {
+  nextSong(currentTime) {
       const stream = this.getCurrentStream();
+      this._syncIndexToTime(currentTime, stream);
       const jumpToNextStreamStart = () => {
           this.nextStream();
           return { type: 'load' };
@@ -351,6 +352,7 @@ export class PlayerCore {
 
   prevSong(currentTime = 0) {
       const stream = this.getCurrentStream();
+      this._syncIndexToTime(currentTime, stream);
       
       const jumpToPreviousStreamEnd = () => {
           this.prevStream();
@@ -414,6 +416,7 @@ export class PlayerCore {
       }
 
       if (this.yapMode) {
+           this._syncIndexToTime(currentTime, stream);
            const lastSong = stream.songs[stream.songs.length - 1];
            if (currentTime >= lastSong.range[1] - 0.2) { // SEEK_EARLY
                this.nextStream();
@@ -564,5 +567,19 @@ export class PlayerCore {
       }
       const info = this._getActiveSongDisplayInfo(currentTime, songs);
       return info.name || fallback;
+  }
+
+  syncToTime(currentTime) {
+      this._syncIndexToTime(currentTime);
+  }
+
+  _syncIndexToTime(currentTime, stream = this.getCurrentStream()) {
+      if (!Number.isFinite(currentTime) || !stream || !stream.songs || stream.songs.length === 0) {
+          return;
+      }
+      const matchIdx = stream.songs.findIndex((s) => currentTime >= s.range[0] && currentTime < s.range[1]);
+      if (matchIdx !== -1) {
+          this.rIdx = matchIdx;
+      }
   }
 }

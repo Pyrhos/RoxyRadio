@@ -79,6 +79,40 @@ describe('PlayerCore', () => {
       expect(res.time).toBe(0);
       expect(core.vIdx).toBe(1); // stays on same stream
     });
+
+    it('nextSong realigns song index using current time before advancing', () => {
+      core.playlist[0].songs = [
+        { name: 'S1T1', range: [0, 10] },
+        { name: 'S1T2', range: [20, 30] },
+        { name: 'S1T3', range: [40, 50] }
+      ];
+      core.vIdx = 0;
+      core.rIdx = 0;
+
+      const res = core.nextSong(25);
+      expect(res.type).toBe('load');
+      expect(core.rIdx).toBe(2);
+    });
+
+    it('prevSong realigns song index using current time before restart logic', () => {
+      core.playlist[0].songs = [
+        { name: 'S1T1', range: [0, 10] },
+        { name: 'S1T2', range: [20, 30] }
+      ];
+      core.vIdx = 0;
+      core.rIdx = 0;
+
+      const res = core.prevSong(27);
+      expect(res.type).toBe('seek');
+      expect(res.time).toBe(20);
+    });
+
+    it('syncToTime aligns rIdx to the song containing the timestamp', () => {
+      core.vIdx = 0;
+      core.rIdx = 0;
+      core.syncToTime(25);
+      expect(core.rIdx).toBe(1);
+    });
   });
 
   describe('Shuffle & History', () => {
@@ -350,6 +384,14 @@ describe('PlayerCore', () => {
           core.checkTick(29.9); 
           expect(callbacks.playVideo).toHaveBeenCalled();
           expect(core.vIdx).toBe(1); // Next stream
+      });
+
+      it('keeps rIdx aligned with playback time while Yap mode is active', () => {
+          core.toggleYap();
+          core.vIdx = 0;
+          core.rIdx = 0;
+          core.checkTick(25);
+          expect(core.rIdx).toBe(1);
       });
   });
 
