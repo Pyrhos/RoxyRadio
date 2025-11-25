@@ -41,7 +41,7 @@
         "name": "Sixpence None the Richer - Kiss me",
         "range": [
           2262,
-          2470
+          2489
         ]
       },
       {
@@ -137,28 +137,28 @@
         "name": "I put a Spell on you - Nina Simone",
         "range": [
           457,
-          636
+          612
         ]
       },
       {
         "name": "Thriller - Michael Jackson",
         "range": [
           636,
-          1031
+          993
         ]
       },
       {
         "name": "Time Warp - The Rocky Horror Show",
         "range": [
           1031,
-          1240
+          1230
         ]
       },
       {
         "name": "Yousei Teikoku - Mirai Nikki OP",
         "range": [
           1240,
-          1527
+          1480
         ]
       }
     ]
@@ -184,126 +184,126 @@
         "name": "Red hot chili peppers - Californication",
         "range": [
           878,
-          1340
+          1199
         ]
       },
       {
         "name": "Micheal Jackson - Man in the mirror",
         "range": [
           1340,
-          1815
+          1659
         ]
       },
       {
         "name": "4 non blondes - What's up?",
         "range": [
           1815,
-          1860
+          2110
         ]
       },
       {
         "name": "George Benson - Nothing's gonna change my love for you",
         "range": [
           1860,
-          2257
+          2100
         ]
       },
       {
         "name": "Mary Mary - Shackles (praise you)",
         "range": [
           2257,
-          2608
+          2454
         ]
       },
       {
         "name": "Bruno mars - That's what I like",
         "range": [
           2608,
-          3016
+          2814
         ]
       },
       {
         "name": "Maroon 5 - Payphone",
         "range": [
           3016,
-          3510
+          3247
         ]
       },
       {
         "name": "Frank Sinatra & Nancy Sinatra - Something stupid",
         "range": [
           3510,
-          3795
+          3670
         ]
       },
       {
         "name": "Alicia Keys - If I ain't got you",
         "range": [
           3795,
-          4120
+          4023
         ]
       },
       {
         "name": "Toni Braxton - Unbreak my heart",
         "range": [
           4120,
-          4463
+          4390
         ]
       },
       {
         "name": "Seal - Kiss from a rose",
         "range": [
           4463,
-          4850
+          4750
         ]
       },
       {
         "name": "Madonna - La Isla Bonita",
         "range": [
           4850,
-          5168
+          5092
         ]
       },
       {
         "name": "Police - Every breath you take",
         "range": [
           5168,
-          5560
+          5421
         ]
       },
       {
         "name": "Sabrina Carpenter - Please please please",
         "range": [
           5560,
-          5880
+          5740
         ]
       },
       {
         "name": "Cher - Believe (After love, ᵃᶠᵗᵉʳ ˡᵒᵛᵉ)",
         "range": [
           5880,
-          6215
+          6119
         ]
       },
       {
         "name": "Sarah McLachlan - When she loved me",
         "range": [
           6215,
-          6442
+          6399
         ]
       },
       {
         "name": "Etta James - At last",
         "range": [
           6442,
-          6731
+          6622
         ]
       },
       {
         "name": "Spongebob - Campfire song song",
         "range": [
           6731,
-          6956
+          6771
         ]
       }
     ]
@@ -329,63 +329,63 @@
         "name": "Enter Sandman - Metallica",
         "range": [
           894,
-          1492
+          1225
         ]
       },
       {
         "name": "Helter Skelter - Beatles",
         "range": [
           1492,
-          1862
+          1761
         ]
       },
       {
         "name": "In the End - Linkin' Park",
         "range": [
           1862,
-          2247
+          2078
         ]
       },
       {
         "name": "When The Levee Breaks - Led Zeppelin",
         "range": [
           2247,
-          2834
+          2674
         ]
       },
       {
         "name": "Poundcake - Eddie van Halen",
         "range": [
           2834,
-          3296
+          3156
         ]
       },
       {
         "name": "Sweet Child O' Mine - Guns N' Roses",
         "range": [
           3337,
-          3782
+          3692
         ]
       },
       {
         "name": "Black Hole Sun - Soundgarden",
         "range": [
           3782,
-          4207
+          4100
         ]
       },
       {
         "name": "A Hard Road - Black Sabbath",
         "range": [
           4207,
-          4801
+          4571
         ]
       },
       {
         "name": "Savior - Rise Against",
         "range": [
           4801,
-          5276
+          5043
         ]
       }
     ]
@@ -509,77 +509,77 @@
         "name": "I don't want to set the world on fire",
         "range": [
           1072,
-          1515
+          1252
         ]
       },
       {
         "name": "Its been a long long time",
         "range": [
           1515,
-          1916
+          1721
         ]
       },
       {
         "name": "You always hurt the ones you love",
         "range": [
           1916,
-          2209
+          2111
         ]
       },
       {
         "name": "I can give you anything but love",
         "range": [
           2209,
-          2587
+          2354
         ]
       },
       {
         "name": "Summertime and the Living is Easy",
         "range": [
           2587,
-          2936
+          2757
         ]
       },
       {
         "name": "Moaning",
         "range": [
           2936,
-          3409
+          3116
         ]
       },
       {
         "name": "My Favorite Things",
         "range": [
           3409,
-          3653
+          3574
         ]
       },
       {
         "name": "I'm Making Believe",
         "range": [
           3653,
-          3950
+          3803
         ]
       },
       {
         "name": "Where or when",
         "range": [
           3950,
-          4392
+          4130
         ]
       },
       {
         "name": "Ain't Misbehavin'",
         "range": [
           4392,
-          4778
+          4572
         ]
       },
       {
         "name": "Cry Me a River",
         "range": [
           4778,
-          5196
+          5108
         ]
       }
     ]
@@ -674,105 +674,105 @@
         "name": "Jump Up, Super Star! - Mario Odyssey",
         "range": [
           1077,
-          1426
+          1323
         ]
       },
       {
         "name": "Beneath the Mask - Persona 5",
         "range": [
           1426,
-          1844
+          1706
         ]
       },
       {
         "name": "Snake Eater - Metal Gear Solid 3: Snake Eater",
         "range": [
           1844,
-          2262
+          2022
         ]
       },
       {
         "name": "Want You Gone - Portal 2",
         "range": [
           2262,
-          2577
+          2404
         ]
       },
       {
         "name": "Escape From The City - Sonic Adventure 2",
         "range": [
           2577,
-          2854
+          2717
         ]
       },
       {
         "name": "Your Reality - Doki Doki Literature Club",
         "range": [
           2854,
-          3386
+          3036
         ]
       },
       {
         "name": "Rivers in the Desert - Persona 5",
         "range": [
           3386,
-          3789
+          3701
         ]
       },
       {
         "name": "Baka Mitai (short ver.) - Yakuza 0",
         "range": [
           3789,
-          4017
+          3879
         ]
       },
       {
         "name": "Baka Mitai (wrong key) - Yakuza 0",
         "range": [
           4017,
-          4106
+          4077
         ]
       },
       {
         "name": "Baka Mitai - Yakuza 0",
         "range": [
           4106,
-          4493
+          4394
         ]
       },
       {
         "name": "The Edge of Dawn (Seasons of Warfare) - Fire Emblem Three Houses",
         "range": [
           4493,
-          4976
+          4828
         ]
       },
       {
         "name": "Weight of the World - Nier: Automata",
         "range": [
           4976,
-          5467
+          5320
         ]
       },
       {
         "name": "Song of the Ancients (1st voice) - NieR RepliCant",
         "range": [
           5467,
-          5676
+          5657
         ]
       },
       {
         "name": "Song of the Ancients (Self Duet) - NieR RepliCant",
         "range": [
           5676,
-          6041
+          5866
         ]
       },
       {
         "name": "Last Surprise - Persona 5",
         "range": [
           6041,
-          6601
+          6276
         ]
       }
     ]
@@ -785,91 +785,91 @@
         "name": "Careless Whisper (Jazz ver.) - George Michael",
         "range": [
           1575,
-          2280
+          1815
         ]
       },
       {
         "name": "Why Don't You Do Right - Peggy Lee",
         "range": [
           2280,
-          2622
+          2428
         ]
       },
       {
         "name": "I Can't Give You Anything But Love - Adelaide Hall, Aida Ward, and Willard McLean",
         "range": [
           2622,
-          2910
+          2767
         ]
       },
       {
         "name": "Lovefool (Jazz ver.) - The Cardigans",
         "range": [
           2910,
-          3312
+          3120
         ]
       },
       {
         "name": "Diamonds Are A Girl's Best Friend - Marilyn Monroe",
         "range": [
           3312,
-          3650
+          3522
         ]
       },
       {
         "name": "My Baby Just Cares For Me - Nina Simone",
         "range": [
           3650,
-          4030
+          3867
         ]
       },
       {
         "name": "Seven Nation Army (Jazz ver.) - The White Stripes",
         "range": [
           4030,
-          4406
+          4270
         ]
       },
       {
         "name": "Snake Eater - Cynthia Harrell (Metal Gear Solid 3)",
         "range": [
           4406,
-          4720
+          4584
         ]
       },
       {
         "name": "Beneath The Mask - Lyn Inaizumi",
         "range": [
           4720,
-          5115
+          5000
         ]
       },
       {
         "name": "L.O.V.E. - Nat King Cole",
         "range": [
           5115,
-          5460
+          5268
         ]
       },
       {
         "name": "Creep (Jazz ver.) - Radiohead",
         "range": [
           5460,
-          6070
+          5750
         ]
       },
       {
         "name": "My Funny Valentine - Richard Rodgers and Lorenz Hart",
         "range": [
           6070,
-          6528
+          6248
         ]
       },
       {
         "name": "Pinky and the Brain (Jazz ver.) - Animaniacs",
         "range": [
           6528,
-          6968
+          6708
         ]
       }
     ]
@@ -882,35 +882,35 @@
         "name": "Rock and Roll - Led Zeppelin",
         "range": [
           372,
-          671
+          592
         ]
       },
       {
         "name": "Don't Stop Believin' - Journey",
         "range": [
           671,
-          996
+          922
         ]
       },
       {
         "name": "Nothing Else Matters - Metallica",
         "range": [
           996,
-          1425
+          1384
         ]
       },
       {
         "name": "The Diary of Jane - Breaking Benjamin",
         "range": [
           1425,
-          1690
+          1625
         ]
       },
       {
         "name": "The Beginning - One Ok Rock",
         "range": [
           1690,
-          2080
+          1983
         ]
       }
     ]
@@ -1041,91 +1041,91 @@
         "name": "Almost there - Anika Noni Rose - Princess and the Frog",
         "range": [
           1103,
-          1370
+          1247
         ]
       },
       {
         "name": "Careless Whisper (Jazz ver.) - Postmodern Jukebox",
         "range": [
           1370,
-          1799
+          1610
         ]
       },
       {
         "name": "Viva La Vida - Coldplay",
         "range": [
           1799,
-          2304
+          2041
         ]
       },
       {
         "name": "Jump Up, Super Star! - Super Mario Odyssey",
         "range": [
           2304,
-          2634
+          2550
         ]
       },
       {
         "name": "Dreams - fleetwood Mac",
         "range": [
           2634,
-          3018
+          2891
         ]
       },
       {
         "name": "Beneath the Mask - Lyn Inaizumi - Persona 5",
         "range": [
           3018,
-          3596
+          3298
         ]
       },
       {
         "name": "The End of the World - Skeeter Davis",
         "range": [
           3596,
-          3984
+          3754
         ]
       },
       {
         "name": "Plastic Love - Mariya Takeuchi",
         "range": [
           3984,
-          4361
+          4275
         ]
       },
       {
         "name": "Sixteen tons - Tennessee Ernie Ford",
         "range": [
           4361,
-          4642
+          4517
         ]
       },
       {
         "name": "Good Old Fashioned Lover Boy - Queen",
         "range": [
           4642,
-          4924
+          4815
         ]
       },
       {
         "name": "La vie en rose - Louis Armstrong",
         "range": [
           4924,
-          5123
+          5128
         ]
       },
       {
         "name": "Somebody to Love - Queen",
         "range": [
           5123,
-          5684
+          5419
         ]
       },
       {
         "name": "My funny Valentine",
         "range": [
           5684,
-          6106
+          5862
         ]
       }
     ]
@@ -1138,49 +1138,49 @@
         "name": "Fever - Peggy Lee",
         "range": [
           425,
-          679
+          625
         ]
       },
       {
         "name": "Dream a Little Dream of Me - Ella Fitzgerald, Louis Armstrong",
         "range": [
           679,
-          973
+          864
         ]
       },
       {
         "name": "I Don't Want to Set the World on Fire - The Ink Spots",
         "range": [
           973,
-          1206
+          1153
         ]
       },
       {
         "name": "Diamond Are a Girl's Best Friend - Marilyn Monroe",
         "range": [
           1206,
-          1458
+          1416
         ]
       },
       {
         "name": "Fly Me to the Moon - Frank sinatra",
         "range": [
           1458,
-          1641
+          1605
         ]
       },
       {
         "name": "Feeling Good - Nina Simone",
         "range": [
           1641,
-          1892
+          1815
         ]
       },
       {
         "name": "At Last - Etta James",
         "range": [
           1892,
-          2107
+          2072
         ]
       }
     ]
@@ -1193,105 +1193,105 @@
         "name": "Santa Claus is Comin' to Town",
         "range": [
           783,
-          1184
+          963
         ]
       },
       {
         "name": "Flappie",
         "range": [
           1184,
-          1502
+          1394
         ]
       },
       {
         "name": "Rocking around the Christmas Tree",
         "range": [
           1502,
-          1929
+          1628
         ]
       },
       {
         "name": "Here comes Santa Claus",
         "range": [
           1929,
-          2289
+          2043
         ]
       },
       {
         "name": "Hip Hop Noel",
         "range": [
           2289,
-          3228
+          2469
         ]
       },
       {
         "name": "Santa Baby",
         "range": [
           3228,
-          3617
+          3434
         ]
       },
       {
         "name": "White Christmas",
         "range": [
           3617,
-          4122
+          3797
         ]
       },
       {
         "name": "Last Christmas",
         "range": [
           4122,
-          4804
+          4387
         ]
       },
       {
         "name": "Jingle Bell Rock",
         "range": [
           4804,
-          5139
+          4936
         ]
       },
       {
         "name": "Oh Holy Night",
         "range": [
           5139,
-          5455
+          5379
         ]
       },
       {
         "name": "Let it snow",
         "range": [
           5455,
-          5710
+          5572
         ]
       },
       {
         "name": "Feliz Navidad",
         "range": [
           5710,
-          6263
+          5892
         ]
       },
       {
         "name": "Please come Home for Christmas",
         "range": [
           6263,
-          6531
+          6433
         ]
       },
       {
         "name": "Man with the Bag",
         "range": [
           6531,
-          7027
+          6692
         ]
       },
       {
         "name": "Baby it's cold outside",
         "range": [
           7027,
-          8027
+          7187
         ]
       }
     ]
@@ -1311,84 +1311,84 @@
         "name": "Thriller - Michael Jackson",
         "range": [
           1157,
-          1689
+          1514
         ]
       },
       {
         "name": "Kuusou Mesorogiwi - Yōsei Teikoku (Mirai Nikki OP)",
         "range": [
           1689,
-          2114
+          1929
         ]
       },
       {
         "name": "Hide and Seek - IU (Lizz Robinet Lyrics)",
         "range": [
           2114,
-          2399
+          2294
         ]
       },
       {
         "name": "The Oogie Boogie's Song - A Nightmare Before Christmas",
         "range": [
           2399,
-          2735
+          2596
         ]
       },
       {
         "name": "The Time Warp - The Rocky Horror Picture Show",
         "range": [
           2735,
-          3074
+          2934
         ]
       },
       {
         "name": "The Devil Went Down to Georgia - The Charlie Daniels Band",
         "range": [
           3074,
-          3431
+          3289
         ]
       },
       {
         "name": "Naraku no Hana - Eiko Shimamiya (Higurashi no Naku Koro ni Kai)",
         "range": [
           3431,
-          3812
+          3731
         ]
       },
       {
         "name": "Somebody's Watching Me - Rockwell",
         "range": [
           3812,
-          4135
+          4050
         ]
       },
       {
         "name": "Ghostbusters - Ray Parker Jr.",
         "range": [
           4135,
-          4587
+          4375
         ]
       },
       {
         "name": "the WORLD - Nightmare (Death Note)",
         "range": [
           4587,
-          4962
+          4821
         ]
       },
       {
         "name": "Kagayaku Sora no Shijima ni wa - Kalafina (Black Butler)",
         "range": [
           4962,
-          5432
+          5202
         ]
       },
       {
         "name": "I Put a Spell on You - Nina Simone",
         "range": [
           5432,
-          6120
+          5587
         ]
       }
     ]
@@ -1401,224 +1401,224 @@
         "name": "Spongebob Intro",
         "range": [
           1145,
-          1291
+          1185
         ]
       },
       {
         "name": "Spongebob Intro but in dutch",
         "range": [
           1291,
-          1415
+          1331
         ]
       },
       {
         "name": "My Shiny Teeth and Me - Fairly Oddparents",
         "range": [
           1415,
-          1686
+          1525
         ]
       },
       {
         "name": "Here we go - Totally spies",
         "range": [
           1686,
-          2152
+          1746
         ]
       },
       {
         "name": "Call Me, Beep Me! - Kim Possible Theme Song",
         "range": [
           2152,
-          2534
+          2308
         ]
       },
       {
         "name": "A World Without Danger - Code Lyoko",
         "range": [
           2534,
-          3033
+          2739
         ]
       },
       {
         "name": "Winx Club Intro (dutch ver.)",
         "range": [
           3033,
-          3273
+          3093
         ]
       },
       {
         "name": "The Flintstones Intro",
         "range": [
           3273,
-          3576
+          3333
         ]
       },
       {
         "name": "Spetter, Pieter, Pater - Alred J Kwak Theme (dutch ver.)",
         "range": [
           3576,
-          3979
+          3726
         ]
       },
       {
         "name": "The Moomins Outro (dutch ver.)",
         "range": [
           3979,
-          4377
+          4069
         ]
       },
       {
         "name": "Ducktales Intro",
         "range": [
           4377,
-          4656
+          4437
         ]
       },
       {
         "name": "Ed, Edd n Eddy Intro",
         "range": [
           4656,
-          4820
+          4686
         ]
       },
       {
         "name": "Cow and Chicken Intro",
         "range": [
           4820,
-          5058
+          4865
         ]
       },
       {
         "name": "Dexter's Laboratory Outro",
         "range": [
           5058,
-          5145
+          5118
         ]
       },
       {
         "name": "Fairly Oddparents Intro",
         "range": [
           5145,
-          5212
+          5190
         ]
       },
       {
         "name": "Fairly Oddparents Intro (dutch ver.)",
         "range": [
           5212,
-          5349
+          5257
         ]
       },
       {
         "name": "Johnny Bravo Intro",
         "range": [
           5349,
-          5440
+          5394
         ]
       },
       {
         "name": "Johnny Bravo Intro (dutch ver.)",
         "range": [
           5440,
-          5554
+          5485
         ]
       },
       {
         "name": "Jimmy Neutron Intro",
         "range": [
           5554,
-          5639
+          5599
         ]
       },
       {
         "name": "Jimmy Neutron Intro (dutch ver.)",
         "range": [
           5639,
-          5780
+          5684
         ]
       },
       {
         "name": "Animaniacs Intro",
         "range": [
           5780,
-          5909
+          5850
         ]
       },
       {
         "name": "Pinky and the Brain Intro",
         "range": [
           5909,
-          6106
+          5979
         ]
       },
       {
         "name": "Pinky and the Brain (Jazz ver.)",
         "range": [
           6106,
-          6343
+          6286
         ]
       },
       {
         "name": "Misadventures of Flapjack Intro",
         "range": [
           6343,
-          6492
+          6393
         ]
       },
       {
         "name": "CatDog Intro",
         "range": [
           6492,
-          6637
+          6552
         ]
       },
       {
         "name": "Hey Arnold Intro",
         "range": [
           6637,
-          6720
+          6687
         ]
       },
       {
         "name": "Hey Arnold Intro (dutch ver.)",
         "range": [
           6720,
-          6830
+          6770
         ]
       },
       {
         "name": "Fly Away - Dommel Intro",
         "range": [
           6830,
-          6994
+          7010
         ]
       },
       {
         "name": "South Park Intro",
         "range": [
           6994,
-          7135
+          7029
         ]
       },
       {
         "name": "My Life as a Teenage Robot Intro",
         "range": [
           7135,
-          7212
+          7185
         ]
       },
       {
         "name": "My Life as a Teenage Robot Intro (dutch ver.)",
         "range": [
           7212,
-          7476
+          7262
         ]
       },
       {
         "name": "Roco's Modern Life Intro",
         "range": [
           7476,
-          7666
+          7526
         ]
       }
     ]
@@ -1631,91 +1631,91 @@
         "name": "Mayonaka no Door - Miki Matsubara",
         "range": [
           452,
-          748
+          722
         ]
       },
       {
         "name": "Flyday Chinatown - Yasuha",
         "range": [
           748,
-          967
+          958
         ]
       },
       {
         "name": "Plastic Love - Mariya Takeuchi",
         "range": [
           967,
-          1341
+          1258
         ]
       },
       {
         "name": "Bay City - Junko Yagami",
         "range": [
           1341,
-          1676
+          1577
         ]
       },
       {
         "name": "Shyness Boy - Anri",
         "range": [
           1676,
-          1937
+          1871
         ]
       },
       {
         "name": "Candy - Naoko Gushima",
         "range": [
           1937,
-          2242
+          2187
         ]
       },
       {
         "name": "Rouge no Dengon - Yumi Matsutoya",
         "range": [
           2242,
-          2443
+          2425
         ]
       },
       {
         "name": "Ride On Time - Tatsuro Yamashita",
         "range": [
           2443,
-          2722
+          2731
         ]
       },
       {
         "name": "Remember Summer Days - Anri",
         "range": [
           2722,
-          3055
+          3017
         ]
       },
       {
         "name": "Telephone Number - Junko Ohashi",
         "range": [
           3055,
-          3355
+          3290
         ]
       },
       {
         "name": "Tasogare no Bay City - Junko Yagami",
         "range": [
           3355,
-          3628
+          3633
         ]
       },
       {
         "name": "Simple Love - Junko Ohashi",
         "range": [
           3628,
-          4185
+          3853
         ]
       },
       {
         "name": "Sparkle - Tatsuro Yamashita",
         "range": [
           4185,
-          4675
+          4439
         ]
       }
     ]
@@ -1728,56 +1728,56 @@
         "name": "Again - Yui (Fullmetal Alchemist: Brotherhood)",
         "range": [
           1541,
-          2251
+          1796
         ]
       },
       {
         "name": "Zankoku na Tenshi no Te-ze - Yoko Takahashi (Evangelion)",
         "range": [
           2251,
-          2856
+          2496
         ]
       },
       {
         "name": "Rinbu - Revolution - Masami Okui (Revolutionary Girl Utena)",
         "range": [
           2856,
-          3281
+          3131
         ]
       },
       {
         "name": "Shounen yo Ware ni Kaere - Yakushimaru Etsuko (Mawaru Penguindrum)",
         "range": [
           3281,
-          3790
+          3581
         ]
       },
       {
         "name": "Honey - chihiro (Cardcaptor Sakura)",
         "range": [
           3790,
-          4213
+          4047
         ]
       },
       {
         "name": "Kami-Iro Awase - binaria (Dangan Ronpa)",
         "range": [
           4213,
-          5223
+          4453
         ]
       },
       {
         "name": "Last Stardust - Aimer (Fate/Stay Night Unlimited Blade works)",
         "range": [
           5223,
-          5910
+          5541
         ]
       },
       {
         "name": "KICK BACK - Kenshi Yonezu (Chainsaw Man)",
         "range": [
           5910,
-          6318
+          6103
         ]
       }
     ]
@@ -1790,91 +1790,91 @@
         "name": "Ikanaide",
         "range": [
           1257,
-          1566
+          1473
         ]
       },
       {
         "name": "Autumn leaves",
         "range": [
           1566,
-          1954
+          1736
         ]
       },
       {
         "name": "Creep",
         "range": [
           1954,
-          2414
+          2192
         ]
       },
       {
         "name": "The End Of The World",
         "range": [
           2414,
-          2751
+          2572
         ]
       },
       {
         "name": "Un-Break My Heart",
         "range": [
           2751,
-          3105
+          3021
         ]
       },
       {
         "name": "Hurt",
         "range": [
           3105,
-          3462
+          3323
         ]
       },
       {
         "name": "Calc. (english ver.)",
         "range": [
           3462,
-          3862
+          3692
         ]
       },
       {
         "name": "Kainé/Salvation",
         "range": [
           3862,
-          4229
+          4045
         ]
       },
       {
         "name": "Brothers",
         "range": [
           4229,
-          4656
+          4469
         ]
       },
       {
         "name": "Last Regrets",
         "range": [
           4656,
-          5235
+          4946
         ]
       },
       {
         "name": "Promise",
         "range": [
           5235,
-          5618
+          5515
         ]
       },
       {
         "name": "Viva La Vida",
         "range": [
           5618,
-          5909
+          5860
         ]
       },
       {
         "name": "Breaking The Habit",
         "range": [
           5909,
-          6406
+          6105
         ]
       }
     ]
@@ -1887,84 +1887,84 @@
         "name": "Heb je even voor mij",
         "range": [
           1136,
-          1525
+          1333
         ]
       },
       {
         "name": "Roller Coaster",
         "range": [
           1525,
-          1996
+          1728
         ]
       },
       {
         "name": "Zij gelooft in mij",
         "range": [
           1996,
-          2477
+          2232
         ]
       },
       {
         "name": "Malle Babbe",
         "range": [
           2477,
-          2897
+          2717
         ]
       },
       {
         "name": "Zoutelande",
         "range": [
           2897,
-          3212
+          3117
         ]
       },
       {
         "name": "Stil in mij",
         "range": [
           3212,
-          3652
+          3457
         ]
       },
       {
         "name": "Iedereen is van de wereld",
         "range": [
           3652,
-          4092
+          3872
         ]
       },
       {
         "name": "Zoutelande (reprise)",
         "range": [
           4092,
-          4316
+          4312
         ]
       },
       {
         "name": "Droom land",
         "range": [
           4316,
-          4731
+          4526
         ]
       },
       {
         "name": "Leef",
         "range": [
           4731,
-          5124
+          4946
         ]
       },
       {
         "name": "Eenzame Kerst",
         "range": [
           5124,
-          5500
+          5314
         ]
       },
       {
         "name": "Viva Hollandia",
         "range": [
           5500,
-          5820
+          5710
         ]
       }
     ]
@@ -1977,28 +1977,28 @@
         "name": "Lovefool",
         "range": [
           248,
-          518
+          443
         ]
       },
       {
         "name": "Stupid Cupid",
         "range": [
           518,
-          719
+          651
         ]
       },
       {
         "name": "Love of my life",
         "range": [
           719,
-          982
+          938
         ]
       },
       {
         "name": "Whole Lotta love",
         "range": [
           982,
-          1280
+          1316
         ]
       }
     ]
@@ -2032,7 +2032,7 @@
         "name": "I can't give you anything but love",
         "range": [
           2349,
-          2636
+          2494
         ]
       },
       {
@@ -2060,7 +2060,7 @@
         "name": "Blue",
         "range": [
           3612,
-          3935
+          3822
         ]
       },
       {
@@ -2094,56 +2094,56 @@
         "name": "Despacito - Luis Fonsi",
         "range": [
           951,
-          1513
+          1179
         ]
       },
       {
         "name": "KICK BACK (Spanish ver.) - Kenshi Yonezu",
         "range": [
           1513,
-          2104
+          1706
         ]
       },
       {
         "name": "Suerte - Shakira",
         "range": [
           2104,
-          2502
+          2300
         ]
       },
       {
         "name": "Besame Mucho - Consuelo Velázquez",
         "range": [
           2502,
-          3013
+          2682
         ]
       },
       {
         "name": "Lamento Boliviano - Enanitos Verdes",
         "range": [
           3013,
-          3403
+          3235
         ]
       },
       {
         "name": "L'Via L'Viaquez - The Mars Volta",
         "range": [
           3403,
-          3944
+          3943
         ]
       },
       {
         "name": "De Música Ligera - Soda Stereo",
         "range": [
           4078,
-          4747
+          4290
         ]
       },
       {
         "name": "La Bamba - Ritchie Valens",
         "range": [
           4747,
-          5203
+          4902
         ]
       }
     ]
@@ -2156,28 +2156,28 @@
         "name": "Cry me a River",
         "range": [
           312,
-          490
+          642
         ]
       },
       {
         "name": "I'm still standing",
         "range": [
           490,
-          785
+          673
         ]
       },
       {
         "name": "What Is and What Should Never Be",
         "range": [
           785,
-          1156
+          1069
         ]
       },
       {
         "name": "I surrender",
         "range": [
           1156,
-          1494
+          1396
         ]
       }
     ]
@@ -2190,21 +2190,21 @@
         "name": "Nessun Dorma",
         "range": [
           1543,
-          3939
+          1723
         ]
       },
       {
         "name": "Ruhe sanft, mein holdes Leben",
         "range": [
           3939,
-          5577
+          4299
         ]
       },
       {
         "name": "Ode to Joy",
         "range": [
           5577,
-          8814
+          5817
         ]
       }
     ]
@@ -2217,7 +2217,7 @@
         "name": "Why Don't You Do Right",
         "range": [
           1259,
-          1700
+          1407
         ]
       },
       {
@@ -2231,91 +2231,91 @@
         "name": "Beyond the Sea",
         "range": [
           2134,
-          2559
+          2304
         ]
       },
       {
         "name": "Hello Dolly!",
         "range": [
           2559,
-          2819
+          2704
         ]
       },
       {
         "name": "At Last",
         "range": [
           2819,
-          3065
+          2999
         ]
       },
       {
         "name": "I am a good Girl",
         "range": [
           3065,
-          3337
+          3215
         ]
       },
       {
         "name": "Say that you Love me",
         "range": [
           3337,
-          3685
+          3547
         ]
       },
       {
         "name": "I can't give you anything but Love",
         "range": [
           3685,
-          3907
+          3830
         ]
       },
       {
         "name": "Cry me a River",
         "range": [
           3907,
-          4173
+          4237
         ]
       },
       {
         "name": "Fever",
         "range": [
           4173,
-          4448
+          4373
         ]
       },
       {
         "name": "Love is a losing game",
         "range": [
           4448,
-          4734
+          4603
         ]
       },
       {
         "name": "Master of Jazz (original)",
         "range": [
           4734,
-          5090
+          4914
         ]
       },
       {
         "name": "At last",
         "range": [
           5090,
-          5367
+          5270
         ]
       },
       {
         "name": "Blue",
         "range": [
           5367,
-          5728
+          5547
         ]
       },
       {
         "name": "That Man",
         "range": [
           5728,
-          6626
+          5878
         ]
       }
     ]
@@ -2328,63 +2328,63 @@
         "name": "Nevereverland",
         "range": [
           1021,
-          1447
+          1246
         ]
       },
       {
         "name": "Can Do",
         "range": [
           1447,
-          1887
+          1657
         ]
       },
       {
         "name": "Again",
         "range": [
           1887,
-          1989
+          2142
         ]
       },
       {
         "name": "Again (Take 02)",
         "range": [
           1989,
-          2437
+          2244
         ]
       },
       {
         "name": "Sobakasu",
         "range": [
           2437,
-          3023
+          2692
         ]
       },
       {
         "name": "Butterfly",
         "range": [
           3023,
-          3620
+          3243
         ]
       },
       {
         "name": "Zoetrope",
         "range": [
           3620,
-          3833
+          3865
         ]
       },
       {
         "name": "99.9",
         "range": [
           3833,
-          4239
+          4048
         ]
       },
       {
         "name": "Beginning",
         "range": [
           4239,
-          4820
+          4532
         ]
       }
     ]
@@ -2397,77 +2397,77 @@
         "name": "I Write Sins not Tragedies - Panic! At The Disco",
         "range": [
           991,
-          1485
+          1177
         ]
       },
       {
         "name": "Bring me To Life - Evanscence",
         "range": [
           1485,
-          1938
+          1722
         ]
       },
       {
         "name": "IN THE END - Linkin Park",
         "range": [
           1938,
-          2347
+          2154
         ]
       },
       {
         "name": "Dear Maria, Count Me In - All Time Low",
         "range": [
           2347,
-          2690
+          2529
         ]
       },
       {
         "name": "Perfect - Simple Plan",
         "range": [
           2690,
-          3211
+          2967
         ]
       },
       {
         "name": "Still Into You - Paramore",
         "range": [
           3211,
-          3603
+          3427
         ]
       },
       {
         "name": "Thnks fr th Mmrs - Fall Out Boy",
         "range": [
           3603,
-          3911
+          3806
         ]
       },
       {
         "name": "Hey There Delilah - Plain White T's",
         "range": [
           3911,
-          4224
+          4143
         ]
       },
       {
         "name": "I'm Not a Vampire - Falling In Reverse",
         "range": [
           4224,
-          4554
+          4456
         ]
       },
       {
         "name": "Numb - Linkin Park",
         "range": [
           4554,
-          4924
+          4741
         ]
       },
       {
         "name": "Welcome To The Black Parade - MCR",
         "range": [
           4924,
-          5484
+          5235
         ]
       }
     ]
@@ -2480,77 +2480,77 @@
         "name": "Heart Shaped Box - Nirvana",
         "range": [
           706,
-          1109
+          987
         ]
       },
       {
         "name": "Black - Pearl Jam",
         "range": [
           1109,
-          1526
+          1452
         ]
       },
       {
         "name": "Lithium - Nirvana",
         "range": [
           1526,
-          1934
+          1783
         ]
       },
       {
         "name": "About a Girl - Nirvana",
         "range": [
           1934,
-          2321
+          2102
         ]
       },
       {
         "name": "Under the Bridge - Red Hot Chilli Peppers",
         "range": [
           2321,
-          2711
+          2585
         ]
       },
       {
         "name": "Creep - Stone Temple Pilots",
         "range": [
           2711,
-          3142
+          3044
         ]
       },
       {
         "name": "Jeremy - Pearl Jam",
         "range": [
           3142,
-          3594
+          3460
         ]
       },
       {
         "name": "Celebrity Skin - Hole",
         "range": [
           3594,
-          3836
+          3756
         ]
       },
       {
         "name": "Black Hole Sun - Soundgarden",
         "range": [
           3836,
-          4258
+          4154
         ]
       },
       {
         "name": "Come as You are - Nirvana",
         "range": [
           4258,
-          4626
+          4477
         ]
       },
       {
         "name": "Zombie - The Cranberries",
         "range": [
           4626,
-          5118
+          4932
         ]
       }
     ]
@@ -2563,70 +2563,70 @@
         "name": "Tokyo Metropolis Rock City",
         "range": [
           747,
-          1221
+          967
         ]
       },
       {
         "name": "Dream Eating Monochrome Baku",
         "range": [
           1221,
-          1488
+          1441
         ]
       },
       {
         "name": "Gekokujou",
         "range": [
           1488,
-          1750
+          1703
         ]
       },
       {
         "name": "Rin Rin Signal",
         "range": [
           1750,
-          2030
+          1960
         ]
       },
       {
         "name": "Cantarella",
         "range": [
           2030,
-          2292
+          2210
         ]
       },
       {
         "name": "Calc.",
         "range": [
           2292,
-          2641
+          2522
         ]
       },
       {
         "name": "Alien Alien",
         "range": [
           2641,
-          2837
+          2823
         ]
       },
       {
         "name": "Just Be Friends",
         "range": [
           2837,
-          3266
+          3127
         ]
       },
       {
         "name": "Koshitantan",
         "range": [
           3266,
-          3525
+          3486
         ]
       },
       {
         "name": "Thousand Year Solo",
         "range": [
           3525,
-          3742
+          3785
         ]
       }
     ]
@@ -2639,70 +2639,70 @@
         "name": "RUNNING IN THE 90S! - Max Coveri",
         "range": [
           1108,
-          1716
+          1393
         ]
       },
       {
         "name": "Lily Lily ☆ Burning Night - samfree",
         "range": [
           1716,
-          2053
+          1916
         ]
       },
       {
         "name": "Seventies - Mega NRG Man",
         "range": [
           2053,
-          2266
+          2263
         ]
       },
       {
         "name": "Give me the Night - Cherry",
         "range": [
           2266,
-          2827
+          2506
         ]
       },
       {
         "name": "Believe - Folder 5",
         "range": [
           2827,
-          3361
+          3052
         ]
       },
       {
         "name": "FINAL BREATH - Odyseee",
         "range": [
           3361,
-          3956
+          3601
         ]
       },
       {
         "name": "Carbonated Love - IRyS",
         "range": [
           3956,
-          4390
+          4166
         ]
       },
       {
         "name": "Gas Gas Gas - Initial D",
         "range": [
           4390,
-          4733
+          4660
         ]
       },
       {
         "name": "Déjà Vu - Initial D",
         "range": [
           4733,
-          5215
+          4993
         ]
       },
       {
         "name": "September (Eurobeat Remix)",
         "range": [
           5215,
-          5605
+          5455
         ]
       }
     ]
@@ -2715,49 +2715,49 @@
         "name": "Doctor Jeep - The Sisters of Mercy",
         "range": [
           1299,
-          1870
+          1579
         ]
       },
       {
         "name": "Burn - The Cure",
         "range": [
           1870,
-          2794
+          2269
         ]
       },
       {
         "name": "Bite my Hip - Bauhaus",
         "range": [
           2794,
-          3202
+          2969
         ]
       },
       {
         "name": "Spellbound - Siouxsie and the Banshees",
         "range": [
           3202,
-          4047
+          3399
         ]
       },
       {
         "name": "The Cat Lady - La Scaltra",
         "range": [
           4047,
-          4584
+          4287
         ]
       },
       {
         "name": "Lovesong - The Cure",
         "range": [
           4584,
-          4983
+          4792
         ]
       },
       {
         "name": "Goo Goo Muck - The Cramps",
         "range": [
           4983,
-          5340
+          5140
         ]
       }
     ]
@@ -2770,188 +2770,188 @@
         "name": "A Thousand Years - Christina Perri",
         "range": [
           1158,
-          1725
+          1443
         ]
       },
       {
         "name": "I'm Yours - Jason Mraz",
         "range": [
           1725,
-          2123
+          1967
         ]
       },
       {
         "name": "Hallelujah - Leonard Cohen",
         "range": [
           2123,
-          2459
+          2375
         ]
       },
       {
         "name": "Mayonaka no Door - Miki Matsubara",
         "range": [
           2459,
-          2809
+          2729
         ]
       },
       {
         "name": "Esok Kan Masih Ada - Utha Likumahuwa",
         "range": [
           2809,
-          3345
+          3079
         ]
       },
       {
         "name": "Basame Mucho - Andrea Brocelli",
         "range": [
           3345,
-          3963
+          3525
         ]
       },
       {
         "name": "Havana - Camila Cabello",
         "range": [
           3963,
-          4227
+          4180
         ]
       },
       {
         "name": "Viva La Vida - Coldplay",
         "range": [
           4227,
-          4740
+          4469
         ]
       },
       {
         "name": "Summertime - cinnamons, evening cinema",
         "range": [
           4740,
-          5049
+          4950
         ]
       },
       {
         "name": "Beautiful - Christina Aguilera",
         "range": [
           5049,
-          5413
+          5289
         ]
       },
       {
         "name": "Soldier of Fortune - Deep Purple",
         "range": [
           5413,
-          5702
+          5607
         ]
       },
       {
         "name": "If I Were a Boy - Beyonce",
         "range": [
           5702,
-          6220
+          5952
         ]
       },
       {
         "name": "Sunny - Boney M",
         "range": [
           6220,
-          6631
+          6440
         ]
       }
     ]
   },
   {
-    "name": "Can you guess the theme？",
+    "name": "Can you guess the theme?",
     "videoId": "RHbRLrqhF20",
     "songs": [
       {
         "name": "September - Earth, Wind & Fire",
         "range": [
           625,
-          1010
+          840
         ]
       },
       {
         "name": "I Will Survive - Gloria Gaynor",
         "range": [
           1010,
-          1400
+          1205
         ]
       },
       {
         "name": "Blame it on the Boogie - The Jackson 5",
         "range": [
           1400,
-          1711
+          1614
         ]
       },
       {
         "name": "Sunny (Disco Ver.) - Boney M",
         "range": [
           1711,
-          2027
+          1891
         ]
       },
       {
         "name": "Lady Marmalade - Labelle",
         "range": [
           2027,
-          2382
+          2263
         ]
       },
       {
         "name": "Ma Baker - Boney M",
         "range": [
           2382,
-          2937
+          2657
         ]
       },
       {
         "name": "Stayin' Alive - Bee Gees",
         "range": [
           2937,
-          3255
+          3222
         ]
       },
       {
         "name": "Boogie Wonderland - Earth, Wind & Fire",
         "range": [
           3255,
-          3608
+          3544
         ]
       },
       {
         "name": "It's Raining Men - The Weather Girls",
         "range": [
           3608,
-          3998
+          3819
         ]
       },
       {
         "name": "Disco Inferno - The Trammps",
         "range": [
           3998,
-          4329
+          4213
         ]
       },
       {
         "name": "Car Wash - Rose Royce",
         "range": [
           4329,
-          4649
+          4527
         ]
       },
       {
         "name": "Rasputin - Boney M",
         "range": [
           4649,
-          5075
+          4916
         ]
       },
       {
         "name": "Le Freak - Chic",
         "range": [
           5075,
-          5552
+          5402
         ]
       }
     ]
@@ -2964,63 +2964,63 @@
         "name": "Don't Stop Me Now - Queen",
         "range": [
           892,
-          1177
+          1101
         ]
       },
       {
         "name": "I Don't Want to Miss a Thing - Aerosmith",
         "range": [
           1177,
-          1600
+          1476
         ]
       },
       {
         "name": "What Is and What Should Never Be - Led Zeppelin",
         "range": [
           1600,
-          2102
+          1884
         ]
       },
       {
         "name": "Piece of My Heart - Janis Joplin",
         "range": [
           2102,
-          2481
+          2361
         ]
       },
       {
         "name": "Bad Reputation - Joan Jett & the Blackhearts",
         "range": [
           2481,
-          2725
+          2650
         ]
       },
       {
         "name": "You Give Love A Bad Name - Bon Jovi",
         "range": [
           2725,
-          3246
+          2947
         ]
       },
       {
         "name": "Are You Gonna Be My Girl - Jet",
         "range": [
           3246,
-          3566
+          3460
         ]
       },
       {
         "name": "Always - Bon Jovi",
         "range": [
           3566,
-          4101
+          3919
         ]
       },
       {
         "name": "House of the Rising Sun - The Animals",
         "range": [
           4101,
-          4545
+          4370
         ]
       }
     ]
@@ -3033,105 +3033,105 @@
         "name": "Believe - Cher",
         "range": [
           879,
-          1265
+          1118
         ]
       },
       {
         "name": "Boom, boom, boom, boom!! - Vengaboys",
         "range": [
           1265,
-          1578
+          1467
         ]
       },
       {
         "name": "Torn - Natalie Imbruglia",
         "range": [
           1578,
-          1935
+          1822
         ]
       },
       {
         "name": "Un-Break My Heart - Toni Braxton",
         "range": [
           1935,
-          2322
+          2205
         ]
       },
       {
         "name": "Hero - Mariah Carey",
         "range": [
           2322,
-          2679
+          2579
         ]
       },
       {
         "name": "Smells Like Teen Spirit - Nirvana",
         "range": [
           2679,
-          3145
+          2980
         ]
       },
       {
         "name": "You Oughta Know - Alanis Morisette",
         "range": [
           3145,
-          3461
+          3394
         ]
       },
       {
         "name": "Zombie - The Cranberries",
         "range": [
           3461,
-          3816
+          3767
         ]
       },
       {
         "name": "Nothing Else Matters - Metallica",
         "range": [
           3816,
-          4339
+          4204
         ]
       },
       {
         "name": "What's up - 4 Non Blondes",
         "range": [
           4339,
-          4811
+          4634
         ]
       },
       {
         "name": "Livin' La Vida Loca - Ricky Martin",
         "range": [
           4811,
-          5114
+          5054
         ]
       },
       {
         "name": "Gangsta's Paradise - Coolio",
         "range": [
           5114,
-          5564
+          5354
         ]
       },
       {
         "name": "Barbie Girl - Aqua",
         "range": [
           5564,
-          5858
+          5760
         ]
       },
       {
         "name": "Mambo No. 5 - Pérez Prado (Idol Version)",
         "range": [
           5858,
-          6211
+          6077
         ]
       },
       {
         "name": "I'm Blue - Eiffel 65",
         "range": [
           6211,
-          6814
+          6419
         ]
       }
     ]
@@ -3144,84 +3144,202 @@
         "name": "The Chain - Fleetwood Mac",
         "range": [
           1302,
-          1706
+          1572
         ]
       },
       {
         "name": "Underdog - Kasabian",
         "range": [
           1706,
-          2102
+          1983
         ]
       },
       {
         "name": "Dani California - Red Hot Chilli Peppers",
         "range": [
           2102,
-          2454
+          2384
         ]
       },
       {
         "name": "Snow - RHCP",
         "range": [
           2454,
-          2849
+          2788
         ]
       },
       {
         "name": "Daft Punk - Get Lucky",
         "range": [
           2849,
-          3356
+          3097
         ]
       },
       {
         "name": "Fantasy - Earth Wind and Fire",
         "range": [
           3356,
-          3748
+          3634
         ]
       },
       {
         "name": "American Boy - Estelle",
         "range": [
           3748,
-          4087
+          4033
         ]
       },
       {
         "name": "Sunday Morning - Maroon 5",
         "range": [
           4087,
-          4448
+          4331
         ]
       },
       {
         "name": "Carnival - The Cardigans",
         "range": [
           4448,
-          4735
+          4665
         ]
       },
       {
         "name": "Son of a Preacher Man - Dusty Springfield",
         "range": [
           4735,
-          4930
+          4881
         ]
       },
       {
         "name": "Blackbird - The Beatles",
         "range": [
           4930,
-          5347
+          5068
         ]
       },
       {
         "name": "Careless Whisper - George Michael (no Saxophone Version)",
         "range": [
           5347,
-          5903
+          5647
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Nap time~ Trying my best to make you relax by singing and talking to you",
+    "videoId": "UFxuiYQ0db8",
+    "songs": [
+      {
+        "name": "from memory",
+        "range": [
+          1415,
+          1497
+        ]
+      },
+      {
+        "name": "simple one",
+        "range": [
+          2056,
+          2086
+        ]
+      },
+      {
+        "name": "Pure imagination",
+        "range": [
+          2668,
+          2731
+        ]
+      },
+      {
+        "name": "Autumn leaves (by nat king cole)",
+        "range": [
+          3116,
+          3356
+        ]
+      },
+      {
+        "name": "Bohemian rhapsody",
+        "range": [
+          5210,
+          5570
+        ]
+      },
+      {
+        "name": "Fly me to the moon",
+        "range": [
+          5765,
+          6005
+        ]
+      },
+      {
+        "name": "You belong to me",
+        "range": [
+          6941,
+          7181
+        ]
+      },
+      {
+        "name": "Somewhere over the rainbow (teaser)",
+        "range": [
+          7214,
+          7291
+        ]
+      },
+      {
+        "name": "Swanlake",
+        "range": [
+          8463,
+          8543
+        ]
+      },
+      {
+        "name": "Constant as the stars above",
+        "range": [
+          8550,
+          8790
+        ]
+      },
+      {
+        "name": "Bring me to life (teaser)",
+        "range": [
+          8845,
+          8905
+        ]
+      },
+      {
+        "name": "What is and what should never be (teaser)",
+        "range": [
+          9124,
+          9184
+        ]
+      },
+      {
+        "name": "Mass destruction (teaser)",
+        "range": [
+          9230,
+          9290
+        ]
+      },
+      {
+        "name": "Gangsta's paradise (teaser)",
+        "range": [
+          9337,
+          9397
+        ]
+      },
+      {
+        "name": "Beneath the mask (rockblocked / teaser)",
+        "range": [
+          9465,
+          9525
+        ]
+      },
+      {
+        "name": "La vie en rose",
+        "range": [
+          12338,
+          12578
         ]
       }
     ]
