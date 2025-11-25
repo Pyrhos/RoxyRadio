@@ -197,6 +197,23 @@ describe('PlayerCore', () => {
       });
   });
 
+  describe('getActiveSongName helper', () => {
+      it('returns the active song name for a given time', () => {
+          core.vIdx = 0;
+          const name1 = core.getActiveSongName(5);
+          expect(name1).toBe('S1T1');
+
+          const name2 = core.getActiveSongName(25);
+          expect(name2).toBe('S1T2');
+      });
+
+      it('returns null when no songs are present (Rule 0)', () => {
+          core.vIdx = 1; // Video 2 has no songs (Rule 0)
+          const name = core.getActiveSongName(5);
+          expect(name).toBeNull();
+      });
+  });
+
   describe('Previous Song Logic', () => {
       it('restarts current song if playing for more than the threshold seconds', () => {
           core.vIdx = 0;

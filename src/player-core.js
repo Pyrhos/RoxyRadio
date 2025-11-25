@@ -499,10 +499,18 @@ export class PlayerCore {
       }
 
       // Determine active song based on time (for Yap/Seek accuracy)
-      const activeIdx = this._findSongIndexForTime(currentTime, stream.songs);
-      const song = stream.songs[activeIdx];
-      const base = `${song.name || "Unknown Track"} (${activeIdx + 1}/${stream.songs.length})`;
+      const { name, index } = this._getActiveSongDisplayInfo(currentTime, stream.songs);
+      const base = `${name} (${index + 1}/${stream.songs.length})`;
       return `${base}${suffix}`;
+  }
+
+  // So UI and status text agree on "which song is active"
+  _getActiveSongDisplayInfo(currentTime, songs) {
+      const idx = this._findSongIndexForTime(currentTime, songs);
+      const safeIdx = (idx >= 0 && idx < songs.length) ? idx : 0;
+      const song = songs[safeIdx];
+      const name = song && song.name ? song.name : "Unknown Track";
+      return { song, name, index: safeIdx };
   }
 
   _getGapStatus(currentTime, songs, suffix) {
@@ -538,5 +546,22 @@ export class PlayerCore {
           return this.rIdx;
       }
       return 0;
+  }
+
+  // Returns the active song name for a given time
+  // when inside a song segment, or null when outside (gaps / Rule 0).
+  getActiveSongName(currentTime, fallback = "Unknown Track") {
+      const stream = this.getCurrentStream();
+      if (!stream || !stream.songs || !stream.songs.length) {
+          return null;
+      }
+      const songs = stream.songs;
+      const inSongIdx = songs.findIndex(s => currentTime >= s.range[0] && currentTime < s.range[1]);
+      if (inSongIdx === -1) {
+          // Outside any defined song – let the UI fall back to full status text.
+          return null;
+      }
+      const info = this._getActiveSongDisplayInfo(currentTime, songs);
+      return info.name || fallback;
   }
 }

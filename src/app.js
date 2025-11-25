@@ -163,6 +163,14 @@ function updateStatus() {
     const t = player.getCurrentTime();
     const msg = core.getStatusText(t);
     setStatus(msg);
+
+    const activeName = core.getActiveSongName(t);
+    if (activeName) {
+        document.title = `Rourin: ${activeName}`;
+    } else {
+        document.title = `Rourin ${msg}`;
+    }
+
     updateDuplicateButtonForCurrentSong();
 }
 
