@@ -27,91 +27,91 @@
         "name": "The Mills Brothers - You always hurt the one you love",
         "range": [
           1370,
-          1756
+          1565
         ]
       },
       {
-        "name": "Michael Bublé - Save the last dance for me",
+        "name": "Fleetwood Mac - Dreams",
         "range": [
           1756,
-          2243
+          2010
         ]
       },
       {
-        "name": "Amy Winehouse - You know I'm no Good",
+        "name": "Sixpence None the Richer - Kiss me",
         "range": [
-          2243,
-          2586
+          2262,
+          2470
         ]
       },
       {
-        "name": "Michael Bublé - Quando Quando Quando",
+        "name": "Takeuchi Mariya - Plastic love",
         "range": [
-          2586,
-          3066
+          2967,
+          3258
         ]
       },
       {
-        "name": "Nat King Cole - L-O-V-E",
+        "name": "The rolling stones - Angie",
         "range": [
-          3669,
-          4029
+          3689,
+          3961
         ]
       },
       {
-        "name": "Peggy Lee - Fever",
+        "name": "Elton John - Bennie and the jets",
         "range": [
-          4029,
-          4348
+          4045,
+          4368
         ]
       },
       {
-        "name": "Etta James - At Last",
+        "name": "Elton John - I'm still standing",
         "range": [
-          4348,
-          4667
+          4385,
+          4568
         ]
       },
       {
-        "name": "Doris Day - Perhaps perhaps perhaps",
+        "name": "Toto - Georgy Porgy",
         "range": [
-          4667,
-          4987
+          4694,
+          4943
         ]
       },
       {
-        "name": "Frank Sinatra - The way you look tonight",
+        "name": "Ella Fitzgerald - Cry me a river",
         "range": [
-          4987,
-          5239
+          5010,
+          5263
         ]
       },
       {
-        "name": "Frank Sinatra - Fly me to the moon",
+        "name": "Jamiroquai - Canned Heat",
         "range": [
-          5239,
-          5577
+          5302,
+          5633
         ]
       },
       {
-        "name": "Nat King Cole - L-O-V-E (again)",
+        "name": "Lyn - Beneath the mask",
         "range": [
-          5577,
-          5904
+          5594,
+          5874
         ]
       },
       {
         "name": "Scorpions - Still loving you",
         "range": [
           5921,
-          6464
+          6311
         ]
       },
       {
         "name": "Billy joel - Vienna",
         "range": [
           6464,
-          6919
+          6678
         ]
       }
     ]
@@ -3143,85 +3143,85 @@
       {
         "name": "The Chain - Fleetwod Mac",
         "range": [
-          1302.0,
-          1706.0
+          1302,
+          1706
         ]
       },
       {
         "name": "Underdog - Kasabian",
         "range": [
-          1706.0,
-          2102.0
+          1706,
+          2102
         ]
       },
       {
         "name": "Dani California - Red Hot Chilli Peppers",
         "range": [
-          2102.0,
-          2454.0
+          2102,
+          2454
         ]
       },
       {
         "name": "Snow - RHCP",
         "range": [
-          2454.0,
-          2849.0
+          2454,
+          2849
         ]
       },
       {
         "name": "Daft Punk - Get Lucky",
         "range": [
-          2849.0,
-          3356.0
+          2849,
+          3356
         ]
       },
       {
         "name": "Fantasy - Earth Wind and Fire",
         "range": [
-          3356.0,
-          3748.0
+          3356,
+          3748
         ]
       },
       {
         "name": "American Boy - Estelle",
         "range": [
-          3748.0,
-          4087.0
+          3748,
+          4087
         ]
       },
       {
         "name": "Sunday Morning - Maroon 5",
         "range": [
-          4087.0,
-          4448.0
+          4087,
+          4448
         ]
       },
       {
         "name": "Carnival - The Cardigans",
         "range": [
-          4448.0,
-          4735.0
+          4448,
+          4735
         ]
       },
       {
         "name": "Son of a Preacher Man - Dusty Springfield",
         "range": [
-          4735.0,
-          4930.0
+          4735,
+          4930
         ]
       },
       {
         "name": "Blackbird - The Beatles",
         "range": [
-          4930.0,
-          5347.0
+          4930,
+          5347
         ]
       },
       {
         "name": "Careless Whisper - George Michael (no Saxophone Version)",
         "range": [
-          5347.0,
-          5903.0
+          5347,
+          5903
         ]
       }
     ]
