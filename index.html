@@ -65,7 +65,12 @@
       </div>
     </div>
 
-    <div id="status">Loading…</div>
+    <div id="status-area">
+      <div id="status-panel" aria-hidden="true">
+        <ol id="status-song-list"></ol>
+      </div>
+      <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel">Loading…</div>
+    </div>
   </div>
 
   <!-- Search Modal -->

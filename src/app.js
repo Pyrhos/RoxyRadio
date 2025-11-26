@@ -2,6 +2,7 @@ import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex } from './search-helpers.js';
+import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
 
 // ======== CONFIG ========
 const TICK_MS = 200;
@@ -24,6 +25,19 @@ let duplicateNameIndex = new Map();
 let duplicateSearchName = '';
 
 const loopLabels = ['None', 'Track', 'Stream'];
+
+const statusEl = document.getElementById('status');
+const statusPanel = document.getElementById('status-panel');
+const statusSongList = document.getElementById('status-song-list');
+let statusPanelStreamId = '';
+let statusPanelSongCount = 0;
+let statusPanelOpen = false;
+let statusPanelSelIdx = -1;
+
+if (statusSongList) {
+    statusSongList.setAttribute('role', 'listbox');
+    statusSongList.setAttribute('aria-label', 'Current karaoke songs');
+}
 
 // Core Logic Instance
 const core = new PlayerCore({
@@ -115,6 +129,7 @@ function initializePlaylist() {
         });
 
         playlistReady = true;
+        refreshStatusSongList(true);
         setStatus('Ready. Click Start.');
         maybeStartPlayback();
     } catch (err) {
@@ -172,6 +187,7 @@ function updateStatus() {
     }
 
     updateDuplicateButtonForCurrentSong();
+    syncStatusPanelActiveState(t);
 }
 
 function updateButtons() {
@@ -276,6 +292,7 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
     }
 
     playVideoAt(stream, startSeconds, endSeconds);
+    refreshStatusSongList();
 }
 
 // ======== UI WIRES ========
@@ -340,6 +357,16 @@ if (duplicatesBtn && fuse) {
     });
 }
 
+if (statusEl) {
+    statusEl.addEventListener('click', () => toggleStatusPanel());
+    statusEl.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleStatusPanel();
+        }
+    });
+}
+
 document.getElementById('yap-btn').addEventListener('click', () => {
     core.toggleYap();
     updateButtons();
@@ -375,6 +402,207 @@ document.getElementById('start').addEventListener('click', () => requestStartPla
 
 function setStatus(msg) {
     document.getElementById('status').textContent = msg;
+}
+
+function toggleStatusPanel(forceState) {
+    if (!statusEl || !statusPanel || !statusSongList || !playlistReady) return;
+
+    refreshStatusSongList();
+
+    const hasSongs = statusSongList.children.length > 0;
+    let nextState = typeof forceState === 'boolean' ? forceState : !statusPanelOpen;
+    if (nextState && !hasSongs) {
+        nextState = false;
+    }
+    statusPanelOpen = nextState;
+
+    statusPanel.classList.toggle('open', statusPanelOpen);
+    statusPanel.setAttribute('aria-hidden', statusPanelOpen ? 'false' : 'true');
+    statusEl.setAttribute('aria-expanded', statusPanelOpen ? 'true' : 'false');
+
+    if (statusPanelOpen) {
+        initializeStatusPanelSelection(true);
+    } else {
+        clearStatusPanelSelection();
+    }
+}
+
+function refreshStatusSongList(force = false) {
+    if (!statusSongList || !playlistReady) return;
+    const stream = core.getCurrentStream();
+    if (!stream) return;
+
+    const songs = getStatusSongsForStream(stream);
+    const streamId = stream.videoId || `stream-${core.vIdx}`;
+
+    if (!force && statusPanelStreamId === streamId && statusPanelSongCount === songs.length) {
+        syncStatusPanelActiveState();
+        return;
+    }
+
+    statusPanelStreamId = streamId;
+    statusPanelSongCount = songs.length;
+
+    statusSongList.innerHTML = '';
+    songs.forEach((song, idx) => {
+        const item = document.createElement('li');
+        item.className = 'status-song';
+        item.dataset.songIndex = String(idx);
+        item.tabIndex = 0;
+        item.setAttribute('role', 'option');
+        item.innerHTML = `
+            <span class="status-song-index">${idx + 1}.</span>
+            <span class="status-song-name">${song.name || `Track ${idx + 1}`}</span>
+        `;
+        item.addEventListener('click', () => handleStatusSongPick(idx));
+        item.addEventListener('focus', () => {
+            if (!statusPanelOpen) return;
+            statusPanelSelIdx = idx;
+            applyStatusPanelSelection(false);
+        });
+        statusSongList.appendChild(item);
+    });
+
+    syncStatusPanelActiveState();
+    if (statusPanelOpen) {
+        initializeStatusPanelSelection();
+    }
+}
+
+function getStatusSongsForStream(stream) {
+    if (stream && Array.isArray(stream.songs) && stream.songs.length) {
+        return stream.songs;
+    }
+    if (!stream) return [];
+    return [{
+        name: stream.title || stream.name || 'Full Stream',
+        range: [core.getStreamDefaultStart(stream) || 0, null]
+    }];
+}
+
+function handleStatusSongPick(songIndex) {
+    const stream = core.getCurrentStream();
+    if (!stream) return;
+
+    const songs = getStatusSongsForStream(stream);
+    if (!songs.length) return;
+
+    const safeIdx = Math.min(Math.max(songIndex, 0), songs.length - 1);
+    core.rIdx = safeIdx;
+
+    const targetRange = songs[safeIdx].range;
+    const startSeconds = Array.isArray(targetRange) && Number.isFinite(targetRange[0])
+        ? targetRange[0]
+        : core.getStreamDefaultStart(stream);
+
+    if (!stream.songs || !stream.songs.length || core.yapMode) {
+        seekToSafe(startSeconds, stream);
+    } else {
+        loadCurrentContent(true, startSeconds);
+    }
+
+    syncStatusPanelActiveState();
+    toggleStatusPanel(false);
+}
+
+function getActiveStatusSongIndex(currentTime) {
+    const stream = core.getCurrentStream();
+    if (!stream) return 0;
+
+    const songs = getStatusSongsForStream(stream);
+    if (!songs.length) return 0;
+
+    if (!stream.songs || !stream.songs.length) {
+        return 0;
+    }
+
+    if (Number.isFinite(currentTime)) {
+        const matchIdx = stream.songs.findIndex(
+            (song) => currentTime >= song.range[0] && currentTime < song.range[1]
+        );
+        if (matchIdx !== -1) {
+            return Math.min(Math.max(matchIdx, 0), songs.length - 1);
+        }
+        return -1;
+    }
+
+    const fallbackIdx = Number.isFinite(core.rIdx) ? core.rIdx : 0;
+    return Math.min(Math.max(fallbackIdx, 0), songs.length - 1);
+}
+
+function initializeStatusPanelSelection(ensureVisible = false) {
+    if (!statusPanelOpen || !statusSongList || !statusSongList.children.length) {
+        statusPanelSelIdx = -1;
+        return;
+    }
+    const currentTime = player && typeof player.getCurrentTime === 'function'
+        ? player.getCurrentTime()
+        : undefined;
+    statusPanelSelIdx = getActiveStatusSongIndex(currentTime);
+    applyStatusPanelSelection(ensureVisible);
+}
+
+function clearStatusPanelSelection() {
+    statusPanelSelIdx = -1;
+    if (!statusSongList) return;
+    statusSongList.querySelectorAll('.status-song').forEach((row) => {
+        row.classList.remove('nav-focus');
+    });
+}
+
+function applyStatusPanelSelection(ensureVisible = false) {
+    if (!statusSongList) return;
+    const rows = statusSongList.querySelectorAll('.status-song');
+    if (!rows.length) {
+        statusPanelSelIdx = -1;
+        return;
+    }
+
+    const shouldHighlight = statusPanelOpen && statusPanelSelIdx >= 0;
+    const clampedIdx = shouldHighlight
+        ? Math.min(Math.max(statusPanelSelIdx, 0), rows.length - 1)
+        : -1;
+
+    rows.forEach((row, idx) => {
+        row.classList.toggle('nav-focus', shouldHighlight && idx === clampedIdx);
+    });
+
+    if (!shouldHighlight) return;
+
+    if (clampedIdx !== statusPanelSelIdx) {
+        statusPanelSelIdx = clampedIdx;
+    }
+
+    if (ensureVisible) {
+        const target = rows[statusPanelSelIdx];
+        target.scrollIntoView({ block: 'nearest' });
+        target.focus({ preventScroll: true });
+    }
+}
+
+function syncStatusPanelActiveState(currentTime) {
+    if (!statusSongList || !statusSongList.children.length) return;
+    const rows = statusSongList.querySelectorAll('.status-song');
+    if (!rows.length) return;
+
+    const candidateIdx = getActiveStatusSongIndex(currentTime);
+    const activeIdx = candidateIdx >= 0
+        ? Math.min(Math.max(candidateIdx, 0), rows.length - 1)
+        : -1;
+
+    rows.forEach((row, idx) => {
+        const isActive = idx === activeIdx;
+        row.classList.toggle('active', isActive);
+        row.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    if (!statusPanelOpen) return;
+
+    if (statusPanelSelIdx === -1 && activeIdx >= 0) {
+        statusPanelSelIdx = activeIdx;
+    }
+
+    applyStatusPanelSelection(false);
 }
 
 // ======== SEARCH LOGIC ========
@@ -423,10 +651,65 @@ modal.addEventListener('click', (e) => {
     }
 });
 
+document.addEventListener('click', (event) => {
+    if (!statusPanelOpen || !statusPanel || !statusEl) return;
+    if (statusPanel.contains(event.target) || statusEl.contains(event.target)) return;
+    toggleStatusPanel(false);
+});
+
 document.addEventListener('keydown', (e) => {
+    const modalOpen = modal.classList.contains('open');
+
+    if (e.key === 'Escape') {
+        if (modalOpen) {
+            e.preventDefault();
+            toggleModal();
+            return;
+        }
+        if (statusPanelOpen) {
+            e.preventDefault();
+            toggleStatusPanel(false);
+            return;
+        }
+    }
+
+    if (!modalOpen && statusPanelOpen) {
+        const totalItems = statusSongList ? statusSongList.children.length : 0;
+        const computedIdx = statusPanelSelIdx >= 0
+            ? statusPanelSelIdx
+            : getActiveStatusSongIndex(player && typeof player.getCurrentTime === 'function'
+                ? player.getCurrentTime()
+                : undefined);
+        const currentIdx = computedIdx >= 0 ? computedIdx : 0;
+
+        const handledStatusNav = handleListKeyEvent(e, {
+            currentIndex: currentIdx,
+            totalItems,
+            onMove: (nextIndex) => {
+                statusPanelSelIdx = nextIndex;
+                applyStatusPanelSelection(true);
+            },
+            onSelect: (nextIndex) => {
+                statusPanelSelIdx = nextIndex;
+                handleStatusSongPick(nextIndex);
+            }
+        });
+
+        if (handledStatusNav) {
+            return;
+        }
+    }
+
     if (e.key === 'S' && e.shiftKey) {
         e.preventDefault();
         toggleModal();
+        return;
+    }
+
+    if (e.key === 'A' && e.shiftKey) {
+        e.preventDefault();
+        toggleStatusPanel();
+        return;
     }
 
     if (e.key === 'Shift' && !e.repeat) {
@@ -437,25 +720,24 @@ document.addEventListener('keydown', (e) => {
         lastShiftTime = now;
     }
 
-    if (modal.classList.contains('open')) {
-        if (e.key === 'Escape') {
-            toggleModal();
-        }
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            searchSelIdx = Math.min(searchSelIdx + 1, searchResults.length - 1);
-            updateSelection();
-        }
-        if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            searchSelIdx = Math.max(searchSelIdx - 1, 0);
-            updateSelection();
-        }
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            if (searchResults[searchSelIdx]) {
-                selectResult(searchResults[searchSelIdx]);
+    if (modalOpen) {
+        const handledSearchNav = handleListKeyEvent(e, {
+            currentIndex: searchSelIdx,
+            totalItems: searchResults.length,
+            onMove: (nextIndex) => {
+                searchSelIdx = nextIndex;
+                updateSelection();
+            },
+            onSelect: (nextIndex) => {
+                if (searchResults[nextIndex]) {
+                    selectResult(searchResults[nextIndex]);
+                }
             }
+        });
+
+        if (handledSearchNav) {
+            // noinspection UnnecessaryReturnStatementJS
+            return;
         }
     }
 });
@@ -504,6 +786,25 @@ function selectResult(item) {
     core.rIdx = item.songId;
     loadCurrentContent(true);
     toggleModal();
+}
+
+function handleListKeyEvent(event, { currentIndex, totalItems, onMove, onSelect }) {
+    const nav = resolveListNavigation(event.key, currentIndex, totalItems);
+    if (!nav.handled) return false;
+
+    event.preventDefault();
+
+    if (nav.action === NAV_ACTION_MOVE) {
+        if (typeof onMove === 'function') {
+            onMove(nav.nextIndex);
+        }
+    } else if (nav.action === NAV_ACTION_SELECT) {
+        if (typeof onSelect === 'function') {
+            onSelect(nav.nextIndex);
+        }
+    }
+
+    return true;
 }
 
 function updateDuplicateButtonForCurrentSong() {
