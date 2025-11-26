@@ -1,13 +1,13 @@
-import { describe, it } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
+const filePath = path.resolve(__dirname, 'data/segments.json');
+const fileContent = fs.readFileSync(filePath, 'utf-8');
+const segments = JSON.parse(fileContent);
+
 describe('Data Integrity', () => {
     it('should not have duplicate videoIds in segments.json', () => {
-        const filePath = path.resolve(__dirname, 'data/segments.json');
-        const fileContent = fs.readFileSync(filePath, 'utf-8');
-        
-        const segments = JSON.parse(fileContent);
         
         const idCounts = {};
         segments.forEach(s => {
@@ -94,6 +94,60 @@ describe('Data Integrity', () => {
         }).join('\n\n');
 
         throw new Error(`Found ${duplicateIds.length} duplicate stream IDs:\n\n${report}`);
+    });
+
+    it('ensures every song range has exactly two numeric values', () => {
+        const invalidRanges = [];
+        segments.forEach((stream, streamIdx) => {
+            if (!Array.isArray(stream.songs)) return;
+            stream.songs.forEach((song, songIdx) => {
+                const range = song.range;
+                const isValidTuple =
+                    Array.isArray(range) &&
+                    range.length === 2 &&
+                    range.every((value) => typeof value === 'number' && Number.isFinite(value));
+                if (!isValidTuple) {
+                    invalidRanges.push(`${stream.videoId} song ${songIdx + 1} (${song.name ?? 'Unnamed'})`);
+                }
+            });
+        });
+
+        expect(invalidRanges).toEqual([]);
+    });
+
+    it('ensures song ranges are non-negative and strictly increasing', () => {
+        const invalid = [];
+        segments.forEach((stream, streamIdx) => {
+            if (!Array.isArray(stream.songs)) return;
+            stream.songs.forEach((song, songIdx) => {
+                const [start, end] = song.range || [];
+                const nonNegative = typeof start === 'number' && typeof end === 'number' && start >= 0 && end >= 0;
+                const strictlyIncreasing = typeof start === 'number' && typeof end === 'number' && end > start;
+                if (!nonNegative || !strictlyIncreasing) {
+                    invalid.push(`${stream.videoId} song ${songIdx + 1} (${song.name ?? 'Unnamed'}) -> [${start}, ${end}]`);
+                }
+            });
+        });
+
+        expect(invalid).toEqual([]);
+    });
+
+    it('ensures song ranges do not overlap within the same stream', () => {
+        const overlaps = [];
+        segments.forEach((stream) => {
+            if (!Array.isArray(stream.songs) || stream.songs.length < 2) return;
+            const sorted = [...stream.songs].sort((a, b) => (a.range?.[0] ?? 0) - (b.range?.[0] ?? 0));
+            for (let i = 1; i < sorted.length; i++) {
+                const prev = sorted[i - 1];
+                const curr = sorted[i];
+                if (!prev.range || !curr.range) continue;
+                if (curr.range[0] < prev.range[1]) {
+                    overlaps.push(`${stream.videoId}: "${prev.name ?? 'Unnamed'}" overlaps "${curr.name ?? 'Unnamed'}"`);
+                }
+            }
+        });
+
+        expect(overlaps).toEqual([]);
     });
 });
 
