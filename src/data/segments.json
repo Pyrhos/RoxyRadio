@@ -90,7 +90,7 @@
         "name": "Canned Heat - Jamiroquai",
         "range": [
           5302,
-          5633
+          5529
         ]
       },
       {
@@ -198,7 +198,7 @@
         "name": "What's up? - 4 non blondes",
         "range": [
           1815,
-          2110
+          1848
         ]
       },
       {
@@ -1110,8 +1110,8 @@
       {
         "name": "La Vie en Rose - Louis Armstrong",
         "range": [
-          4924,
-          5128
+          4927,
+          5031
         ]
       },
       {
@@ -1590,14 +1590,14 @@
         "name": "Fly Away - Dommel Intro",
         "range": [
           6830,
-          7010
+          6932
         ]
       },
       {
         "name": "South Park Intro",
         "range": [
           6994,
-          7029
+          7023
         ]
       },
       {
@@ -1628,94 +1628,73 @@
     "videoId": "g1lftAAJnls",
     "songs": [
       {
-        "name": "Mayonaka no Door - Miki Matsubara",
+        "name": "Machi no Dorufin - Kingo Hamada",
         "range": [
-          452,
-          722
-        ]
-      },
-      {
-        "name": "Flyday Chinatown - Yasuha",
-        "range": [
-          748,
-          958
+          1452,
+          1752
         ]
       },
       {
         "name": "Plastic Love - Mariya Takeuchi",
         "range": [
-          967,
-          1258
+          1922,
+          2217
         ]
       },
       {
         "name": "Bay City - Junko Yagami",
         "range": [
-          1341,
-          1577
+          2724,
+          2974
         ]
       },
       {
-        "name": "Shyness Boy - Anri",
+        "name": "I Can't Stop the Loneliness - Anri (messed up)",
         "range": [
-          1676,
-          1871
+          3192,
+          3392
         ]
       },
       {
-        "name": "Candy - Naoko Gushima",
+        "name": "I Can't Stop the Loneliness - Anri (take 0)",
         "range": [
-          1937,
-          2187
+          3442,
+          3702
         ]
       },
       {
-        "name": "Rouge no Dengon - Yumi Matsutoya",
+        "name": "Mayonaka no Door - Miki Matsubara",
         "range": [
-          2242,
-          2425
+          3897,
+          4225
+        ]
+      },
+      {
+        "name": "Flyday Chinatown - Yasuha",
+        "range": [
+          4967,
+          5177
         ]
       },
       {
         "name": "Ride On Time - Tatsuro Yamashita",
         "range": [
-          2443,
-          2731
-        ]
-      },
-      {
-        "name": "Remember Summer Days - Anri",
-        "range": [
-          2722,
-          3017
+          5417,
+          5707
         ]
       },
       {
         "name": "Telephone Number - Junko Ohashi",
         "range": [
-          3055,
-          3290
+          5886,
+          6126
         ]
       },
       {
-        "name": "Tasogare no Bay City - Junko Yagami",
+        "name": "Fly Away - Dommel Intro (Don-Don Domel to Ron | Dutch ver)",
         "range": [
-          3355,
-          3633
-        ]
-      },
-      {
-        "name": "Simple Love - Junko Ohashi",
-        "range": [
-          3628,
-          3853
-        ]
-      },
-      {
-        "name": "Sparkle - Tatsuro Yamashita",
-        "range": [
-          4185,
-          4439
+          6314,
+          6494
         ]
       }
     ]
@@ -2273,7 +2252,7 @@
         "name": "Cry Me a River - Julie London",
         "range": [
           3907,
-          4237
+          4173
         ]
       },
       {
@@ -2342,7 +2321,7 @@
         "name": "Again - YUI",
         "range": [
           1887,
-          2142
+          1989
         ]
       },
       {
@@ -2370,7 +2349,7 @@
         "name": "Zoetrope - Yanagi Nagi",
         "range": [
           3620,
-          3865
+          3833
         ]
       },
       {
