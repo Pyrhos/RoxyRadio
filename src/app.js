@@ -702,10 +702,17 @@ modal.addEventListener('click', (e) => {
     }
 });
 
-document.addEventListener('click', (event) => {
+function handleGlobalPointerDown(event) {
     if (!statusPanelOpen || !statusPanel || !statusEl) return;
     if (statusPanel.contains(event.target) || statusEl.contains(event.target)) return;
     toggleStatusPanel(false);
+}
+
+document.addEventListener('pointerdown', handleGlobalPointerDown, true);
+window.addEventListener('blur', () => {
+    if (statusPanelOpen) {
+        toggleStatusPanel(false);
+    }
 });
 
 document.addEventListener('keydown', (e) => {
