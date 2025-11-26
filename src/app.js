@@ -6,6 +6,7 @@ import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './lis
 
 // ======== CONFIG ========
 const TICK_MS = 200;
+const TITLE_REFRESH_MS = 2000;
 
 // ======== STATE ========
 let tickHandle = null;
@@ -33,6 +34,9 @@ let statusPanelStreamId = '';
 let statusPanelSongCount = 0;
 let statusPanelOpen = false;
 let statusPanelSelIdx = -1;
+let lastStatusText = '';
+let lastTitleText = document.title;
+let titleRefreshHandle = null;
 
 if (statusSongList) {
     statusSongList.setAttribute('role', 'listbox');
@@ -91,6 +95,42 @@ function playVideoAt(stream, desiredStart, endSeconds) {
     }
     player.loadVideoById(payload);
 }
+
+function startTickLoop() {
+    if (tickHandle) return;
+    tickHandle = setInterval(tick, TICK_MS);
+}
+
+function stopTickLoop() {
+    if (!tickHandle) return;
+    clearInterval(tickHandle);
+    tickHandle = null;
+}
+
+function shouldTickRun() {
+    if (document.hidden) return false;
+    if (!player || typeof player.getPlayerState !== 'function') return false;
+    if (typeof YT === 'undefined' || !YT.PlayerState) return false;
+    return player.getPlayerState() === YT.PlayerState.PLAYING;
+}
+
+function evaluateTickLoop() {
+    if (shouldTickRun()) {
+        startTickLoop();
+    } else {
+        stopTickLoop();
+    }
+}
+
+function ensureTitleRefreshLoop() {
+    if (titleRefreshHandle) return;
+    titleRefreshHandle = setInterval(() => {
+        const t = player && player.getCurrentTime ? player.getCurrentTime() : lastKnownTime;
+        updateStatus(t);
+    }, TITLE_REFRESH_MS);
+}
+
+ensureTitleRefreshLoop();
 
 window.addEventListener('beforeunload', () => {
     let time = lastKnownTime;
@@ -173,17 +213,17 @@ function onPlayerReady() {
     requestStartPlayback();
 }
 
-function updateStatus() {
+function updateStatus(forcedTime) {
     if (!player || !player.getCurrentTime) return;
-    const t = player.getCurrentTime();
+    const t = Number.isFinite(forcedTime) ? forcedTime : player.getCurrentTime();
     const msg = core.getStatusText(t);
     setStatus(msg);
 
     const activeName = core.getActiveSongName(t);
-    if (activeName) {
-        document.title = `Rourin: ${activeName}`;
-    } else {
-        document.title = `Rourin ${msg}`;
+    const newTitle = activeName ? `Rourin: ${activeName}` : `Rourin ${msg}`;
+    if (newTitle !== lastTitleText) {
+        lastTitleText = newTitle;
+        document.title = newTitle;
     }
 
     updateDuplicateButtonForCurrentSong();
@@ -224,8 +264,8 @@ function startPlaybackInternal() {
     const override = resumeTime > 0 ? resumeTime : null;
     loadCurrentContent(true, override);
 
-    clearInterval(tickHandle);
-    tickHandle = setInterval(tick, TICK_MS);
+    stopTickLoop();
+    evaluateTickLoop();
 }
 
 function tick() {
@@ -233,7 +273,7 @@ function tick() {
     const t = player.getCurrentTime();
     if (Number.isFinite(t)) lastKnownTime = t;
 
-    updateStatus();
+    updateStatus(t);
     core.checkTick(t);
 }
 
@@ -256,6 +296,8 @@ function onStateChange(ev) {
             }
         }
     }
+
+    evaluateTickLoop();
 }
 
 function loadCurrentContent(autoplay, startTimeOverride = null) {
@@ -401,7 +443,10 @@ document.getElementById('yap-btn').addEventListener('click', () => {
 document.getElementById('start').addEventListener('click', () => requestStartPlayback());
 
 function setStatus(msg) {
-    document.getElementById('status').textContent = msg;
+    if (!statusEl) return;
+    if (msg === lastStatusText) return;
+    lastStatusText = msg;
+    statusEl.textContent = msg;
 }
 
 function toggleStatusPanel(forceState) {
@@ -635,6 +680,12 @@ document.addEventListener('fullscreenchange', updateSearchButtonFullscreenVisibi
 document.addEventListener('webkitfullscreenchange', updateSearchButtonFullscreenVisibility);
 document.addEventListener('mozfullscreenchange', updateSearchButtonFullscreenVisibility);
 document.addEventListener('MSFullscreenChange', updateSearchButtonFullscreenVisibility);
+document.addEventListener('visibilitychange', () => {
+    evaluateTickLoop();
+    if (!document.hidden) {
+        updateStatus();
+    }
+});
 
 function toggleModal() {
     const isOpen = modal.classList.toggle('open');
