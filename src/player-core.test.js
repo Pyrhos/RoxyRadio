@@ -15,6 +15,8 @@ describe('PlayerCore', () => {
     callbacks = {
       saveSettings: vi.fn(),
       getSettings: vi.fn(() => ({})),
+      saveSessionData: vi.fn(),
+      getSessionData: vi.fn(() => ({})),
       now: vi.fn(() => 1000000), // Fixed time
       playVideo: vi.fn(),
       seekTo: vi.fn()
@@ -159,23 +161,20 @@ describe('PlayerCore', () => {
         randomSpy.mockRestore();
     });
 
-    it('filters history older than 24h on init', () => {
-       const now = 100000000;
-       callbacks.now = () => now;
-       const oneDay = 24 * 60 * 60 * 1000;
-       
-       const oldHistory = [
-           { vIdx: 0, rIdx: 0, timestamp: now - oneDay - 100 }, // Old
-           { vIdx: 1, rIdx: 0, timestamp: now - 100 } // New
+    it('restores history from session storage on init', () => {
+       const sessionHistory = [
+           { vIdx: 0, rIdx: 0 },
+           { vIdx: 1, rIdx: 0 }
        ];
        
-       callbacks.getSettings = () => ({ history: JSON.stringify(oldHistory) });
+       callbacks.getSessionData = () => ({ history: JSON.stringify(sessionHistory) });
        
        const newCore = new PlayerCore(callbacks);
        newCore.init(MOCK_SEGMENTS);
        
-       expect(newCore.history.length).toBe(1);
-       expect(newCore.history[0].vIdx).toBe(1);
+       expect(newCore.history.length).toBe(2);
+       expect(newCore.history[0].vIdx).toBe(0);
+       expect(newCore.history[1].vIdx).toBe(1);
     });
 
     it('caps history to the most recent 20 entries', () => {
@@ -183,6 +182,65 @@ describe('PlayerCore', () => {
             core.nextStream();
         }
         expect(core.history.length).toBeLessThanOrEqual(20);
+    });
+
+    it('clears history when shuffle is turned off', () => {
+        core.toggleShuffle(); // On
+        core.nextStream(); // Adds to history
+        core.nextStream(); // Adds more
+        expect(core.history.length).toBeGreaterThan(0);
+        
+        core.toggleShuffle(); // Off - should wipe history
+        expect(core.history.length).toBe(0);
+    });
+
+    it('does not clear history when shuffle is turned on', () => {
+        // Start with shuffle on, add history
+        core.toggleShuffle(); // On
+        core.nextStream();
+        expect(core.history.length).toBe(1);
+        
+        core.toggleShuffle(); // Off - clears
+        core.toggleShuffle(); // On again
+        // No history to clear since it was already empty
+        expect(core.history.length).toBe(0);
+    });
+
+    it('Shift+prevStream bypasses history and goes to actual previous stream when shuffle is ON', () => {
+        core.toggleShuffle(); // On
+        core.vIdx = 2; // Start at v3
+        core.nextStream(); // Go somewhere random, pushes history
+        const historyBefore = [...core.history];
+        expect(historyBefore.length).toBe(1);
+        
+        core.prevStream({ skipHistory: true }); // Shift+click
+        // Should go to actual previous (vIdx - 1 or wrap)
+        // History should NOT be modified
+        expect(core.history).toEqual(historyBefore);
+    });
+
+    it('Shift+prevStream has no effect when shuffle is OFF', () => {
+        // shuffle is off by default
+        core.vIdx = 2;
+        core.prevStream({ skipHistory: true });
+        expect(core.vIdx).toBe(1); // Normal prev behavior
+    });
+
+    it('Shift+prevStream wraps around when at first stream', () => {
+        core.toggleShuffle();
+        core.vIdx = 0;
+        core.prevStream({ skipHistory: true });
+        expect(core.vIdx).toBe(2); // Wraps to last
+    });
+
+    it('saves history to session storage, not localStorage', () => {
+        core.nextStream();
+        expect(callbacks.saveSessionData).toHaveBeenCalledWith(
+            expect.objectContaining({ history: expect.any(String) })
+        );
+        // localStorage should NOT contain history
+        const lastSaveSettings = callbacks.saveSettings.mock.calls.at(-1)[0];
+        expect(lastSaveSettings.history).toBeUndefined();
     });
   });
 
@@ -674,8 +732,8 @@ describe('PlayerCore', () => {
   });
 
   describe('History parsing resilience', () => {
-      it('ignores corrupted history payloads', () => {
-          callbacks.getSettings = () => ({
+      it('ignores corrupted history payloads from session storage', () => {
+          callbacks.getSessionData = () => ({
               history: 'this-is-not-json'
           });
 

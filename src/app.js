@@ -62,6 +62,19 @@ const core = new PlayerCore({
         }
         return s;
     },
+    saveSessionData: (data) => {
+        for (const [key, val] of Object.entries(data)) {
+            sessionStorage.setItem(`roxy_session_${key}`, val);
+        }
+    },
+    getSessionData: () => {
+        const s = {};
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const k = sessionStorage.key(i);
+            if (k.startsWith('roxy_session_')) s[k.replace('roxy_session_', '')] = sessionStorage.getItem(k);
+        }
+        return s;
+    },
     now: () => Date.now(),
     onStatus: () => updateStatus()
 });
@@ -349,8 +362,9 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
 }
 
 // ======== UI WIRES ========
-document.getElementById('prev-stream').addEventListener('click', () => {
-    if (core.prevStream()) loadCurrentContent(true);
+document.getElementById('prev-stream').addEventListener('click', (event) => {
+    // Shift+click bypasses history and goes to actual previous stream (when shuffle is ON)
+    if (core.prevStream({ skipHistory: event.shiftKey })) loadCurrentContent(true);
 });
 
 document.getElementById('next-stream').addEventListener('click', () => {

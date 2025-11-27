@@ -12,6 +12,8 @@ export class PlayerCore {
       seekTo: callbacks.seekTo || (() => {}),
       saveSettings: callbacks.saveSettings || (() => {}),
       getSettings: callbacks.getSettings || (() => ({})),
+      saveSessionData: callbacks.saveSessionData || (() => {}),
+      getSessionData: callbacks.getSessionData || (() => ({})),
       now: callbacks.now || (() => Date.now()), // Mockable time
       onStatus: callbacks.onStatus || (() => {}),
     };
@@ -25,6 +27,7 @@ export class PlayerCore {
     this.shuffleMode = false;
 
     // Stream history powers deterministic back navigation (behavior §4C).
+    // Session-only: cleared when tab closes, capped at HISTORY_LIMIT.
     this.history = [];
     // Rule 0 streams cache their durations once YouTube reports them.
     this.durations = {};
@@ -65,24 +68,22 @@ export class PlayerCore {
         }
     }
     
-    // Restore history (prune > 24h)
+    // Restore history from session storage (session-only, cleared on tab close)
+    const sessionData = this.cb.getSessionData();
     let rawHistory = [];
-    if (saved.history) {
+    if (sessionData.history) {
         try {
-            rawHistory = JSON.parse(saved.history);
+            rawHistory = JSON.parse(sessionData.history);
         } catch {
             rawHistory = [];
         }
     }
-    const oneDay = 24 * 60 * 60 * 1000;
-    const now = this.cb.now();
     this.history = rawHistory
-        .filter((h) => h && typeof h.timestamp === 'number' && (now - h.timestamp) < oneDay)
+        .filter((h) => h && typeof h.vIdx === 'number')
         .map((h) => ({
-            vIdx: typeof h.vIdx === 'number' ? h.vIdx : 0,
+            vIdx: h.vIdx,
             rIdx: typeof h.rIdx === 'number' ? h.rIdx : 0,
-            time: typeof h.time === 'number' ? h.time : undefined,
-            timestamp: h.timestamp
+            time: typeof h.time === 'number' ? h.time : undefined
         }));
     if (this.history.length > HISTORY_LIMIT) {
         this.history = this.history.slice(-HISTORY_LIMIT);
@@ -102,8 +103,11 @@ export class PlayerCore {
           loopMode: this.loopMode,
           vIdx: this.vIdx,
           videoId: stream ? stream.videoId : '',
-          history: JSON.stringify(this.history),
           lastTime: currentTime.toFixed(2)
+      });
+      // Session-only history (cleared on tab close)
+      this.cb.saveSessionData({
+          history: JSON.stringify(this.history)
       });
   }
 
@@ -214,7 +218,12 @@ export class PlayerCore {
   }
 
   toggleShuffle() {
+      const wasOn = this.shuffleMode;
       this.shuffleMode = !this.shuffleMode;
+      // Wipe history entirely when shuffle is turned off
+      if (wasOn && !this.shuffleMode) {
+          this.history = [];
+      }
       this._saveState();
       return this.shuffleMode;
   }
@@ -227,8 +236,7 @@ export class PlayerCore {
       this.history.push({
           vIdx: this.vIdx,
           rIdx: this.rIdx,
-          time: this._getHistoryPosition(stream),
-          timestamp: this.cb.now()
+          time: this._getHistoryPosition(stream)
       });
       if (this.history.length > HISTORY_LIMIT) {
           this.history.shift();
@@ -272,8 +280,23 @@ export class PlayerCore {
       return true; // Indicates change happened
   }
 
-  prevStream() {
+  prevStream(options = {}) {
+    const { skipHistory = false } = options;
     let saveTime = 0;
+
+    // Shift+prevStream when shuffle ON: bypass history, go to actual prev index
+    if (skipHistory && this.shuffleMode) {
+        if (this.vIdx > 0) {
+            this.vIdx--;
+        } else {
+            this.vIdx = this.playlist.length - 1;
+        }
+        this.rIdx = 0;
+        saveTime = this.getStreamDefaultStart();
+        this._saveState(saveTime);
+        return true;
+    }
+
     if (this.history.length > 0) {
           const prev = this.history.pop();
           this.vIdx = prev.vIdx;
