@@ -233,6 +233,22 @@ button.active {
     margin-right: auto;
 }
 
+.status-icon {
+    color: #CE55CC;
+    margin-right: 8px;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+#status:hover .status-icon {
+    transform: translateY(-2px);
+    color: #FE77FE;
+}
+
+#status[aria-expanded="true"] .status-icon {
+    color: #FE77FE;
+}
+
 #status-panel {
     width: 100%;
     max-width: 80%;
