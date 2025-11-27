@@ -108,10 +108,21 @@ function stopTickLoop() {
 }
 
 function shouldTickRun() {
-    if (document.hidden) return false;
     if (!player || typeof player.getPlayerState !== 'function') return false;
     if (typeof YT === 'undefined' || !YT.PlayerState) return false;
-    return player.getPlayerState() === YT.PlayerState.PLAYING;
+
+    const state = player.getPlayerState();
+    if (state !== YT.PlayerState.PLAYING) return false;
+
+    if (document.hidden) {
+        const stream = core.getCurrentStream();
+        const needsGapSkipping = stream && stream.songs && stream.songs.length > 0 && !core.yapMode;
+        if (!needsGapSkipping) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function evaluateTickLoop() {
