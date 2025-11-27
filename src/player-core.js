@@ -332,7 +332,7 @@ export class PlayerCore {
 
   nextSong(currentTime) {
       const stream = this.getCurrentStream();
-      this._syncIndexToTime(currentTime, stream);
+      const posContext = this._syncIndexToTime(currentTime, stream);
       const jumpToNextStreamStart = () => {
           this.nextStream();
           return { type: 'load' };
@@ -342,6 +342,23 @@ export class PlayerCore {
           if (this.loopMode === LOOP_STREAM) {
               const start = this.getStreamDefaultStart(stream);
               return { type: 'seek', time: start };
+          }
+          return jumpToNextStreamStart();
+      }
+
+      // If before the first song, "next" goes TO song 0 (don't skip past it)
+      if (posContext === 'before') {
+          this.rIdx = 0;
+          return this.yapMode
+              ? { type: 'seek', time: stream.songs[0].range[0] }
+              : { type: 'load' };
+      }
+
+      // If after the last song, go to next stream
+      if (posContext === 'after') {
+          if (this.loopMode === LOOP_STREAM) {
+              this.rIdx = 0;
+              return { type: 'load' };
           }
           return jumpToNextStreamStart();
       }
@@ -358,6 +375,7 @@ export class PlayerCore {
       }
 
       // Standard segmented playback reloads so end bounds remain enforced.
+      // For 'gap' context, rIdx points to the song that just ended, so rIdx++ goes to the next song.
       if (this.rIdx < stream.songs.length - 1) {
           this.rIdx++;
           return { type: 'load' };
@@ -375,7 +393,7 @@ export class PlayerCore {
 
   prevSong(currentTime = 0) {
       const stream = this.getCurrentStream();
-      this._syncIndexToTime(currentTime, stream);
+      const posContext = this._syncIndexToTime(currentTime, stream);
       
       const jumpToPreviousStreamEnd = () => {
           this.prevStream();
@@ -398,6 +416,26 @@ export class PlayerCore {
               return { type: 'seek', time: start };
           }
           return jumpToPreviousStreamEnd();
+      }
+
+      // If before the first song, go to previous stream
+      if (posContext === 'before') {
+          if (this.loopMode === LOOP_STREAM) {
+              this.rIdx = stream.songs.length - 1;
+              const wrapStart = stream.songs[this.rIdx].range[0];
+              return this.yapMode
+                  ? { type: 'seek', time: wrapStart }
+                  : { type: 'seek', time: wrapStart, reload: true };
+          }
+          return jumpToPreviousStreamEnd();
+      }
+
+      // If in a gap after a song, or after the last song, go back to that song
+      if (posContext === 'gap' || posContext === 'after') {
+          const targetStart = stream.songs[this.rIdx].range[0];
+          return this.yapMode
+              ? { type: 'seek', time: targetStart }
+              : { type: 'load' };
       }
 
       const song = stream.songs[this.rIdx];
@@ -596,13 +634,41 @@ export class PlayerCore {
       this._syncIndexToTime(currentTime);
   }
 
+  // Returns position context: 'inside' | 'before' | 'gap' | 'after'
+  // Also updates rIdx appropriately for gap positions
   _syncIndexToTime(currentTime, stream = this.getCurrentStream()) {
       if (!Number.isFinite(currentTime) || !stream || !stream.songs || stream.songs.length === 0) {
-          return;
+          return 'none';
       }
-      const matchIdx = stream.songs.findIndex((s) => currentTime >= s.range[0] && currentTime < s.range[1]);
+      const songs = stream.songs;
+
+      // Check if inside any song
+      const matchIdx = songs.findIndex((s) => currentTime >= s.range[0] && currentTime < s.range[1]);
       if (matchIdx !== -1) {
           this.rIdx = matchIdx;
+          return 'inside';
       }
+
+      // Before the first song
+      if (currentTime < songs[0].range[0]) {
+          this.rIdx = 0;
+          return 'before';
+      }
+
+      // After the last song
+      if (currentTime >= songs[songs.length - 1].range[1]) {
+          this.rIdx = songs.length - 1;
+          return 'after';
+      }
+
+      // In a gap between songs - find which gap and set rIdx to the preceding song
+      for (let i = 0; i < songs.length - 1; i++) {
+          if (currentTime >= songs[i].range[1] && currentTime < songs[i + 1].range[0]) {
+              this.rIdx = i;
+              return 'gap';
+          }
+      }
+
+      return 'none';
   }
 }

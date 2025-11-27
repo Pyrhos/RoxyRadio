@@ -527,6 +527,118 @@ describe('PlayerCore', () => {
       });
   });
 
+  describe('Arbitrary Seek Position Handling', () => {
+      it('nextSong from before first song goes TO first song, not past it', () => {
+          // Stream 0 has songs: S1T1 [0, 10], S1T2 [20, 30]
+          // Simulate: user seeks to time -5 (or any time before first song start at 0)
+          core.vIdx = 0;
+          core.rIdx = 1; // Stale index from previous position
+          
+          // First song starts at 0, so let's modify to have a gap before it
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] }
+          ];
+          
+          const res = core.nextSong(5); // Time 5 is before first song (starts at 10)
+          expect(res.type).toBe('load');
+          expect(core.rIdx).toBe(0); // Should go TO first song, not skip it
+      });
+
+      it('nextSong from gap between songs goes to the next song', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [0, 10] },
+              { name: 'S1T2', range: [20, 30] },
+              { name: 'S1T3', range: [40, 50] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 0; // Stale index
+          
+          // Time 15 is in the gap between song 0 (ends at 10) and song 1 (starts at 20)
+          const res = core.nextSong(15);
+          expect(res.type).toBe('load');
+          expect(core.rIdx).toBe(1); // Should go to song 1 (the next song after the gap)
+      });
+
+      it('nextSong from after last song goes to next stream', () => {
+          core.vIdx = 0;
+          core.rIdx = 0;
+          
+          // Time 100 is after the last song (ends at 30)
+          const res = core.nextSong(100);
+          expect(res.type).toBe('load');
+          expect(core.vIdx).toBe(1); // Should go to next stream
+      });
+
+      it('prevSong from before first song goes to previous stream', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 1;
+          
+          // Time 5 is before first song (starts at 10)
+          const res = core.prevSong(5);
+          expect(res.type).toBe('load');
+          expect(core.vIdx).toBe(2); // Should wrap to previous stream
+      });
+
+      it('prevSong from gap between songs goes back to the preceding song', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [0, 10] },
+              { name: 'S1T2', range: [20, 30] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 1; // Stale index
+          
+          // Time 15 is in the gap after song 0 (ends at 10)
+          const res = core.prevSong(15);
+          expect(res.type).toBe('load');
+          expect(core.rIdx).toBe(0); // Should go back to song 0
+      });
+
+      it('prevSong from after last song goes to the last song', () => {
+          core.vIdx = 0;
+          core.rIdx = 0;
+          
+          // Time 100 is after the last song (ends at 30)
+          const res = core.prevSong(100);
+          expect(res.type).toBe('load');
+          expect(core.rIdx).toBe(1); // Should go to last song (index 1)
+      });
+
+      it('nextSong in Yap mode from before first song seeks to first song', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 1;
+          core.toggleYap();
+          
+          const res = core.nextSong(5); // Before first song
+          expect(res.type).toBe('seek');
+          expect(res.time).toBe(10); // First song start
+          expect(core.rIdx).toBe(0);
+      });
+
+      it('prevSong in Yap mode from gap seeks to preceding song', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [0, 10] },
+              { name: 'S1T2', range: [20, 30] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 1;
+          core.toggleYap();
+          
+          const res = core.prevSong(15); // In gap after song 0
+          expect(res.type).toBe('seek');
+          expect(res.time).toBe(0); // Song 0 start
+          expect(core.rIdx).toBe(0);
+      });
+  });
+
   describe('Bug: Arbitrary Seek "Snapping"', () => {
       it('should NOT snap to song start if user seeks manually in Yap Off mode', () => {
           // Setup: Standard mode (Yap Off)
