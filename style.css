@@ -111,6 +111,17 @@ button.active {
     color: #0A0B0D;
 }
 
+@keyframes yap-chatter {
+    0% { transform: translate(-2px, -2px); }
+    35% { transform: translate(-2px, -5px); }
+    65% { transform: translate(-2px, -1px); }
+    100% { transform: translate(-2px, -2px); }
+}
+
+#yap-btn:not(.active):hover {
+    animation: yap-chatter 0.3s ease-in-out 2;
+}
+
 /* Floating search icon button (bottom-right, desktop + mobile) */
 #search-btn {
   position: fixed;
@@ -316,6 +327,10 @@ button.active {
     margin-left: 16px;
     margin-right: 16px;
     max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+    border-left-width: 0;
+    border-right-width: 0;
   }
 
   #status-panel {
@@ -332,6 +347,11 @@ button.active {
   #status-song-list {
     font-size: 18px;
     max-height: calc(70vh - 12px);
+  }
+
+  #status-song-list {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }
 
