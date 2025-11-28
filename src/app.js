@@ -28,6 +28,7 @@ let duplicateSearchName = '';
 const loopLabels = ['None', 'Track', 'Stream'];
 
 const statusEl = document.getElementById('status');
+const statusTextEl = document.getElementById('status-text');
 const statusPanel = document.getElementById('status-panel');
 const statusSongList = document.getElementById('status-song-list');
 let statusPanelStreamId = '';
@@ -468,10 +469,10 @@ document.getElementById('yap-btn').addEventListener('click', () => {
 document.getElementById('start').addEventListener('click', () => requestStartPlayback());
 
 function setStatus(msg) {
-    if (!statusEl) return;
+    if (!statusTextEl) return;
     if (msg === lastStatusText) return;
     lastStatusText = msg;
-    statusEl.textContent = msg;
+    statusTextEl.textContent = msg;
 }
 
 function toggleStatusPanel(forceState) {
