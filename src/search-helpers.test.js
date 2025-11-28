@@ -103,18 +103,23 @@ describe('search helpers', () => {
   });
 
   describe('Fuse search integration', () => {
+    const APP_FUSE_CONFIG = {
+      keys: [
+        { name: 'name', weight: 2 },
+        { name: 'streamName', weight: 1 }
+      ],
+      threshold: 0.3,
+      ignoreLocation: true
+    };
+
     it('finds songs with Japanese titles using the same config as the app', () => {
       const items = [
-        { name: 'Love Song', streamId: 0, songId: 0 },
-        { name: '終わりなき旅', streamId: 1, songId: 0 },
-        { name: '青い栞', streamId: 2, songId: 0 }
+        { name: 'Love Song', streamId: 0, songId: 0, streamName: 'Stream A' },
+        { name: '終わりなき旅', streamId: 1, songId: 0, streamName: 'Stream B' },
+        { name: '青い栞', streamId: 2, songId: 0, streamName: 'Stream C' }
       ];
 
-      const fuse = new Fuse(items, {
-        keys: ['name'],
-        threshold: 0.3,
-        ignoreLocation: true
-      });
+      const fuse = new Fuse(items, APP_FUSE_CONFIG);
 
       const jpQuery = '終わりなき旅';
       const jpResults = fuse.search(jpQuery, { limit: 10 }).map(r => r.item.name);
@@ -123,6 +128,50 @@ describe('search helpers', () => {
       const kanaQuery = '青い栞';
       const kanaResults = fuse.search(kanaQuery, { limit: 10 }).map(r => r.item.name);
       expect(kanaResults).toContain('青い栞');
+    });
+
+    it('matches stream names with lower priority than song names', () => {
+      const items = [
+        { name: 'Different Song', streamId: 0, songId: 0, streamName: 'Karaoke Night' },
+        { name: 'Another Track', streamId: 0, songId: 1, streamName: 'Karaoke Night' },
+        { name: 'Karaoke Party', streamId: 1, songId: 0, streamName: 'Rock Concert' },
+        { name: 'Random Song', streamId: 2, songId: 0, streamName: 'Jazz Session' }
+      ];
+
+      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+
+      // Search for "Karaoke" - should find both song name match AND stream name matches
+      const results = fuse.search('Karaoke', { limit: 10 });
+      
+      // Should find results
+      expect(results.length).toBeGreaterThan(0);
+      
+      // Song name match ("Karaoke Party") should rank higher than stream name matches
+      expect(results[0].item.name).toBe('Karaoke Party');
+      
+      // Stream name matches should also be included
+      const allNames = results.map(r => r.item.name);
+      expect(allNames).toContain('Different Song');
+      expect(allNames).toContain('Another Track');
+    });
+
+    it('finds songs by stream name when song name does not match', () => {
+      const items = [
+        { name: 'Song A', streamId: 0, songId: 0, streamName: 'Birthday Stream' },
+        { name: 'Song B', streamId: 0, songId: 1, streamName: 'Birthday Stream' },
+        { name: 'Song C', streamId: 1, songId: 0, streamName: 'Regular Stream' }
+      ];
+
+      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+
+      const results = fuse.search('Birthday', { limit: 10 });
+      
+      // Should find both songs from "Birthday Stream"
+      expect(results.length).toBe(2);
+      const names = results.map(r => r.item.name);
+      expect(names).toContain('Song A');
+      expect(names).toContain('Song B');
+      expect(names).not.toContain('Song C');
     });
   });
 });

@@ -188,7 +188,10 @@ function initializePlaylist() {
         duplicateNameIndex = buildDuplicateNameIndex(searchIndex);
 
         fuse = new Fuse(searchIndex, {
-            keys: ['name'],
+            keys: [
+                { name: 'name', weight: 2 },
+                { name: 'streamName', weight: 1 }
+            ],
             threshold: 0.3,
             ignoreLocation: true
         });
