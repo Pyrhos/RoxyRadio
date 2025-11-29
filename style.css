@@ -177,6 +177,10 @@ button.active {
     bottom: 12px;
     right: 68px; /* 12px + 48px + 8px gap */
   }
+
+  #loop-btn {
+    min-width: 161px; /* Prevent layout shift when cycling None/Track/Stream */
+  }
 }
 
 /* On larger screens, float the icons higher so they line up with the control buttons row */
