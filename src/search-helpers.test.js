@@ -108,8 +108,10 @@ describe('search helpers', () => {
         { name: 'name', weight: 2 },
         { name: 'streamName', weight: 1 }
       ],
-      threshold: 0.3,
-      ignoreLocation: true
+      threshold: 0.35,
+      ignoreLocation: false,
+      location: 0,
+      distance: 100
     };
 
     it('finds songs with Japanese titles using the same config as the app', () => {
@@ -172,6 +174,22 @@ describe('search helpers', () => {
       expect(names).toContain('Song A');
       expect(names).toContain('Song B');
       expect(names).not.toContain('Song C');
+    });
+
+    it('prioritizes matches at start of string over partial matches elsewhere', () => {
+      const items = [
+        { name: 'Flappie - Youp van \'t Hek', streamId: 0, songId: 0, streamName: 'Stream A' },
+        { name: 'Shackles - Mary Mary (Praise You)', streamId: 1, songId: 0, streamName: 'Stream B' },
+        { name: 'You Belong to Me - Jo Stafford', streamId: 2, songId: 0, streamName: 'Stream C' }
+      ];
+
+      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+
+      const results = fuse.search('You', { limit: 10 });
+      
+      // "You Belong to Me" should rank first because "You" appears at position 0
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0].item.name).toBe('You Belong to Me - Jo Stafford');
     });
   });
 });

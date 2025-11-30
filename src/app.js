@@ -192,8 +192,10 @@ function initializePlaylist() {
                 { name: 'name', weight: 2 },
                 { name: 'streamName', weight: 1 }
             ],
-            threshold: 0.3,
-            ignoreLocation: true
+            threshold: 0.35,
+            ignoreLocation: false,  // Prefer matches closer to start of string
+            location: 0,            // Ideal match position is at the beginning
+            distance: 100           // How quickly score degrades with distance from location
         });
 
         playlistReady = true;
