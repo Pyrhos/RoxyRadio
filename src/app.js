@@ -1,7 +1,7 @@
 import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
-import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex } from './search-helpers.js';
+import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
 
 // ======== CONFIG ========
@@ -187,16 +187,7 @@ function initializePlaylist() {
 
         duplicateNameIndex = buildDuplicateNameIndex(searchIndex);
 
-        fuse = new Fuse(searchIndex, {
-            keys: [
-                { name: 'name', weight: 2 },
-                { name: 'streamName', weight: 1 }
-            ],
-            threshold: 0.35,
-            ignoreLocation: false,  // Prefer matches closer to start of string
-            location: 0,            // Ideal match position is at the beginning
-            distance: 100           // How quickly score degrades with distance from location
-        });
+        fuse = new Fuse(searchIndex, FUSE_CONFIG);
 
         playlistReady = true;
         refreshStatusSongList(true);

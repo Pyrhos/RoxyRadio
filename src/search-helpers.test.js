@@ -3,7 +3,8 @@ import Fuse from 'fuse.js';
 import {
   normalizeSongBaseName,
   buildSearchIndexFromPlaylist,
-  buildDuplicateNameIndex
+  buildDuplicateNameIndex,
+  FUSE_CONFIG
 } from './search-helpers.js';
 
 describe('search helpers', () => {
@@ -103,17 +104,6 @@ describe('search helpers', () => {
   });
 
   describe('Fuse search integration', () => {
-    const APP_FUSE_CONFIG = {
-      keys: [
-        { name: 'name', weight: 2 },
-        { name: 'streamName', weight: 1 }
-      ],
-      threshold: 0.35,
-      ignoreLocation: false,
-      location: 0,
-      distance: 100
-    };
-
     it('finds songs with Japanese titles using the same config as the app', () => {
       const items = [
         { name: 'Love Song', streamId: 0, songId: 0, streamName: 'Stream A' },
@@ -121,7 +111,7 @@ describe('search helpers', () => {
         { name: '青い栞', streamId: 2, songId: 0, streamName: 'Stream C' }
       ];
 
-      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+      const fuse = new Fuse(items, FUSE_CONFIG);
 
       const jpQuery = '終わりなき旅';
       const jpResults = fuse.search(jpQuery, { limit: 10 }).map(r => r.item.name);
@@ -140,7 +130,7 @@ describe('search helpers', () => {
         { name: 'Random Song', streamId: 2, songId: 0, streamName: 'Jazz Session' }
       ];
 
-      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+      const fuse = new Fuse(items, FUSE_CONFIG);
 
       // Search for "Karaoke" - should find both song name match AND stream name matches
       const results = fuse.search('Karaoke', { limit: 10 });
@@ -164,7 +154,7 @@ describe('search helpers', () => {
         { name: 'Song C', streamId: 1, songId: 0, streamName: 'Regular Stream' }
       ];
 
-      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+      const fuse = new Fuse(items, FUSE_CONFIG);
 
       const results = fuse.search('Birthday', { limit: 10 });
       
@@ -183,7 +173,7 @@ describe('search helpers', () => {
         { name: 'You Belong to Me - Jo Stafford', streamId: 2, songId: 0, streamName: 'Stream C' }
       ];
 
-      const fuse = new Fuse(items, APP_FUSE_CONFIG);
+      const fuse = new Fuse(items, FUSE_CONFIG);
 
       const results = fuse.search('You', { limit: 10 });
       
