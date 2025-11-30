@@ -441,6 +441,18 @@ button.active {
 .result-title { font-weight: bold; font-size: 1.2em; color: #0A0B0D; }
 .result-sub { font-size: 0.9em; color: #353947; font-style: italic; }
 
+/* Pin modal to top on mobile so keyboard doesn't obscure it */
+@media (pointer: coarse) {
+  #modal-overlay {
+    place-items: start center; /* align to top, horizontally centered */
+    padding-top: 20px;
+  }
+  
+  #comic-box {
+    max-height: 60vh; /* Leave room for keyboard */
+  }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar { width: 12px; background: #0A0B0D; }
 ::-webkit-scrollbar-thumb { background: #F4C2C1; border: 2px solid #000; }
