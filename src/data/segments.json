@@ -398,105 +398,105 @@
         "name": "Hello - Lionel Richie",
         "range": [
           952,
-          1296
+          1227
         ]
       },
       {
         "name": "Take On Me - a-ha",
         "range": [
           1296,
-          1660
+          1541
         ]
       },
       {
         "name": "Forever Young - Alphaville",
         "range": [
           1660,
-          2020
+          1900
         ]
       },
       {
         "name": "Careless Whisper - George Michael",
         "range": [
           2020,
-          2545
+          2340
         ]
       },
       {
         "name": "It's Raining Men - The Weather Girls",
         "range": [
           2545,
-          2880
+          2805
         ]
       },
       {
         "name": "I Love Rock 'n' Roll - Joan Jett",
         "range": [
           2880,
-          3135
+          3070
         ]
       },
       {
         "name": "Beat It - Michael Jackson",
         "range": [
           3135,
-          3508
+          3410
         ]
       },
       {
         "name": "What a Feeling - Irene Cara (Flashdance)",
         "range": [
           3508,
-          3857
+          3758
         ]
       },
       {
         "name": "Girls Just Want to Have Fun - Cyndi Lauper",
         "range": [
           3857,
-          4116
+          4107
         ]
       },
       {
         "name": "Call Me - Blondie",
         "range": [
           4116,
-          4427
+          4346
         ]
       },
       {
         "name": "9 to 5 - Dolly Parton",
         "range": [
           4427,
-          4669
+          4607
         ]
       },
       {
         "name": "Summer of '69 - Bryan Adams",
         "range": [
           4669,
-          4974
+          4899
         ]
       },
       {
         "name": "Alone - Heart",
         "range": [
           4974,
-          5252
+          5209
         ]
       },
       {
         "name": "Material Girl - Madonna",
         "range": [
           5252,
-          5736
+          5512
         ]
       },
       {
         "name": "I Wanna Dance with Somebody - Whitney Houston",
         "range": [
           5736,
-          6194
+          6046
         ]
       }
     ]
@@ -605,63 +605,63 @@
         "name": "I'd Rather Go Blind - Etta James",
         "range": [
           1011,
-          1303
+          1260
         ]
       },
       {
         "name": "Still Got the Blues - Gary Moore",
         "range": [
           1303,
-          1731
+          1693
         ]
       },
       {
         "name": "Rock Me Baby - B.B. King",
         "range": [
           1731,
-          2002
+          1931
         ]
       },
       {
         "name": "Hound Dog - Elvis Presley",
         "range": [
           2002,
-          2306
+          2152
         ]
       },
       {
         "name": "Hallelujah I Love Her So - Ray Charles",
         "range": [
           2306,
-          2596
+          2481
         ]
       },
       {
         "name": "Five Long Years - Eddie Boyd",
         "range": [
           2596,
-          3040
+          2881
         ]
       },
       {
         "name": "Roadhouse Blues - The Doors",
         "range": [
           3040,
-          3359
+          3300
         ]
       },
       {
         "name": "The Thrill Is Gone - B.B. King",
         "range": [
           3359,
-          3819
+          3704
         ]
       },
       {
         "name": "Hit the Road Jack - Ray Charles",
         "range": [
           3819,
-          4109
+          3954
         ]
       }
     ]
@@ -923,84 +923,84 @@
         "name": "Landslide - Fleetwood Mac",
         "range": [
           832,
-          1145
+          1102
         ]
       },
       {
         "name": "Summertime - George Gershwin",
         "range": [
           1145,
-          1460
+          1340
         ]
       },
       {
         "name": "La Isla Bonita - Madonna",
         "range": [
           1460,
-          1734
+          1715
         ]
       },
       {
         "name": "Believe - Cher (Acoustic)",
         "range": [
           1734,
-          2068
+          1989
         ]
       },
       {
         "name": "Take It Easy - Eagles",
         "range": [
           2068,
-          2330
+          2293
         ]
       },
       {
         "name": "Waiting for Love - Avicii",
         "range": [
           2330,
-          2595
+          2575
         ]
       },
       {
         "name": "Nothing - Bruno Major",
         "range": [
           2595,
-          2933
+          2820
         ]
       },
       {
         "name": "Dreams - Fleetwood Mac",
         "range": [
           2933,
-          3279
+          3203
         ]
       },
       {
         "name": "Drops of Jupiter - Train",
         "range": [
           3279,
-          3596
+          3554
         ]
       },
       {
         "name": "Jezebel - Sade",
         "range": [
           3596,
-          3998
+          3941
         ]
       },
       {
         "name": "Make You Feel My Love - Adele",
         "range": [
           3998,
-          4284
+          4223
         ]
       },
       {
         "name": "My Favorite Things - The Sound of Music",
         "range": [
           4284,
-          4564
+          4439
         ]
       },
       {
@@ -1014,21 +1014,21 @@
         "name": "Dani California - Red Hot Chili Peppers",
         "range": [
           4946,
-          5340
+          5246
         ]
       },
       {
         "name": "Angels - Robbie Williams",
         "range": [
           5340,
-          5748
+          5625
         ]
       },
       {
         "name": "It's Beginning to Look a Lot Like Christmas - Meredith Willson",
         "range": [
           5748,
-          6050
+          5943
         ]
       }
     ]
@@ -1304,7 +1304,7 @@
         "name": "Spooky Scary Skeletons - Andrew Gold",
         "range": [
           854,
-          1157
+          1064
         ]
       },
       {
@@ -1990,21 +1990,21 @@
         "name": "Hotel California - Eagles",
         "range": [
           950,
-          1585
+          1356
         ]
       },
       {
         "name": "Drops of Jupiter - Train",
         "range": [
           1585,
-          1955
+          1860
         ]
       },
       {
         "name": "Dani California - Red Hot Chili Peppers",
         "range": [
           1955,
-          2349
+          2252
         ]
       },
       {
@@ -2018,21 +2018,21 @@
         "name": "Desperado - Eagles",
         "range": [
           2636,
-          2994
+          2864
         ]
       },
       {
         "name": "At Last - Etta James",
         "range": [
           2994,
-          3229
+          3189
         ]
       },
       {
         "name": "Habits (Stay High) - Tove Lo",
         "range": [
           3229,
-          3612
+          3476
         ]
       },
       {
@@ -2046,14 +2046,14 @@
         "name": "Take It Easy - Eagles",
         "range": [
           3935,
-          4418
+          4162
         ]
       },
       {
         "name": "This Love - Maroon 5",
         "range": [
           4418,
-          4790
+          4630
         ]
       },
       {
@@ -2203,7 +2203,7 @@
         "name": "Diamonds Are a Girl's Best Friend - Marilyn Monroe",
         "range": [
           1700,
-          2134
+          1932
         ]
       },
       {
