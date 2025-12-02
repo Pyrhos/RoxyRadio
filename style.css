@@ -56,7 +56,7 @@ html, body, #app {
 #controls-container { 
   width: 100%; 
   background: #7659B9; 
-  padding: 15px 20px; 
+  padding: 16px 20px; 
   box-sizing: border-box; 
   margin-top: 0;
   border-top: 4px solid #000;
@@ -93,6 +93,42 @@ button {
   box-shadow: 4px 4px 0 #000;
   text-transform: uppercase;
   transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.has-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 10px 10px;
+  overflow: visible;
+}
+
+.button-icon {
+  width: 70px;
+  height: 70px;
+  margin-right: 6px;
+  margin-top: -25px;
+  margin-bottom: -25px;
+  margin-left: -15px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: width 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              height 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              margin 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges; /* Firefox fallback */
+}
+
+.button-icon-flip {
+  transform: scaleX(-1);
+}
+
+.has-icon:hover .button-icon {
+  width: 80px;
+  height: 80px;
+  margin-top: -30px;
+  margin-bottom: -30px;
 }
 
 button:hover { 
