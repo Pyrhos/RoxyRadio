@@ -118,6 +118,11 @@ button {
   transition: transform 0.2s var(--bounce-ease);
   image-rendering: pixelated;
   image-rendering: crisp-edges; /* Firefox fallback */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none; /* Let clicks pass through to the button */
 }
 
 .button-icon-flip {
