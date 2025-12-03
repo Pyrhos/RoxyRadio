@@ -26,6 +26,15 @@ let duplicateNameIndex = new Map();
 let duplicateSearchName = '';
 
 const loopLabels = ['None', 'Track', 'Stream'];
+const loopIcons = ['./loop.png', './loop-active-track.png', './loop-active.png'];
+const loopAlts = ['Loop off', 'Loop track', 'Loop stream'];
+
+// Cache button elements
+const btnYap = document.getElementById('yap-btn');
+const btnLoop = document.getElementById('loop-btn');
+const btnShuffle = document.getElementById('shuffle-btn');
+const iconYap = document.getElementById('yap-icon');
+const iconLoop = document.getElementById('loop-icon');
 
 const statusEl = document.getElementById('status');
 const statusTextEl = document.getElementById('status-text');
@@ -251,18 +260,35 @@ function updateStatus(forcedTime) {
     syncStatusPanelActiveState(t);
 }
 
+function updateButtonLabel(btn, text, isActive) {
+    if (!btn) return;
+    const label = btn.querySelector('.btn-label');
+    if (label) label.textContent = text;
+    else btn.textContent = text;
+    btn.classList.toggle('active', isActive);
+}
+
+function updateButtonIcon(icon, src, alt) {
+    if (icon) {
+        icon.setAttribute('src', src);
+        icon.setAttribute('alt', alt);
+    }
+}
+
 function updateButtons() {
-    const btnYap = document.getElementById('yap-btn');
-    btnYap.textContent = `Yap: ${core.yapMode ? 'On' : 'Off'}`;
-    btnYap.classList.toggle('active', core.yapMode);
+    // Yap button
+    const yapOn = core.yapMode;
+    updateButtonLabel(btnYap, `Yap: ${yapOn ? 'On' : 'Off'}`, yapOn);
+    updateButtonIcon(iconYap, yapOn ? './yap.png' : './noyap.png', yapOn ? 'Yap on' : 'Yap off');
 
-    const btnLoop = document.getElementById('loop-btn');
-    btnLoop.textContent = `Loop: ${loopLabels[core.loopMode]}`;
-    btnLoop.classList.toggle('active', core.loopMode !== 0);
+    // Loop button
+    const loopMode = core.loopMode;
+    updateButtonLabel(btnLoop, `Loop: ${loopLabels[loopMode]}`, loopMode !== 0);
+    updateButtonIcon(iconLoop, loopIcons[loopMode], loopAlts[loopMode]);
 
-    const btnShuffle = document.getElementById('shuffle-btn');
-    btnShuffle.textContent = `Shuffle: ${core.shuffleMode ? 'On' : 'Off'}`;
-    btnShuffle.classList.toggle('active', core.shuffleMode);
+    // Shuffle button
+    const shuffleOn = core.shuffleMode;
+    updateButtonLabel(btnShuffle, `Shuffle: ${shuffleOn ? 'On' : 'Off'}`, shuffleOn);
 }
 
 function requestStartPlayback() {
@@ -400,8 +426,12 @@ document.getElementById('shuffle-btn').addEventListener('click', () => {
 
 const searchBtn = document.getElementById('search-btn');
 const duplicatesBtn = document.getElementById('duplicates-btn');
+let modalToggleTime = 0;
 if (searchBtn) {
     searchBtn.addEventListener('click', () => {
+        const now = Date.now();
+        if (now - modalToggleTime < 400) return; // Debounce rapid clicks
+        modalToggleTime = now;
         toggleModal();
     });
 }
@@ -719,6 +749,7 @@ function toggleModal() {
 }
 
 modal.addEventListener('click', (e) => {
+    // Only close when clicking the overlay backdrop, not the wrapper or comic-box
     if (e.target === modal) {
         toggleModal();
     }

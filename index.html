@@ -34,6 +34,17 @@
   <link rel="icon" type="image/png" sizes="16x16" href="./16.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="./32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="./48.png" />
+
+  <!-- Preload button icons -->
+  <link rel="preload" as="image" href="./next-stream.png" />
+  <link rel="preload" as="image" href="./next-song.png" />
+  <link rel="preload" as="image" href="./loop.png" />
+  <link rel="preload" as="image" href="./loop-active.png" />
+  <link rel="preload" as="image" href="./loop-active-track.png" />
+  <link rel="preload" as="image" href="./shuffle.png" />
+  <link rel="preload" as="image" href="./yap.png" />
+  <link rel="preload" as="image" href="./noyap.png" />
+  <link rel="preload" as="image" href="./jamstone.png" />
   <link rel="stylesheet" href="style.css" />
   <style>
   </style>
@@ -52,13 +63,28 @@
           <img src="./next-stream.png" alt="Previous Stream" class="button-icon button-icon-flip" />
           Stream
         </button>
-        <button id="prev-song" title="Previous Song">⏮ Song</button>
+        <button id="prev-song" class="has-icon" title="Previous Song">
+          <img src="./next-song.png" alt="Previous Song" class="button-icon button-icon-flip" />
+          Song
+        </button>
         
-        <button id="loop-btn" title="Loop Mode: None">Loop: None</button>
-        <button id="shuffle-btn" title="Toggle Shuffle">Shuffle: Off</button>
-        <button id="yap-btn" title="Toggle Yap Mode">Yap: Off</button>
+        <button id="loop-btn" class="has-icon" title="Loop Mode: None">
+          <img src="./loop.png" alt="Loop off" class="button-icon" id="loop-icon" />
+          <span class="btn-label">Loop: None</span>
+        </button>
+        <button id="shuffle-btn" class="has-icon" title="Toggle Shuffle">
+          <img src="./shuffle.png" alt="Shuffle" class="button-icon" />
+          <span class="btn-label">Shuffle: Off</span>
+        </button>
+        <button id="yap-btn" class="has-icon" title="Toggle Yap Mode">
+          <img src="./noyap.png" alt="Yap off" class="button-icon" id="yap-icon" />
+          <span class="btn-label">Yap: Off</span>
+        </button>
         
-        <button id="next-song" title="Next Song">⏭ Song</button>
+        <button id="next-song" class="has-icon" title="Next Song">
+          <img src="./next-song.png" alt="Next Song" class="button-icon" />
+          Song
+        </button>
         <button id="next-stream" class="has-icon" title="Next Stream">
           <img src="./next-stream.png" alt="Next Stream" class="button-icon" />
           Stream
@@ -80,11 +106,14 @@
 
   <!-- Search Modal -->
   <div id="modal-overlay">
-    <div id="comic-box">
-      <div id="comic-title">Search-O-Matic!</div>
-        <!--suppress HtmlFormInputWithoutLabel -->
-        <input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
-      <div id="search-results"></div>
+    <div id="modal-wrapper">
+      <img src="./jamstone.png" alt="" class="modal-jamstone" />
+      <div id="comic-box">
+        <div id="comic-title">Search-O-Matic!</div>
+          <!--suppress HtmlFormInputWithoutLabel -->
+          <input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
+        <div id="search-results"></div>
+      </div>
     </div>
   </div>
 
