@@ -115,9 +115,7 @@ button {
   display: inline-block;
   vertical-align: middle;
   flex-shrink: 0;
-  transition: width 0.2s var(--bounce-ease),
-              height 0.2s var(--bounce-ease),
-              margin 0.2s var(--bounce-ease);
+  transition: transform 0.2s var(--bounce-ease);
   image-rendering: pixelated;
   image-rendering: crisp-edges; /* Firefox fallback */
 }
@@ -139,19 +137,17 @@ button {
 /* Hover effects only for devices that support hover (not touch-only) */
 @media (hover: hover) {
   .has-icon:hover .button-icon {
-    width: 80px;
-    height: 80px;
-    margin-top: -30px;
-    margin-bottom: -30px;
+    transform: scale(1.15);
+  }
+
+  .has-icon:hover .button-icon.button-icon-flip {
+    transform: scaleX(-1) scale(1.15);
   }
 
   #yap-btn:hover .button-icon,
   #loop-btn:hover .button-icon,
   #shuffle-btn:hover .button-icon {
-    width: 70px;
-    height: 70px;
-    margin-top: -25px;
-    margin-bottom: -25px;
+    transform: scale(1.17);
   }
 
   button:hover { 
@@ -176,10 +172,10 @@ button.active {
 }
 
 @keyframes yap-chatter {
-    0% { transform: translateY(0); }
-    35% { transform: translateY(-3px); }
-    65% { transform: translateY(2px); }
-    100% { transform: translateY(0); }
+    0% { transform: scale(1.17) translateY(0); }
+    35% { transform: scale(1.17) translateY(-3px); }
+    65% { transform: scale(1.17) translateY(2px); }
+    100% { transform: scale(1.17) translateY(0); }
 }
 
 /* Floating search icon button (bottom-right, desktop + mobile) */
@@ -227,24 +223,71 @@ button.active {
   transform: translate(-1px, -10px); /* Nudge up and slightly right for a superscript feel */
 }
 
-@media (max-width: 600px) {
+/* Fixed grid button layout for tablets and below */
+@media (max-width: 960px) {
+  #buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: none;
+  }
+
+  #prev-stream { grid-row: 1; grid-column: 1; }
+  #next-stream { grid-row: 1; grid-column: 2; }
+  #prev-song   { grid-row: 2; grid-column: 1; }
+  #next-song   { grid-row: 2; grid-column: 2; }
+  #loop-btn    { grid-row: 3; grid-column: 1; min-width: 0; }
+  #shuffle-btn { grid-row: 3; grid-column: 2; }
+  #yap-btn     { grid-row: 4; grid-column: 1; }
+  
+  #duplicates-btn,
   #search-btn {
-    bottom: 12px;
-    right: 12px;
+    position: static;
+    grid-row: 4;
+    grid-column: 2;
+    height: auto !important;
+    min-height: unset;
+    align-self: stretch;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 10px 16px;
   }
 
+  #search-btn {
+    width: 100%;
+  }
+
+  /* When duplicates is visible, both share the cell side by side */
   #duplicates-btn {
-    bottom: 12px;
-    right: 68px; /* 12px + 48px + 8px gap */
+    justify-self: start;
+    width: calc(50% - 5px);
   }
 
-  #loop-btn {
-    min-width: 161px; /* Prevent layout shift when cycling None/Track/Stream */
+  /* Shrink search when duplicates is present */
+  #buttons:has(#duplicates-btn[style*="flex"]) #search-btn {
+    justify-self: end;
+    width: calc(50% - 5px);
+  }
+
+  /* Make buttons fill their grid cells */
+  #buttons button.has-icon {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 10px 16px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    align-self: stretch;
+  }
+
+  #controls-container {
+    padding: 12px;
   }
 }
 
-/* On larger screens, float the icons higher so they line up with the control buttons row */
-@media (min-width: 768px) {
+/* On larger screens (above grid breakpoint), float icons and constrain button width */
+@media (min-width: 961px) {
   #search-btn {
     bottom: 61px;
   }
