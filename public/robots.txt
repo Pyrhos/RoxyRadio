@@ -1,0 +1,8 @@
+# Rourin Radio - robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://rourin.am/sitemap.xml
+
+
