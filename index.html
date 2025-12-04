@@ -73,7 +73,7 @@
     
   </head>
   <body>
-  <div class="wrap">
+  <main class="wrap">
     <div id="player-container">
         <div id="player"></div>
         <div id="overlay"><button id="start">▶ Start</button></div>
@@ -119,14 +119,14 @@
     </div>
 
     <div id="status-area">
-      <div id="status-panel" aria-hidden="true">
+      <div id="status-panel" aria-hidden="true" inert>
         <ol id="status-song-list"></ol>
       </div>
       <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel"><span class="status-icon">𝄞</span><span id="status-text">Loading…</span></div>
     </div>
-  </div>
+  </main>
 
-  <div id="modal-overlay">
+  <div id="modal-overlay" inert>
     <div id="modal-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
       <div id="comic-box">

@@ -515,6 +515,7 @@ function toggleStatusPanel(forceState) {
 
     statusPanel.classList.toggle('open', statusPanelOpen);
     statusPanel.setAttribute('aria-hidden', statusPanelOpen ? 'false' : 'true');
+    statusPanel.inert = !statusPanelOpen;
     statusEl.setAttribute('aria-expanded', statusPanelOpen ? 'true' : 'false');
 
     if (statusPanelOpen) {
@@ -741,6 +742,7 @@ document.addEventListener('visibilitychange', () => {
 
 function toggleModal() {
     const isOpen = modal.classList.toggle('open');
+    modal.inert = !isOpen;
     if (isOpen) {
         searchInput.value = '';
         renderResults([]);
