@@ -121,14 +121,14 @@ describe('PlayerCore', () => {
     it('randomizes next stream when shuffle is on', () => {
       core.toggleShuffle();
       // Mock random to return index 2
-      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99); 
-      
+      const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
       core.nextStream();
       expect(core.vIdx).toBe(2); // v3
       expect(core.history.length).toBe(1);
       expect(core.history[0].vIdx).toBe(0); // Previous was v1 (0)
       expect(core.history[0].rIdx).toBe(0);
-      
+
       randomSpy.mockRestore();
     });
 
@@ -136,7 +136,7 @@ describe('PlayerCore', () => {
       core.toggleShuffle();
       core.nextStream(); // Go to some random
       const previousVIdx = core.history[0].vIdx;
-      
+
       core.prevStream();
       expect(core.vIdx).toBe(previousVIdx);
     });
@@ -155,7 +155,7 @@ describe('PlayerCore', () => {
         core.toggleShuffle();
         core.history = []; // Clear history
         const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5); // Should map to 1
-        
+
         core.prevStream();
         expect(core.vIdx).toBe(1); // v2
         randomSpy.mockRestore();
@@ -166,12 +166,12 @@ describe('PlayerCore', () => {
            { vIdx: 0, rIdx: 0 },
            { vIdx: 1, rIdx: 0 }
        ];
-       
+
        callbacks.getSessionData = () => ({ history: JSON.stringify(sessionHistory) });
-       
+
        const newCore = new PlayerCore(callbacks);
        newCore.init(MOCK_SEGMENTS);
-       
+
        expect(newCore.history.length).toBe(2);
        expect(newCore.history[0].vIdx).toBe(0);
        expect(newCore.history[1].vIdx).toBe(1);
@@ -189,7 +189,7 @@ describe('PlayerCore', () => {
         core.nextStream(); // Adds to history
         core.nextStream(); // Adds more
         expect(core.history.length).toBeGreaterThan(0);
-        
+
         core.toggleShuffle(); // Off - should wipe history
         expect(core.history.length).toBe(0);
     });
@@ -199,7 +199,7 @@ describe('PlayerCore', () => {
         core.toggleShuffle(); // On
         core.nextStream();
         expect(core.history.length).toBe(1);
-        
+
         core.toggleShuffle(); // Off - clears
         core.toggleShuffle(); // On again
         // No history to clear since it was already empty
@@ -212,7 +212,7 @@ describe('PlayerCore', () => {
         core.nextStream(); // Go somewhere random, pushes history
         const historyBefore = [...core.history];
         expect(historyBefore.length).toBe(1);
-        
+
         core.prevStream({ skipHistory: true }); // Shift+click
         // Should go to actual previous (vIdx - 1 or wrap)
         // History should NOT be modified
@@ -257,7 +257,7 @@ describe('PlayerCore', () => {
          core.nextSong();
          expect(core.rIdx).toBe(1); // Manual overrides loop
      });
-     
+
      it('Loop Stream wraps song index but stays on stream', () => {
          core.loopMode = LOOP_STREAM;
          core.rIdx = 1; // Last song
@@ -286,6 +286,39 @@ describe('PlayerCore', () => {
           // v1 Song 1 ends at 10, Song 2 starts at 20
           const text = core.getStatusText(15);
           expect(text).toContain('Next: S1T2');
+      });
+
+      it('does not show "Next: first song" during transitions when rIdx indicates later song', () => {
+          // Bug fix: During video loading/transitions (especially in background tabs),
+          // getCurrentTime() may return 0 or stale values. If rIdx already points to
+          // a later song, we should NOT show "Next: first song".
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] },
+              { name: 'S1T3', range: [50, 60] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 2; // Navigation already set us to song 3
+
+          // Simulate transition state: currentTime reports 0 (before first song at 10)
+          const text = core.getStatusText(0);
+
+          // Should NOT show "Next: S1T1" - instead should show current song based on rIdx
+          expect(text).not.toContain('Next: S1T1');
+          expect(text).toContain('S1T3');
+          expect(text).toContain('(3/3)');
+      });
+
+      it('still shows "Next: first song" when legitimately before first song', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 0; // rIdx confirms we're at the start
+
+          const text = core.getStatusText(5); // Before first song
+          expect(text).toContain('Next: S1T1');
       });
   });
 
@@ -425,7 +458,7 @@ describe('PlayerCore', () => {
           // Video 1: S1 [0,10], S2 [20,30]
           core.vIdx = 0;
           core.rIdx = 0;
-          
+
           // Tick at 11 (past S1 end, in gap)
           // Should NOT trigger nextStream or advanceAuto or any callback
           core.checkTick(11);
@@ -438,8 +471,8 @@ describe('PlayerCore', () => {
           core.vIdx = 0;
           // Last song ends at 30. Global end is 30.
           // Logic checks: currentTime >= lastSong.range[1] - 0.2
-          
-          core.checkTick(29.9); 
+
+          core.checkTick(29.9);
           expect(callbacks.playVideo).toHaveBeenCalled();
           expect(core.vIdx).toBe(1); // Next stream
       });
@@ -489,7 +522,7 @@ describe('PlayerCore', () => {
           core.vIdx = 1; // Video 2 (No segments)
           let song = core.getCurrentSong();
           expect(song.range[1]).toBe(0); // Unknown duration defaults to open-ended
-          
+
           core.setDuration('v2', 1234);
           song = core.getCurrentSong();
           expect(song.range[1]).toBe(1234);
@@ -501,28 +534,28 @@ describe('PlayerCore', () => {
           // Mock single item playlist
           const singleItemPlaylist = [MOCK_SEGMENTS[0]];
           core.init(singleItemPlaylist);
-          
+
           core.toggleShuffle();
           core.nextStream();
           expect(core.vIdx).toBe(0);
       });
-      
+
       it('excludes current video from random selection', () => {
           // We have 3 videos. vIdx = 0.
           // Mock random to pick 0 (current). It should retry.
           core.toggleShuffle();
-          
-          // Math.random is called. 
+
+          // Math.random is called.
           // Call 1: returns 0.0 (maps to index 0) -> Retry
           // Call 2: returns 0.5 (maps to index 1) -> Accept
-          
+
           const randomSpy = vi.spyOn(Math, 'random');
           randomSpy.mockReturnValueOnce(0.0).mockReturnValueOnce(0.5);
-          
+
           core.nextStream();
           expect(core.vIdx).toBe(1);
           expect(randomSpy).toHaveBeenCalledTimes(2);
-          
+
           randomSpy.mockRestore();
       });
   });
@@ -533,13 +566,13 @@ describe('PlayerCore', () => {
           // Simulate: user seeks to time -5 (or any time before first song start at 0)
           core.vIdx = 0;
           core.rIdx = 1; // Stale index from previous position
-          
+
           // First song starts at 0, so let's modify to have a gap before it
           core.playlist[0].songs = [
               { name: 'S1T1', range: [10, 20] },
               { name: 'S1T2', range: [30, 40] }
           ];
-          
+
           const res = core.nextSong(5); // Time 5 is before first song (starts at 10)
           expect(res.type).toBe('load');
           expect(core.rIdx).toBe(0); // Should go TO first song, not skip it
@@ -553,7 +586,7 @@ describe('PlayerCore', () => {
           ];
           core.vIdx = 0;
           core.rIdx = 0; // Stale index
-          
+
           // Time 15 is in the gap between song 0 (ends at 10) and song 1 (starts at 20)
           const res = core.nextSong(15);
           expect(res.type).toBe('load');
@@ -563,7 +596,7 @@ describe('PlayerCore', () => {
       it('nextSong from after last song goes to next stream', () => {
           core.vIdx = 0;
           core.rIdx = 0;
-          
+
           // Time 100 is after the last song (ends at 30)
           const res = core.nextSong(100);
           expect(res.type).toBe('load');
@@ -577,7 +610,7 @@ describe('PlayerCore', () => {
           ];
           core.vIdx = 0;
           core.rIdx = 1;
-          
+
           // Time 5 is before first song (starts at 10)
           const res = core.prevSong(5);
           expect(res.type).toBe('load');
@@ -591,7 +624,7 @@ describe('PlayerCore', () => {
           ];
           core.vIdx = 0;
           core.rIdx = 1; // Stale index
-          
+
           // Time 15 is in the gap after song 0 (ends at 10)
           const res = core.prevSong(15);
           expect(res.type).toBe('load');
@@ -601,7 +634,7 @@ describe('PlayerCore', () => {
       it('prevSong from after last song goes to the last song', () => {
           core.vIdx = 0;
           core.rIdx = 0;
-          
+
           // Time 100 is after the last song (ends at 30)
           const res = core.prevSong(100);
           expect(res.type).toBe('load');
@@ -616,7 +649,7 @@ describe('PlayerCore', () => {
           core.vIdx = 0;
           core.rIdx = 1;
           core.toggleYap();
-          
+
           const res = core.nextSong(5); // Before first song
           expect(res.type).toBe('seek');
           expect(res.time).toBe(10); // First song start
@@ -631,7 +664,7 @@ describe('PlayerCore', () => {
           core.vIdx = 0;
           core.rIdx = 1;
           core.toggleYap();
-          
+
           const res = core.prevSong(15); // In gap after song 0
           expect(res.type).toBe('seek');
           expect(res.time).toBe(0); // Song 0 start
@@ -645,22 +678,22 @@ describe('PlayerCore', () => {
           // Video 1 has songs: S1T1 [0, 10], S1T2 [20, 30]
           core.vIdx = 0;
           core.rIdx = 0;
-          
+
           // Simulate seek to 5 (middle of Song 1)
           core.checkTick(5);
           expect(core.rIdx).toBe(0);
-          
+
           // Simulate seek to 25 (middle of Song 2)
           // The bug is that previously logic might try to enforce rIdx=0 end bound or snap back
           // But checkTick logic updates rIdx if we land in a valid song range
-          
+
           core.checkTick(25);
           expect(core.rIdx).toBe(1); // Should update index to match time
-          
+
           // CRITICAL: Ensure we don't trigger a 'load' or 'seek' that would snap to START of song
           // checkTick itself doesn't return action, but its internal state update shouldn't cause a reload loop
           // In the UI integration, `checkTick` is just passive.
-          
+
           // However, if we seek to a GAP (e.g. 15), what happens?
           core.checkTick(15);
           // rIdx should probably stay at last known valid or be indeterminate?
@@ -673,29 +706,29 @@ describe('PlayerCore', () => {
           core.vIdx = 0;
           core.rIdx = 0;
           core.checkTick(15);
-          
+
           // If we are in a gap, standard mode (Yap Off) usually implies we only play segments?
           // "Rule 4b: When off, the player strictly plays only parts specified within the songs array"
           // BUT "Rule 2: If user manually seeks... that should ALWAYS do exactly what's expected"
-          
+
           // Conflict: User seeks to gap. Rule 4b says "strictly play only parts". Rule 2 says "do what user wants".
           // Rule 2 "takes over". So we should ALLOW playing in the gap.
           // Does current logic allow this?
-          
-          // `checkTick` calculates `song = stream.songs[this.rIdx]`. 
+
+          // `checkTick` calculates `song = stream.songs[this.rIdx]`.
           // If `rIdx` was 0 (Song 1), range is [0, 10].
           // If time is 15, `currentTime >= song.range[1]`.
           // `checkTick` calls `advanceAuto()`.
           // `advanceAuto` increments `rIdx` to 1 and calls `playVideo` (RELOAD).
           // So if user seeks to 15, the next tick sees 15 > 10, thinks "Song 1 Ended", and skips to Song 2.
           // THIS IS THE SNAP/SKIP behavior!
-          
+
           // We need to detect if the time jump was a seek (discontinuity) vs natural playback?
           // Or simply: If we are "far" past the end, assume seek and don't auto-advance?
-          
+
           // If we naturally play, we hit 10.0, 10.2...
           // If we seek, we hit 15.0 instantly.
-          
+
           // FIX: Logic to detect discontinuity or allow gap playback if seeked.
           // Assert that we do NOT call playVideo (reload)
           expect(callbacks.playVideo).not.toHaveBeenCalled();
@@ -712,7 +745,7 @@ describe('PlayerCore', () => {
       it('saves loop mode when toggled', () => {
           core.toggleLoop(); // Loop Track
           expect(callbacks.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ loopMode: LOOP_TRACK }));
-          
+
           core.toggleLoop(); // Loop Stream
           expect(callbacks.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ loopMode: LOOP_STREAM }));
       });
@@ -748,17 +781,17 @@ describe('PlayerCore', () => {
               yapMode: 'true',
               lastTime: '123.45'
           });
-          
+
           const newCore = new PlayerCore(callbacks);
           newCore.init(MOCK_SEGMENTS);
-          
+
           expect(newCore.shuffleMode).toBe(true);
           expect(newCore.loopMode).toBe(LOOP_STREAM);
           expect(newCore.vIdx).toBe(2);
           expect(newCore.yapMode).toBe(true);
           expect(newCore.getStartSeconds()).toBe(123.45);
       });
-      
+
       it('saves current time when saveState is called', () => {
           core.saveState(100.5);
           expect(callbacks.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ lastTime: '100.50' }));
@@ -832,11 +865,11 @@ describe('PlayerCore', () => {
         // Missing
         callbacks.getSettings = () => ({});
         expect(core.getStartSeconds()).toBe(0);
-        
+
         // Invalid string
         callbacks.getSettings = () => ({ lastTime: "NaN" });
         expect(core.getStartSeconds()).toBe(0);
-        
+
         // Negative
         callbacks.getSettings = () => ({ lastTime: "-10" });
         expect(core.getStartSeconds()).toBe(0);
