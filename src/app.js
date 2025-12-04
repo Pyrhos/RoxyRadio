@@ -29,10 +29,18 @@ const loopLabels = ['None', 'Track', 'Stream'];
 const loopIcons = ['./loop.png', './loop-active-track.png', './loop-active.png'];
 const loopAlts = ['Loop off', 'Loop track', 'Loop stream'];
 
-// Cache button elements
+// Cache DOM elements
+const overlay = document.getElementById('overlay');
+const btnStart = document.getElementById('start');
+const btnPrevStream = document.getElementById('prev-stream');
+const btnNextStream = document.getElementById('next-stream');
+const btnPrevSong = document.getElementById('prev-song');
+const btnNextSong = document.getElementById('next-song');
 const btnYap = document.getElementById('yap-btn');
 const btnLoop = document.getElementById('loop-btn');
 const btnShuffle = document.getElementById('shuffle-btn');
+const btnSearch = document.getElementById('search-btn');
+const btnDuplicates = document.getElementById('duplicates-btn');
 const iconYap = document.getElementById('yap-icon');
 const iconLoop = document.getElementById('loop-icon');
 
@@ -40,6 +48,10 @@ const statusEl = document.getElementById('status');
 const statusTextEl = document.getElementById('status-text');
 const statusPanel = document.getElementById('status-panel');
 const statusSongList = document.getElementById('status-song-list');
+
+const modal = document.getElementById('modal-overlay');
+const searchInput = document.getElementById('search-input');
+const resultsContainer = document.getElementById('search-results');
 let statusPanelStreamId = '';
 let statusPanelSongCount = 0;
 let statusPanelOpen = false;
@@ -304,7 +316,7 @@ function maybeStartPlayback() {
 }
 
 function startPlaybackInternal() {
-    document.getElementById('overlay').style.display = 'none';
+    overlay.style.display = 'none';
 
     const savedTime = core.getStartSeconds();
     const resumeTime = core.normalizeResumeTime(savedTime);
@@ -385,16 +397,16 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
 }
 
 // ======== UI WIRES ========
-document.getElementById('prev-stream').addEventListener('click', (event) => {
+btnPrevStream.addEventListener('click', (event) => {
     // Shift+click bypasses history and goes to actual previous stream (when shuffle is ON)
     if (core.prevStream({ skipHistory: event.shiftKey })) loadCurrentContent(true);
 });
 
-document.getElementById('next-stream').addEventListener('click', () => {
+btnNextStream.addEventListener('click', () => {
     if (core.nextStream()) loadCurrentContent(true);
 });
 
-document.getElementById('prev-song').addEventListener('click', () => {
+btnPrevSong.addEventListener('click', () => {
     const curTime = player ? player.getCurrentTime() : 0;
     const action = core.prevSong(curTime);
     if (action.type === 'load') {
@@ -407,28 +419,26 @@ document.getElementById('prev-song').addEventListener('click', () => {
     }
 });
 
-document.getElementById('next-song').addEventListener('click', () => {
+btnNextSong.addEventListener('click', () => {
     const curTime = player.getCurrentTime();
     const action = core.nextSong(curTime);
     if (action.type === 'load') loadCurrentContent(true);
     if (action.type === 'seek') core.cb.seekTo(action.time);
 });
 
-document.getElementById('loop-btn').addEventListener('click', () => {
+btnLoop.addEventListener('click', () => {
     core.toggleLoop();
     updateButtons();
 });
 
-document.getElementById('shuffle-btn').addEventListener('click', () => {
+btnShuffle.addEventListener('click', () => {
     core.toggleShuffle();
     updateButtons();
 });
 
-const searchBtn = document.getElementById('search-btn');
-const duplicatesBtn = document.getElementById('duplicates-btn');
 let modalToggleTime = 0;
-if (searchBtn) {
-    searchBtn.addEventListener('click', () => {
+if (btnSearch) {
+    btnSearch.addEventListener('click', () => {
         const now = Date.now();
         if (now - modalToggleTime < 400) return; // Debounce rapid clicks
         modalToggleTime = now;
@@ -436,8 +446,8 @@ if (searchBtn) {
     });
 }
 
-if (duplicatesBtn && fuse) {
-    duplicatesBtn.addEventListener('click', () => {
+if (btnDuplicates && fuse) {
+    btnDuplicates.addEventListener('click', () => {
         if (!duplicateSearchName) return;
         if (!modal.classList.contains('open')) {
             toggleModal();
@@ -461,7 +471,7 @@ if (statusEl) {
     });
 }
 
-document.getElementById('yap-btn').addEventListener('click', () => {
+btnYap.addEventListener('click', () => {
     core.toggleYap();
     updateButtons();
 
@@ -492,7 +502,7 @@ document.getElementById('yap-btn').addEventListener('click', () => {
     playVideoAt(stream, t, endSeconds);
 });
 
-document.getElementById('start').addEventListener('click', () => requestStartPlayback());
+btnStart.addEventListener('click', () => requestStartPlayback());
 
 function setStatus(msg) {
     if (!statusTextEl) return;
@@ -704,24 +714,21 @@ function syncStatusPanelActiveState(currentTime) {
 }
 
 // ======== SEARCH LOGIC ========
-const modal = document.getElementById('modal-overlay');
-const searchInput = document.getElementById('search-input');
-const resultsContainer = document.getElementById('search-results');
 let lastShiftTime = 0;
 
 function updateSearchButtonFullscreenVisibility() {
-    if (!searchBtn) return;
+    if (!btnSearch) return;
     const isFullscreen =
         document.fullscreenElement ||
         document.webkitFullscreenElement ||
         document.mozFullScreenElement ||
         document.msFullscreenElement;
 
-    searchBtn.style.display = isFullscreen ? 'none' : 'flex';
+    btnSearch.style.display = isFullscreen ? 'none' : 'flex';
 
-    if (duplicatesBtn) {
+    if (btnDuplicates) {
         if (isFullscreen) {
-            duplicatesBtn.style.display = 'none';
+            btnDuplicates.style.display = 'none';
         } else {
             // Restore visibility based on current song / duplicate state
             updateDuplicateButtonForCurrentSong();
@@ -921,13 +928,13 @@ function handleListKeyEvent(event, { currentIndex, totalItems, onMove, onSelect 
 }
 
 function updateDuplicateButtonForCurrentSong() {
-    if (!duplicatesBtn || !playlistReady) return;
+    if (!btnDuplicates || !playlistReady) return;
 
     const stream = core.getCurrentStream();
     const song = core.getCurrentSong();
 
     if (!stream || !song || !song.name) {
-        duplicatesBtn.style.display = 'none';
+        btnDuplicates.style.display = 'none';
         duplicateSearchName = '';
         return;
     }
@@ -937,7 +944,7 @@ function updateDuplicateButtonForCurrentSong() {
     const entry = duplicateNameIndex.get(key);
 
     if (!entry || entry.count <= 1) {
-        duplicatesBtn.style.display = 'none';
+        btnDuplicates.style.display = 'none';
         duplicateSearchName = '';
         return;
     }
@@ -945,11 +952,11 @@ function updateDuplicateButtonForCurrentSong() {
     const otherCount = entry.count - 1;
 
     duplicateSearchName = entry.baseName || baseName;
-    duplicatesBtn.style.display = 'flex';
-    const countSpan = duplicatesBtn.querySelector('.note-count');
+    btnDuplicates.style.display = 'flex';
+    const countSpan = btnDuplicates.querySelector('.note-count');
     if (countSpan) {
         countSpan.textContent = String(otherCount);
     }
-    duplicatesBtn.title = `Search other versions of "${duplicateSearchName}"`;
+    btnDuplicates.title = `Search other versions of "${duplicateSearchName}"`;
 }
 
