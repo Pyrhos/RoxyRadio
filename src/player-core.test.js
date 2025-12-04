@@ -287,6 +287,39 @@ describe('PlayerCore', () => {
           const text = core.getStatusText(15);
           expect(text).toContain('Next: S1T2');
       });
+
+      it('does not show "Next: first song" during transitions when rIdx indicates later song', () => {
+          // Bug fix: During video loading/transitions (especially in background tabs),
+          // getCurrentTime() may return 0 or stale values. If rIdx already points to
+          // a later song, we should NOT show "Next: first song".
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] },
+              { name: 'S1T3', range: [50, 60] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 2; // Navigation already set us to song 3
+
+          // Simulate transition state: currentTime reports 0 (before first song at 10)
+          const text = core.getStatusText(0);
+
+          // Should NOT show "Next: S1T1" - instead should show current song based on rIdx
+          expect(text).not.toContain('Next: S1T1');
+          expect(text).toContain('S1T3');
+          expect(text).toContain('(3/3)');
+      });
+
+      it('still shows "Next: first song" when legitimately before first song', () => {
+          core.playlist[0].songs = [
+              { name: 'S1T1', range: [10, 20] },
+              { name: 'S1T2', range: [30, 40] }
+          ];
+          core.vIdx = 0;
+          core.rIdx = 0; // rIdx confirms we're at the start
+
+          const text = core.getStatusText(5); // Before first song
+          expect(text).toContain('Next: S1T1');
+      });
   });
 
   describe('getActiveSongName helper', () => {

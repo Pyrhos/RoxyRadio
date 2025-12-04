@@ -582,6 +582,10 @@ export class PlayerCore {
       // In Yap mode, or if user sought manually, rIdx might not match time
       // We should find if the currentTime lands in any gap or outside bounds.
       if (currentTime < songs[0].range[0]) {
+          // Avoid "Next: first song" flashing between songs
+          if (this.rIdx > 0 && this.rIdx < songs.length) {
+              return null;
+          }
           const text = `Next: ${songs[0].name}`;
           const info = `(1/${songs.length})`;
           return `${text} ${info}${suffix}`;
