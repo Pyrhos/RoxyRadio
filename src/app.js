@@ -25,6 +25,9 @@ let searchSelIdx = 0;
 let duplicateNameIndex = new Map();
 let duplicateSearchName = '';
 
+// URL parameter override (YouTube-style ?v= and ?t= params)
+let urlOverride = null;
+
 const loopLabels = ['None', 'Track', 'Stream'];
 const loopIcons = ['./loop.png', './loop-active-track.png', './loop-active.png'];
 const loopAlts = ['Loop off', 'Loop track', 'Loop stream'];
@@ -191,6 +194,54 @@ window.addEventListener('beforeunload', () => {
     core.saveState(Number.isFinite(time) ? time : 0);
 });
 
+// ======== URL PARAMETER PARSING ========
+function parseUrlParams() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const videoId = params.get('v');
+        const timestamp = params.get('t');
+
+        if (!videoId) return null;
+
+        // Find the stream index by videoId
+        const streamIdx = core.playlist.findIndex(s => s.videoId === videoId);
+        if (streamIdx === -1) {
+            console.log(`[URL] v=${videoId} not found in playlist, ignoring`);
+            return null;
+        }
+
+        const result = { streamIdx, time: null };
+
+        // Parse timestamp if provided
+        if (timestamp !== null) {
+            const t = parseFloat(timestamp);
+            if (Number.isFinite(t) && t >= 0) {
+                const stream = core.playlist[streamIdx];
+
+                // Validate timestamp is within outer bounds
+                if (stream.songs && stream.songs.length > 0) {
+                    const firstStart = stream.songs[0].range[0];
+                    const lastEnd = stream.songs[stream.songs.length - 1].range[1];
+
+                    if (t >= firstStart && t <= lastEnd) {
+                        result.time = t;
+                    } else {
+                        console.log(`[URL] t=${t} is outside segment bounds [${firstStart}, ${lastEnd}], ignoring timestamp`);
+                    }
+                } else {
+                    // Rule 0 stream (no songs array) - accept any non-negative timestamp
+                    result.time = t;
+                }
+            }
+        }
+
+        return result;
+    } catch (err) {
+        console.warn('[URL] Failed to parse URL parameters:', err.message);
+        return null;
+    }
+}
+
 // ======== LOAD SEGMENTS ========
 initializePlaylist();
 
@@ -199,6 +250,15 @@ function initializePlaylist() {
         core.init(segmentsData); // Core handles the filtering logic
 
         if (!core.playlist.length) throw new Error('Empty playlist');
+
+        // Check URL params to override saved state (YouTube-style ?v= and ?t=)
+        urlOverride = parseUrlParams();
+        if (urlOverride) {
+            core.vIdx = urlOverride.streamIdx;
+            core.rIdx = 0;
+            console.log(`[URL] Jumping to stream index ${urlOverride.streamIdx}` +
+                (urlOverride.time !== null ? ` at t=${urlOverride.time}` : ''));
+        }
 
         // Update buttons state based on core init (e.g. persisted Yap mode)
         updateButtons();
@@ -318,10 +378,23 @@ function maybeStartPlayback() {
 function startPlaybackInternal() {
     overlay.style.display = 'none';
 
-    const savedTime = core.getStartSeconds();
-    const resumeTime = core.normalizeResumeTime(savedTime);
-    const override = resumeTime > 0 ? resumeTime : null;
-    loadCurrentContent(true, override);
+    let startTime = null;
+
+    // URL param override takes priority over saved state
+    if (urlOverride) {
+        if (urlOverride.time !== null) {
+            startTime = core.normalizeResumeTime(urlOverride.time);
+        }
+        // When URL specifies a video, don't use saved time from a different video
+        // startTime stays null if no valid t= was provided, which loads from song start
+        urlOverride = null;
+    } else {
+        const savedTime = core.getStartSeconds();
+        const resumeTime = core.normalizeResumeTime(savedTime);
+        startTime = resumeTime > 0 ? resumeTime : null;
+    }
+
+    loadCurrentContent(true, startTime);
 
     stopTickLoop();
     evaluateTickLoop();
