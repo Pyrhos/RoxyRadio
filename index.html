@@ -5,35 +5,57 @@
   <title>Rourin Radio!</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-  <!-- SEO -->
   <meta name="description" content="Enchanting singing of the VTuber Roca Rourin. Come take a listen!" />
-  <!--  <meta name="robots" content="index,follow" />-->
-  <meta name="robots" content="noindex, nofollow" />
+  <meta name="robots" content="index, follow" />
   <meta name="application-name" content="Rourin Radio!" />
+  <meta name="keywords" content="Roca Rourin, VTuber, karaoke, singing, covers, idol, music, radio, streaming" />
 
-  <link rel="canonical" href="https://pyrhos.github.io/RoxyRadio/" />
+  <link rel="canonical" href="https://rourin.am/" />
 
   <meta name="theme-color" content="#7659B9" />
 
-  <!-- Open Graph / Discord / social sharing -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Rourin Radio!" />
   <meta property="og:title" content="Get ready to Rock 'n Roll!" />
   <meta property="og:description" content="Enchanting singing of the VTuber Roca Rourin. Come take a listen!" />
-  <meta property="og:url" content="https://pyrhos.github.io/RoxyRadio/" />
-  <meta property="og:image" content="https://pyrhos.github.io/RoxyRadio/og-image.png" />
+  <meta property="og:url" content="https://rourin.am/" />
+  <meta property="og:image" content="https://rourin.am/og-image.png" />
   <meta property="og:image:alt" content="Rourin Radio Logo" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="en_US" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Rourin Radio!" />
-  <meta name="twitter:url" content="https://pyrhos.github.io/RoxyRadio/" />
+  <meta name="twitter:url" content="https://rourin.am/" />
   <meta name="twitter:description" content="Enchanting singing of the VTuber Roca Rourin. Come take a listen!" />
-  <meta name="twitter:image" content="https://pyrhos.github.io/RoxyRadio/og-image.png" />
+  <meta name="twitter:image" content="https://rourin.am/og-image.png" />
 
-  <!-- Favicons -->
   <link rel="icon" type="image/png" sizes="16x16" href="./16.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="./32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="./48.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./180.png" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Rourin Radio!",
+    "url": "https://rourin.am/",
+    "description": "Enchanting singing of the VTuber Roca Rourin. Come take a listen!",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "Any",
+    "author": {
+      "@type": "Person",
+      "name": "Pyrhos"
+    },
+    "about": {
+      "@type": "Person",
+      "name": "Roca Rourin",
+      "url": "https://www.youtube.com/@RocaRourin"
+    }
+  }
+  </script>
 
   <!-- Preload button icons -->
   <link rel="preload" as="image" href="./next-stream.png" />
@@ -51,7 +73,7 @@
     
   </head>
   <body>
-  <div class="wrap">
+  <main class="wrap">
     <div id="player-container">
         <div id="player"></div>
         <div id="overlay"><button id="start">▶ Start</button></div>
@@ -97,27 +119,24 @@
     </div>
 
     <div id="status-area">
-      <div id="status-panel" aria-hidden="true">
+      <div id="status-panel" aria-hidden="true" inert>
         <ol id="status-song-list"></ol>
       </div>
       <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel"><span class="status-icon">𝄞</span><span id="status-text">Loading…</span></div>
     </div>
-  </div>
+  </main>
 
-  <!-- Search Modal -->
-  <div id="modal-overlay">
+  <div id="modal-overlay" inert>
     <div id="modal-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
       <div id="comic-box">
         <div id="comic-title">Search-O-Matic!</div>
-          <!--suppress HtmlFormInputWithoutLabel -->
           <input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
         <div id="search-results"></div>
       </div>
     </div>
   </div>
 
-  <!-- YouTube IFrame API -->
   <script src="https://www.youtube.com/iframe_api"></script>
   
   <script type="module" src="./src/app.js"></script>
