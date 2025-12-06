@@ -278,7 +278,7 @@ button.active {
   /* Make buttons fill their grid cells */
   #buttons button.has-icon {
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
     box-sizing: border-box;
     padding: 10px 16px;
     margin-top: 10px;
