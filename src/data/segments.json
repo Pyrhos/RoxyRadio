@@ -80,7 +80,7 @@
         ]
       },
       {
-        "name": "Cry Me a River - Ella Fitzgerald",
+        "name": "Cry Me a River - Julie London",
         "range": [
           5010,
           5160
@@ -136,29 +136,29 @@
       {
         "name": "I Put a Spell on You - Nina Simone",
         "range": [
-          457,
-          612
+          460,
+          615
         ]
       },
       {
         "name": "Thriller - Michael Jackson",
         "range": [
-          636,
-          993
+          658,
+          1013
         ]
       },
       {
         "name": "Time Warp - The Rocky Horror Picture Show",
         "range": [
-          1031,
-          1230
+          1054,
+          1245
         ]
       },
       {
         "name": "Kuusou Mesorogiwi - Yōsei Teikoku (Mirai Nikki OP)",
         "range": [
-          1240,
-          1480
+          1266,
+          1501
         ]
       }
     ]
@@ -184,18 +184,18 @@
         "name": "Californication - Red Hot Chili Peppers",
         "range": [
           878,
-          1199
+          1212
         ]
       },
       {
         "name": "Man in the Mirror - Michael Jackson",
         "range": [
           1340,
-          1659
+          1581
         ]
       },
       {
-        "name": "What's Up? - 4 Non Blondes",
+        "name": "What's Up? - 4 Non Blondes (improv)",
         "range": [
           1815,
           1848
@@ -205,28 +205,28 @@
         "name": "Nothing's gonna change my love for you - George Benson",
         "range": [
           1860,
-          2100
+          2136
         ]
       },
       {
         "name": "Shackles - Mary Mary (Praise You)",
         "range": [
           2257,
-          2454
+          2409
         ]
       },
       {
         "name": "That's What I Like - Bruno Mars",
         "range": [
           2608,
-          2814
+          2755
         ]
       },
       {
         "name": "Payphone - Maroon 5",
         "range": [
           3016,
-          3247
+          3227
         ]
       },
       {
@@ -240,70 +240,70 @@
         "name": "If I ain't got you - Alicia Keys",
         "range": [
           3795,
-          4023
+          4020
         ]
       },
       {
         "name": "Unbreak my heart - Toni Braxton",
         "range": [
           4120,
-          4390
+          4370
         ]
       },
       {
         "name": "Kiss from a rose - Seal",
         "range": [
           4463,
-          4750
+          4763
         ]
       },
       {
         "name": "La Isla Bonita - Madonna",
         "range": [
           4850,
-          5092
+          5078
         ]
       },
       {
         "name": "Every Breath You Take - The Police",
         "range": [
           5168,
-          5421
+          5412
         ]
       },
       {
         "name": "Please please please - Sabrina Carpenter",
         "range": [
           5560,
-          5740
+          5748
         ]
       },
       {
         "name": "Believe - Cher",
         "range": [
-          5880,
-          6119
+          5879,
+          6115
         ]
       },
       {
         "name": "When she loved me - Sarah McLachlan",
         "range": [
           6215,
-          6399
+          6396
         ]
       },
       {
-        "name": "At last - Etta James",
+        "name": "At Last - Etta James",
         "range": [
           6442,
-          6622
+          6611
         ]
       },
       {
         "name": "Campfire Song Song - SpongeBob SquarePants",
         "range": [
           6731,
-          6771
+          6792
         ]
       }
     ]
@@ -328,21 +328,21 @@
       {
         "name": "Enter Sandman - Metallica",
         "range": [
-          894,
-          1225
+          898,
+          1235
         ]
       },
       {
         "name": "Helter Skelter - The Beatles",
         "range": [
-          1492,
-          1761
+          1495,
+          1727
         ]
       },
       {
         "name": "In the End - Linkin Park",
         "range": [
-          1862,
+          1867,
           2078
         ]
       },
@@ -356,7 +356,7 @@
       {
         "name": "Poundcake - Van Halen",
         "range": [
-          2834,
+          2839,
           3160
         ]
       },
@@ -364,28 +364,28 @@
         "name": "Sweet Child O' Mine - Guns N' Roses",
         "range": [
           3337,
-          3692
+          3681
         ]
       },
       {
         "name": "Black Hole Sun - Soundgarden",
         "range": [
-          3782,
-          4100
+          3785,
+          4106
         ]
       },
       {
         "name": "A Hard Road - Black Sabbath",
         "range": [
-          4207,
-          4571
+          4213,
+          4566
         ]
       },
       {
         "name": "Savior - Rise Against",
         "range": [
-          4801,
-          5043
+          4808,
+          5055
         ]
       }
     ]
@@ -398,105 +398,105 @@
         "name": "Hello - Lionel Richie",
         "range": [
           952,
-          1227
+          1199
         ]
       },
       {
         "name": "Take On Me - a-ha",
         "range": [
           1296,
-          1541
+          1526
         ]
       },
       {
         "name": "Forever Young - Alphaville",
         "range": [
           1660,
-          1900
+          1877
         ]
       },
       {
         "name": "Careless Whisper - George Michael",
         "range": [
-          2020,
-          2340
+          2023,
+          2328
         ]
       },
       {
         "name": "It's Raining Men - The Weather Girls",
         "range": [
           2545,
-          2805
+          2765
         ]
       },
       {
         "name": "I Love Rock 'n' Roll - Joan Jett",
         "range": [
-          2880,
-          3070
+          2882,
+          3060
         ]
       },
       {
         "name": "Beat It - Michael Jackson",
         "range": [
           3135,
-          3410
+          3443
         ]
       },
       {
         "name": "What a Feeling - Irene Cara (Flashdance)",
         "range": [
           3508,
-          3758
+          3746
         ]
       },
       {
         "name": "Girls Just Want to Have Fun - Cyndi Lauper",
         "range": [
           3857,
-          4107
+          4079
         ]
       },
       {
         "name": "Call Me - Blondie",
         "range": [
           4116,
-          4346
+          4336
         ]
       },
       {
         "name": "9 to 5 - Dolly Parton",
         "range": [
           4427,
-          4607
+          4612
         ]
       },
       {
         "name": "Summer of '69 - Bryan Adams",
         "range": [
           4669,
-          4899
+          4873
         ]
       },
       {
         "name": "Alone - Heart",
         "range": [
           4974,
-          5209
+          5190
         ]
       },
       {
         "name": "Material Girl - Madonna",
         "range": [
           5252,
-          5512
+          5484
         ]
       },
       {
         "name": "I Wanna Dance with Somebody - Whitney Houston",
         "range": [
           5736,
-          6046
+          6028
         ]
       }
     ]
@@ -509,7 +509,7 @@
         "name": "I Don't Want to Set the World on Fire - The Ink Spots",
         "range": [
           1072,
-          1252
+          1259
         ]
       },
       {
@@ -522,64 +522,64 @@
       {
         "name": "You Always Hurt the One You Love - The Mills Brothers",
         "range": [
-          1916,
-          2111
+          1907,
+          2098
         ]
       },
       {
-        "name": "I Can't Give You Anything but Love - Billie Holiday",
+        "name": "I Can't Give You Anything but Love - Jimmy McHugh & Dorothy Fields",
         "range": [
           2209,
-          2354
+          2365
         ]
       },
       {
-        "name": "Summertime - Ella Fitzgerald",
+        "name": "Summertime - George Gershwin",
         "range": [
-          2587,
-          2757
+          2573,
+          2735
         ]
       },
       {
         "name": "Moanin' - Art Blakey",
         "range": [
           2936,
-          3116
+          3124
         ]
       },
       {
-        "name": "My Favorite Things - Julie Andrews",
+        "name": "My Favorite Things - Rodgers & Hammerstein",
         "range": [
-          3409,
-          3574
+          3404,
+          3591
         ]
       },
       {
         "name": "I'm Making Believe - Ella Fitzgerald",
         "range": [
           3653,
-          3803
+          3844
         ]
       },
       {
         "name": "Where or When - Peggy Lee",
         "range": [
-          3950,
-          4130
+          3936,
+          4220
         ]
       },
       {
         "name": "Ain't Misbehavin' - Fats Waller",
         "range": [
-          4392,
-          4572
+          4395,
+          4633
         ]
       },
       {
         "name": "Cry Me a River - Julie London",
         "range": [
           4778,
-          5108
+          5030
         ]
       }
     ]
@@ -605,63 +605,63 @@
         "name": "I'd Rather Go Blind - Etta James",
         "range": [
           1011,
-          1260
+          1171
         ]
       },
       {
         "name": "Still Got the Blues - Gary Moore",
         "range": [
           1303,
-          1693
+          1568
         ]
       },
       {
         "name": "Rock Me Baby - B.B. King",
         "range": [
           1731,
-          1931
+          1907
         ]
       },
       {
         "name": "Hound Dog - Elvis Presley",
         "range": [
           2002,
-          2152
+          2171
         ]
       },
       {
         "name": "Hallelujah I Love Her So - Ray Charles",
         "range": [
           2306,
-          2481
+          2462
         ]
       },
       {
         "name": "Five Long Years - Eddie Boyd",
         "range": [
           2596,
-          2881
+          2874
         ]
       },
       {
         "name": "Roadhouse Blues - The Doors",
         "range": [
           3040,
-          3300
+          3284
         ]
       },
       {
         "name": "The Thrill Is Gone - B.B. King",
         "range": [
           3359,
-          3704
+          3635
         ]
       },
       {
         "name": "Hit the Road Jack - Ray Charles",
         "range": [
-          3819,
-          3954
+          3824,
+          3936
         ]
       }
     ]
@@ -673,29 +673,29 @@
       {
         "name": "Jump Up, Super Star! - Kate Higgins (Super Mario Odyssey)",
         "range": [
-          1077,
-          1323
+          1078,
+          1321
         ]
       },
       {
         "name": "Beneath the Mask - Lyn (Persona 5)",
         "range": [
-          1426,
-          1706
+          1428,
+          1704
         ]
       },
       {
         "name": "Snake Eater - Cynthia Harrell (Metal Gear Solid 3)",
         "range": [
           1844,
-          2022
+          2018
         ]
       },
       {
         "name": "Want You Gone - Ellen McLain (Portal 2)",
         "range": [
           2262,
-          2404
+          2400
         ]
       },
       {
@@ -716,34 +716,27 @@
         "name": "Rivers in the Desert - Lyn (Persona 5)",
         "range": [
           3386,
-          3701
+          3699
         ]
       },
       {
         "name": "Baka Mitai - Ryu ga Gotoku (Yakuza 0, short ver.)",
         "range": [
           3789,
-          3879
-        ]
-      },
-      {
-        "name": "Baka Mitai - Ryu ga Gotoku (Yakuza 0, wrong key)",
-        "range": [
-          4017,
-          4077
+          3900
         ]
       },
       {
         "name": "Baka Mitai - Ryu ga Gotoku (Yakuza 0)",
         "range": [
           4106,
-          4394
+          4396
         ]
       },
       {
         "name": "The Edge of Dawn - Caro (Fire Emblem: Three Houses)",
         "range": [
-          4493,
+          4531,
           4828
         ]
       },
@@ -758,21 +751,21 @@
         "name": "Song of the Ancients - Emi Evans (NieR, 1st voice)",
         "range": [
           5467,
-          5657
+          5627
         ]
       },
       {
         "name": "Song of the Ancients - Emi Evans (NieR, Self Duet)",
         "range": [
           5676,
-          5866
+          5835
         ]
       },
       {
         "name": "Last Surprise - Lyn (Persona 5)",
         "range": [
           6041,
-          6276
+          6273
         ]
       }
     ]
@@ -785,32 +778,32 @@
         "name": "Careless Whisper - George Michael (Jazz ver.)",
         "range": [
           1575,
-          1815
+          1790
         ]
       },
       {
         "name": "Why Don't You Do Right - Peggy Lee",
         "range": [
           2280,
-          2428
+          2431
         ]
       },
       {
         "name": "I Can't Give You Anything but Love - Adelaide Hall",
         "range": [
           2622,
-          2767
+          2780
         ]
       },
       {
         "name": "Lovefool - The Cardigans (Jazz ver.)",
         "range": [
           2910,
-          3120
+          3148
         ]
       },
       {
-        "name": "Diamonds Are A Girl's Best Friend - Marilyn Monroe",
+        "name": "Diamonds Are a Girl's Best Friend - Marilyn Monroe",
         "range": [
           3312,
           3522
@@ -820,14 +813,14 @@
         "name": "My Baby Just Cares For Me - Nina Simone",
         "range": [
           3650,
-          3867
+          3866
         ]
       },
       {
         "name": "Seven Nation Army - The White Stripes (Jazz ver.)",
         "range": [
-          4030,
-          4270
+          4020,
+          4266
         ]
       },
       {
@@ -840,36 +833,36 @@
       {
         "name": "Beneath the Mask - Lyn (Persona 5)",
         "range": [
-          4720,
-          5000
+          4718,
+          5001
         ]
       },
       {
         "name": "L-O-V-E - Nat King Cole",
         "range": [
           5115,
-          5268
+          5303
         ]
       },
       {
         "name": "Creep - Radiohead (Jazz ver.)",
         "range": [
-          5460,
-          5750
+          5459,
+          5745
         ]
       },
       {
-        "name": "My Funny Valentine - Chet Baker",
+        "name": "My Funny Valentine - Rodgers & Hart",
         "range": [
           6070,
-          6248
+          6312
         ]
       },
       {
         "name": "Pinky and the Brain - Animaniacs (Jazz ver.)",
         "range": [
           6528,
-          6708
+          6701
         ]
       }
     ]
@@ -881,29 +874,29 @@
       {
         "name": "Rock and Roll - Led Zeppelin",
         "range": [
-          372,
-          592
+          373,
+          593
         ]
       },
       {
         "name": "Don't Stop Believin' - Journey",
         "range": [
-          671,
-          922
+          661,
+          928
         ]
       },
       {
         "name": "Nothing Else Matters - Metallica",
         "range": [
-          996,
-          1384
+          981,
+          1361
         ]
       },
       {
         "name": "The Diary of Jane - Breaking Benjamin",
         "range": [
           1425,
-          1625
+          1622
         ]
       },
       {
@@ -923,112 +916,112 @@
         "name": "Landslide - Fleetwood Mac",
         "range": [
           832,
-          1102
+          1030
         ]
       },
       {
         "name": "Summertime - George Gershwin",
         "range": [
           1145,
-          1340
+          1309
         ]
       },
       {
         "name": "La Isla Bonita - Madonna",
         "range": [
           1460,
-          1715
+          1687
         ]
       },
       {
         "name": "Believe - Cher (Acoustic)",
         "range": [
           1734,
-          1989
+          1976
         ]
       },
       {
         "name": "Take It Easy - Eagles",
         "range": [
           2068,
-          2293
+          2271
         ]
       },
       {
         "name": "Waiting for Love - Avicii",
         "range": [
           2330,
-          2575
+          2520
         ]
       },
       {
         "name": "Nothing - Bruno Major",
         "range": [
           2595,
-          2820
+          2827
         ]
       },
       {
         "name": "Dreams - Fleetwood Mac",
         "range": [
-          2933,
-          3203
+          2932,
+          3186
         ]
       },
       {
         "name": "Drops of Jupiter - Train",
         "range": [
-          3279,
-          3554
+          3281,
+          3539
         ]
       },
       {
         "name": "Jezebel - Sade",
         "range": [
           3596,
-          3941
+          3920
         ]
       },
       {
         "name": "Make You Feel My Love - Adele",
         "range": [
           3998,
-          4223
+          4211
         ]
       },
       {
-        "name": "My Favorite Things - The Sound of Music",
+        "name": "My Favorite Things - Rodgers & Hammerstein",
         "range": [
-          4284,
-          4439
+          4285,
+          4497
         ]
       },
       {
         "name": "Heal the World - Michael Jackson",
         "range": [
           4564,
-          4946
+          4901
         ]
       },
       {
         "name": "Dani California - Red Hot Chili Peppers",
         "range": [
           4946,
-          5246
+          5224
         ]
       },
       {
         "name": "Angels - Robbie Williams",
         "range": [
-          5340,
-          5625
+          5346,
+          5620
         ]
       },
       {
         "name": "It's Beginning to Look a Lot Like Christmas - Meredith Willson",
         "range": [
           5748,
-          5943
+          5932
         ]
       }
     ]
@@ -1041,21 +1034,21 @@
         "name": "Almost There - Anika Noni Rose",
         "range": [
           1103,
-          1247
+          1248
         ]
       },
       {
         "name": "Careless Whisper - Postmodern Jukebox (Jazz ver.)",
         "range": [
-          1370,
-          1610
+          1374,
+          1595
         ]
       },
       {
         "name": "Viva La Vida - Coldplay",
         "range": [
-          1799,
-          2041
+          1803,
+          2046
         ]
       },
       {
@@ -1068,64 +1061,64 @@
       {
         "name": "Dreams - Fleetwood Mac",
         "range": [
-          2634,
+          2637,
           2891
         ]
       },
       {
         "name": "Beneath the Mask - Lyn (Persona 5)",
         "range": [
-          3018,
-          3298
+          3021,
+          3296
         ]
       },
       {
         "name": "The End of the World - Skeeter Davis",
         "range": [
           3596,
-          3754
+          3826
         ]
       },
       {
         "name": "Plastic Love - Mariya Takeuchi",
         "range": [
-          3984,
-          4275
+          3987,
+          4263
         ]
       },
       {
         "name": "Sixteen Tons - Tennessee Ernie Ford",
         "range": [
           4361,
-          4517
+          4520
         ]
       },
       {
         "name": "Good Old Fashioned Lover Boy - Queen",
         "range": [
           4642,
-          4815
+          4823
         ]
       },
       {
-        "name": "La Vie en Rose - Louis Armstrong",
+        "name": "La Vie en Rose - Edith Piaf",
         "range": [
-          4927,
+          4926,
           5031
         ]
       },
       {
         "name": "Somebody to Love - Queen",
         "range": [
-          5123,
-          5419
+          5125,
+          5425
         ]
       },
       {
-        "name": "My Funny Valentine - Frank Sinatra",
+        "name": "My Funny Valentine - Rodgers & Hart",
         "range": [
           5684,
-          5862
+          5932
         ]
       }
     ]
@@ -1137,15 +1130,15 @@
       {
         "name": "Fever - Peggy Lee",
         "range": [
-          425,
-          625
+          429,
+          629
         ]
       },
       {
         "name": "Dream a Little Dream of Me - Ella Fitzgerald & Louis Armstrong",
         "range": [
           679,
-          864
+          892
         ]
       },
       {
@@ -1166,21 +1159,21 @@
         "name": "Fly Me to the Moon - Frank Sinatra",
         "range": [
           1458,
-          1605
+          1606
         ]
       },
       {
         "name": "Feeling Good - Nina Simone",
         "range": [
           1641,
-          1815
+          1875
         ]
       },
       {
         "name": "At Last - Etta James",
         "range": [
           1892,
-          2072
+          2070
         ]
       }
     ]
@@ -1193,14 +1186,14 @@
         "name": "Santa Claus Is Comin' to Town - Bruce Springsteen",
         "range": [
           783,
-          963
+          961
         ]
       },
       {
         "name": "Flappie - Youp van 't Hek",
         "range": [
           1184,
-          1394
+          1378
         ]
       },
       {
@@ -1794,7 +1787,7 @@
         ]
       },
       {
-        "name": "Un-Break My Heart - Toni Braxton",
+        "name": "Unbreak My Heart - Toni Braxton",
         "range": [
           2751,
           3021
@@ -2360,7 +2353,7 @@
         ]
       },
       {
-        "name": "The Beginning - ONE OK ROCK",
+        "name": "The Beginning - One Ok Rock",
         "range": [
           4239,
           4532
@@ -2788,7 +2781,7 @@
         ]
       },
       {
-        "name": "Bésame Mucho - Andrea Bocelli",
+        "name": "Besame Mucho - Consuelo Velázquez",
         "range": [
           3345,
           3637

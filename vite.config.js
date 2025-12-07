@@ -25,6 +25,9 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
       sourcemap: !isProd,
     },
+    test: {
+      environment: 'happy-dom',
+    },
   };
 });
 

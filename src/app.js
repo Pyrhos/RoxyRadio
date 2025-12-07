@@ -195,8 +195,37 @@ window.addEventListener('beforeunload', () => {
 });
 
 // ======== URL PARAMETER PARSING ========
+const PERMITTED_URL_PARAMS = ['v', 't'];
+
+function stripInvalidParams() {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const keysToRemove = [];
+
+        for (const key of params.keys()) {
+            if (!PERMITTED_URL_PARAMS.includes(key)) {
+                keysToRemove.push(key);
+            }
+        }
+
+        if (keysToRemove.length === 0) return;
+
+        for (const key of keysToRemove) {
+            params.delete(key);
+        }
+
+        const newSearch = params.toString();
+        const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+        history.replaceState(null, '', newUrl);
+    } catch (err) {
+        console.warn('[URL] Failed to strip invalid params:', err.message);
+    }
+}
+
 function parseUrlParams() {
     try {
+        stripInvalidParams();
+
         const params = new URLSearchParams(window.location.search);
         const videoId = params.get('v');
         const timestamp = params.get('t');
@@ -1033,3 +1062,24 @@ function updateDuplicateButtonForCurrentSong() {
     btnDuplicates.title = `Search other versions of "${duplicateSearchName}"`;
 }
 
+// ======== Wanted Poster ========
+const boltTrigger = document.getElementById('bolt-trigger');
+const wantedOverlay = document.getElementById('wanted-overlay');
+
+if (boltTrigger && wantedOverlay) {
+    boltTrigger.addEventListener('click', () => {
+        wantedOverlay.classList.add('open');
+    });
+
+    wantedOverlay.addEventListener('click', (e) => {
+        if (e.target === wantedOverlay) {
+            wantedOverlay.classList.remove('open');
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && wantedOverlay.classList.contains('open')) {
+            wantedOverlay.classList.remove('open');
+        }
+    });
+}
