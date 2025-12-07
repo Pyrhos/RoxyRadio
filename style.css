@@ -12,7 +12,7 @@ html, body, #app {
     height: 100%; 
     margin: 0; 
     background: #0A0B0D; /* Very dark charcoal base */
-    font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif; /* Consistent comic font */
+    font-family: 'Comic Sans MS', 'Chalkboard SE', 'Purisa', cursive, sans-serif;
 }
 
 .wrap { 
