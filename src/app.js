@@ -3,6 +3,7 @@ import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
+import { MessageQueue, validateMessages } from './message-bar.js';
 
 // ======== CONFIG ========
 const TICK_MS = 200;
@@ -1083,3 +1084,81 @@ if (boltTrigger && wantedOverlay) {
         }
     });
 }
+
+// ======== Message Bar ========
+const messageBar = document.getElementById('message-bar');
+const messageText = document.getElementById('message-text');
+const messageClose = document.getElementById('message-close');
+
+const MESSAGE_WPM = 70;
+const MESSAGE_MIN_SECONDS = 10;
+
+let messageQueueInstance = null;
+let messageTimeoutHandle = null;
+
+function showNextMessage() {
+    if (!messageBar || !messageText || !messageQueueInstance) return;
+
+    const next = messageQueueInstance.next();
+    if (!next) return;
+
+    // Trigger re-animation by briefly removing the element content
+    messageText.style.animation = 'none';
+    messageText.offsetHeight; // Force reflow
+    messageText.style.animation = '';
+    messageText.textContent = next.message;
+
+    messageTimeoutHandle = setTimeout(showNextMessage, next.duration * 1000);
+}
+
+function stopMessageCycle() {
+    if (messageTimeoutHandle) {
+        clearTimeout(messageTimeoutHandle);
+        messageTimeoutHandle = null;
+    }
+}
+
+function hideMessageBar() {
+    stopMessageCycle();
+    if (messageBar) {
+        messageBar.hidden = true;
+    }
+}
+
+async function initMessageBar() {
+    try {
+        const response = await fetch('./src/data/messages.json');
+        if (!response.ok) {
+            return;
+        }
+
+        const rawMessages = await response.json();
+        const validMessages = validateMessages(rawMessages);
+
+        if (validMessages.length === 0) {
+            console.log('[Messages] No valid messages found in messages.json');
+            return;
+        }
+
+        messageQueueInstance = new MessageQueue(validMessages, {
+            wpm: MESSAGE_WPM,
+            minSeconds: MESSAGE_MIN_SECONDS
+        });
+
+        if (messageBar) {
+            messageBar.hidden = false;
+        }
+
+        showNextMessage();
+
+        console.log(`[Messages] Loaded ${messageQueueInstance.size} messages`);
+    } catch (err) {
+        console.warn('[Messages] Failed to load messages.json:', err.message);
+    }
+}
+
+if (messageClose) {
+    messageClose.addEventListener('click', hideMessageBar);
+}
+
+setTimeout(initMessageBar, 500);

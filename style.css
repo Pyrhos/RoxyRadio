@@ -51,6 +51,82 @@ html, body, #app {
   inset: 0;
 }
 
+/* Message Bar */
+#message-bar {
+  width: 100%;
+  background: #1A1D23;
+  padding: 10px 48px 10px 16px;
+  box-sizing: border-box;
+  border-top: 3px solid #000;
+  border-bottom: 3px solid #000;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 44px;
+}
+
+#message-bar[hidden] {
+  display: none;
+}
+
+#message-text {
+  color: #F4C2C1;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 1px 1px 0 #000;
+  line-height: 1.4;
+  animation: message-fade-in 0.3s ease-out;
+}
+
+@keyframes message-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#message-close {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  background: transparent;
+  border: 2px solid #353947;
+  box-shadow: none;
+  color: #F4C2C1;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+}
+
+#message-close:hover {
+  opacity: 1;
+  background: #353947;
+  border-color: #F4C2C1;
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
+#message-close:active {
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
 /* Controls bar at bottom */
 #controls-container { 
   width: 100%; 
