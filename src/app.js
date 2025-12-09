@@ -1,6 +1,7 @@
 import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
+import messagesData from './data/messages.json';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
 import { MessageQueue, validateMessages } from './message-bar.js';
@@ -1125,15 +1126,9 @@ function hideMessageBar() {
     }
 }
 
-async function initMessageBar() {
+function initMessageBar() {
     try {
-        const response = await fetch('./src/data/messages.json');
-        if (!response.ok) {
-            return;
-        }
-
-        const rawMessages = await response.json();
-        const validMessages = validateMessages(rawMessages);
+        const validMessages = validateMessages(messagesData);
 
         if (validMessages.length === 0) {
             console.log('[Messages] No valid messages found in messages.json');
@@ -1153,7 +1148,7 @@ async function initMessageBar() {
 
         console.log(`[Messages] Loaded ${messageQueueInstance.size} messages`);
     } catch (err) {
-        console.warn('[Messages] Failed to load messages.json:', err.message);
+        console.warn('[Messages] Failed to initialize message bar:', err.message);
     }
 }
 
