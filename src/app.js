@@ -9,6 +9,7 @@ import { MessageQueue, validateMessages } from './message-bar.js';
 // ======== CONFIG ========
 const TICK_MS = 200;
 const TITLE_REFRESH_MS = 2000;
+const YAP_TOGGLE_DEBOUNCE_MS = 300;
 
 // ======== STATE ========
 let tickHandle = null;
@@ -17,6 +18,8 @@ let isReady = false;
 let playlistReady = false;
 let pendingStart = false;
 let lastKnownTime = 0;
+let modalToggleTime = 0;
+let yapToggleTime = 0;
 
 // Search State
 let fuse = null;
@@ -113,6 +116,29 @@ function seekToSafe(time, stream = core.getCurrentStream()) {
     }
     lastKnownTime = safeStart;
     updateStatus();
+}
+
+function getSafeCurrentTime() {
+    if (!player) {
+        return lastKnownTime;
+    }
+
+    const playerTime = player.getCurrentTime();
+
+    // If player returns a valid time > 0, use it and update lastKnownTime
+    if (Number.isFinite(playerTime) && playerTime > 0) {
+        lastKnownTime = playerTime;
+        return playerTime;
+    }
+
+    // If player returns 0 or invalid, prefer lastKnownTime if it's valid
+    // This guards against race conditions during video loading transitions
+    if (Number.isFinite(lastKnownTime) && lastKnownTime > 0) {
+        return lastKnownTime;
+    }
+
+    // Both are 0/invalid - return what the player says (likely 0 at stream start)
+    return playerTime;
 }
 
 function playVideoAt(stream, desiredStart, endSeconds) {
@@ -511,7 +537,7 @@ btnNextStream.addEventListener('click', () => {
 });
 
 btnPrevSong.addEventListener('click', () => {
-    const curTime = player ? player.getCurrentTime() : 0;
+    const curTime = getSafeCurrentTime();
     const action = core.prevSong(curTime);
     if (action.type === 'load') {
         loadCurrentContent(true);
@@ -524,7 +550,7 @@ btnPrevSong.addEventListener('click', () => {
 });
 
 btnNextSong.addEventListener('click', () => {
-    const curTime = player.getCurrentTime();
+    const curTime = getSafeCurrentTime();
     const action = core.nextSong(curTime);
     if (action.type === 'load') loadCurrentContent(true);
     if (action.type === 'seek') core.cb.seekTo(action.time);
@@ -540,7 +566,6 @@ btnShuffle.addEventListener('click', () => {
     updateButtons();
 });
 
-let modalToggleTime = 0;
 if (btnSearch) {
     btnSearch.addEventListener('click', () => {
         const now = Date.now();
@@ -576,10 +601,14 @@ if (statusEl) {
 }
 
 btnYap.addEventListener('click', () => {
+    const now = Date.now();
+    if (now - yapToggleTime < YAP_TOGGLE_DEBOUNCE_MS) return;
+    yapToggleTime = now;
+
     core.toggleYap();
     updateButtons();
 
-    const t = player.getCurrentTime();
+    const t = getSafeCurrentTime();
     core.syncToTime(t);
 
     if (!core.yapMode) { // Switched TO Standard

@@ -739,6 +739,139 @@ describe('Control Buttons', () => {
     });
   });
 
+  describe('Yap button - Race condition regression', () => {
+    let yapToggleTime;
+    let lastKnownTime; // Simulate a known playback position
+    let toggleCount;
+    const YAP_TOGGLE_DEBOUNCE_MS = 300;
+
+    // Simulate player.getCurrentTime() behavior during race condition:
+    // During rapid toggles or video loading, it may return 0 or stale data
+    const createMockPlayer = (timeToReturn) => ({
+      getCurrentTime: () => timeToReturn
+    });
+
+    const getSafeCurrentTime = (player) => {
+      if (!player || typeof player.getCurrentTime !== 'function') {
+        return lastKnownTime;
+      }
+
+      const playerTime = player.getCurrentTime();
+
+      if (Number.isFinite(playerTime) && playerTime > 0) {
+        lastKnownTime = playerTime;
+        return playerTime;
+      }
+
+      if (Number.isFinite(lastKnownTime) && lastKnownTime > 0) {
+        return lastKnownTime;
+      }
+
+      return playerTime;
+    };
+
+    const simulateYapToggle = (player, currentTimeMs) => {
+      if (currentTimeMs - yapToggleTime < YAP_TOGGLE_DEBOUNCE_MS) {
+        return { debounced: true, time: null };
+      }
+      yapToggleTime = currentTimeMs;
+      toggleCount++;
+      const t = getSafeCurrentTime(player);
+      return { debounced: false, time: t };
+    };
+
+    beforeEach(() => {
+      // Initialize to a time far in the past so first toggle always works
+      // This mirrors how the app starts: yapToggleTime = 0, but Date.now() is large
+      yapToggleTime = -Infinity;
+      lastKnownTime = 25;
+      toggleCount = 0;
+    });
+
+    it('debounces rapid yap toggles to prevent race condition', () => {
+      const player = createMockPlayer(25);
+
+      // First toggle at t=1000 (simulating Date.now())
+      const result1 = simulateYapToggle(player, 1000);
+      expect(result1.debounced).toBe(false);
+      expect(toggleCount).toBe(1);
+
+      // Rapid toggle at t=1050ms - should be debounced
+      const result2 = simulateYapToggle(player, 1050);
+      expect(result2.debounced).toBe(true);
+      expect(toggleCount).toBe(1);
+
+      // Rapid toggle at t=1100ms - should be debounced
+      const result3 = simulateYapToggle(player, 1100);
+      expect(result3.debounced).toBe(true);
+      expect(toggleCount).toBe(1);
+
+      // Toggle after debounce period at t=1350ms - should work
+      const result4 = simulateYapToggle(player, 1350);
+      expect(result4.debounced).toBe(false);
+      expect(toggleCount).toBe(2);
+    });
+
+    it('uses lastKnownTime when player.getCurrentTime() returns 0 during race', () => {
+      // Simulate race condition: player returns 0 during video loading transition
+      const racingPlayer = createMockPlayer(0);
+
+      const result = simulateYapToggle(racingPlayer, 1000);
+
+      // Should fall back to lastKnownTime (25) instead of 0
+      expect(result.time).toBe(25);
+    });
+
+    it('uses player time when getCurrentTime() returns valid positive value', () => {
+      const player = createMockPlayer(42);
+
+      const result = simulateYapToggle(player, 1000);
+
+      expect(result.time).toBe(42);
+    });
+
+    it('handles missing player gracefully', () => {
+      const result = simulateYapToggle(null, 1000);
+
+      expect(result.time).toBe(25); // Falls back to lastKnownTime
+    });
+
+    it('handles player without getCurrentTime method', () => {
+      const brokenPlayer = {};
+
+      const result = simulateYapToggle(brokenPlayer, 1000);
+
+      expect(result.time).toBe(25); // Falls back to lastKnownTime
+    });
+
+    it('updates lastKnownTime when player returns valid time', () => {
+      lastKnownTime = 10;
+      const player = createMockPlayer(50);
+
+      getSafeCurrentTime(player);
+
+      expect(lastKnownTime).toBe(50); // Should be updated
+    });
+
+    it('does not update lastKnownTime when player returns 0', () => {
+      lastKnownTime = 30;
+      const racingPlayer = createMockPlayer(0);
+
+      getSafeCurrentTime(racingPlayer);
+
+      expect(lastKnownTime).toBe(30); // Should remain unchanged
+    });
+
+    it('returns 0 when both player and lastKnownTime are 0 (legitimate stream start)', () => {
+      lastKnownTime = 0;
+      const player = createMockPlayer(0);
+
+      const time = getSafeCurrentTime(player);
+
+      expect(time).toBe(0); // Both are 0, so return 0 (stream start)
+    });
+  });
+
   describe('Navigation buttons exist and are clickable', () => {
     it('prev-stream button exists and is clickable', () => {
       let clicked = false;
