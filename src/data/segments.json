@@ -1186,7 +1186,7 @@
         "name": "Santa Claus Is Comin' to Town - Bruce Springsteen",
         "range": [
           783,
-          961
+          937
         ]
       },
       {
@@ -1200,7 +1200,7 @@
         "name": "Rockin' Around the Christmas Tree - Brenda Lee",
         "range": [
           1502,
-          1628
+          1624
         ]
       },
       {
@@ -1214,14 +1214,21 @@
         "name": "Hip Hop Noel - Will Smith",
         "range": [
           2289,
-          2469
+          2499
         ]
       },
       {
         "name": "Santa Baby - Eartha Kitt",
         "range": [
           3228,
-          3434
+          3398
+        ]
+      },
+      {
+        "name": "Santa Baby - Eartha Kitt (short acapella)",
+        "range": [
+          3418,
+          3442
         ]
       },
       {
@@ -1235,56 +1242,56 @@
         "name": "Last Christmas - Wham!",
         "range": [
           4122,
-          4387
+          4395
         ]
       },
       {
         "name": "Jingle Bell Rock - Bobby Helms",
         "range": [
           4804,
-          4936
+          4931
         ]
       },
       {
         "name": "O Holy Night - Mariah Carey",
         "range": [
           5139,
-          5379
+          5363
         ]
       },
       {
         "name": "Let It Snow! - Dean Martin",
         "range": [
           5455,
-          5572
+          5573
         ]
       },
       {
         "name": "Feliz Navidad - José Feliciano",
         "range": [
           5710,
-          5892
+          5948
         ]
       },
       {
         "name": "Please Come Home for Christmas - Eagles",
         "range": [
           6263,
-          6433
+          6439
         ]
       },
       {
         "name": "Man with the Bag - Kay Starr",
         "range": [
           6531,
-          6692
+          6691
         ]
       },
       {
         "name": "Baby It's Cold Outside - Dean Martin",
         "range": [
           7027,
-          7187
+          7192
         ]
       }
     ]
