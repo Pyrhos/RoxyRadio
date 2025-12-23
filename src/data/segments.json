@@ -1401,70 +1401,70 @@
         "name": "SpongeBob SquarePants - Theme Song",
         "range": [
           1145,
-          1185
+          1212
         ]
       },
       {
         "name": "SpongeBob SquarePants - Theme Song (Dutch ver.)",
         "range": [
           1291,
-          1331
+          1325
         ]
       },
       {
         "name": "My Shiny Teeth and Me - Chip Skylark",
         "range": [
           1415,
-          1525
+          1535
         ]
       },
       {
         "name": "Here We Go - Totally Spies (Theme)",
         "range": [
           1686,
-          1746
+          1907
         ]
       },
       {
         "name": "Call Me, Beep Me! - Kim Possible",
         "range": [
           2152,
-          2308
+          2307
         ]
       },
       {
         "name": "A World Without Danger - Code Lyoko",
         "range": [
           2534,
-          2739
+          2736
         ]
       },
       {
         "name": "Winx Club - Theme Song (Dutch ver.)",
         "range": [
           3033,
-          3093
+          3117
         ]
       },
       {
         "name": "The Flintstones - Theme Song",
         "range": [
           3273,
-          3333
+          3355
         ]
       },
       {
         "name": "Spetter, Pieter, Pater - Alfred J. Kwak (Dutch ver.)",
         "range": [
           3576,
-          3726
+          3666
         ]
       },
       {
         "name": "The Moomins - Outro (Dutch ver.)",
         "range": [
           3979,
-          4069
+          4046
         ]
       },
       {
@@ -1478,105 +1478,105 @@
         "name": "Ed, Edd n Eddy - Theme Song",
         "range": [
           4656,
-          4686
+          4681
         ]
       },
       {
         "name": "Cow and Chicken - Theme Song",
         "range": [
           4820,
-          4865
+          4925
         ]
       },
       {
         "name": "Dexter's Laboratory - Outro",
         "range": [
           5058,
-          5118
+          5090
         ]
       },
       {
         "name": "The Fairly OddParents - Theme Song",
         "range": [
           5145,
-          5190
+          5191
         ]
       },
       {
         "name": "The Fairly OddParents - Theme Song (Dutch ver.)",
         "range": [
           5212,
-          5257
+          5259
         ]
       },
       {
         "name": "Johnny Bravo - Theme Song",
         "range": [
           5349,
-          5394
+          5381
         ]
       },
       {
         "name": "Johnny Bravo - Theme Song (Dutch ver.)",
         "range": [
           5440,
-          5485
+          5470
         ]
       },
       {
         "name": "Jimmy Neutron - Theme Song",
         "range": [
           5554,
-          5599
+          5589
         ]
       },
       {
         "name": "Jimmy Neutron - Theme Song (Dutch ver.)",
         "range": [
           5639,
-          5684
+          5673
         ]
       },
       {
         "name": "Animaniacs - Theme Song",
         "range": [
           5780,
-          5850
+          5848
         ]
       },
       {
         "name": "Pinky and the Brain - Theme Song",
         "range": [
           5909,
-          5979
+          5949
         ]
       },
       {
         "name": "Pinky and the Brain - Animaniacs (Jazz ver.)",
         "range": [
           6106,
-          6286
+          6277
         ]
       },
       {
         "name": "The Marvelous Misadventures of Flapjack - Theme Song",
         "range": [
           6343,
-          6393
+          6373
         ]
       },
       {
         "name": "CatDog - Theme Song",
         "range": [
           6492,
-          6552
+          6538
         ]
       },
       {
         "name": "Hey Arnold! - Theme Song",
         "range": [
           6637,
-          6687
+          6686
         ]
       },
       {
@@ -1590,35 +1590,35 @@
         "name": "Fly Away - Rascal the Raccoon (Dommel Theme)",
         "range": [
           6830,
-          6932
+          6930
         ]
       },
       {
         "name": "South Park - Theme Song",
         "range": [
           6994,
-          7023
+          7022
         ]
       },
       {
         "name": "My Life as a Teenage Robot - Theme Song",
         "range": [
           7135,
-          7185
+          7180
         ]
       },
       {
         "name": "My Life as a Teenage Robot - Theme Song (Dutch ver.)",
         "range": [
           7212,
-          7262
+          7257
         ]
       },
       {
         "name": "Rocko's Modern Life - Theme Song",
         "range": [
           7476,
-          7526
+          7518
         ]
       }
     ]
@@ -1631,35 +1631,35 @@
         "name": "Machi no Dorufin - Kingo Hamada",
         "range": [
           1452,
-          1752
+          1683
         ]
       },
       {
         "name": "Plastic Love - Mariya Takeuchi",
         "range": [
           1922,
-          2217
+          2208
         ]
       },
       {
         "name": "Bay City - Junko Yagami",
         "range": [
           2724,
-          2974
+          3005
         ]
       },
       {
         "name": "I Can't Stop the Loneliness - Anri (messed up)",
         "range": [
           3192,
-          3392
+          3293
         ]
       },
       {
         "name": "I Can't Stop the Loneliness - Anri (take 0)",
         "range": [
           3442,
-          3702
+          3710
         ]
       },
       {
@@ -1673,28 +1673,28 @@
         "name": "Flyday Chinatown - Yasuha",
         "range": [
           4967,
-          5177
+          5174
         ]
       },
       {
         "name": "Ride On Time - Tatsuro Yamashita",
         "range": [
-          5417,
-          5707
+          5437,
+          5703
         ]
       },
       {
         "name": "Telephone Number - Junko Ohashi",
         "range": [
           5886,
-          6126
+          6123
         ]
       },
       {
         "name": "Fly Away - Rascal the Raccoon (Dutch ver.)",
         "range": [
           6314,
-          6494
+          6448
         ]
       }
     ]
@@ -1706,43 +1706,43 @@
       {
         "name": "Again - YUI (Fullmetal Alchemist: Brotherhood)",
         "range": [
-          1541,
-          1796
+          1546,
+          1793
         ]
       },
       {
         "name": "Zankoku na Tenshi no Thesis - Yoko Takahashi (Neon Genesis Evangelion)",
         "range": [
-          2251,
-          2496
+          2263,
+          2505
         ]
       },
       {
         "name": "Rinbu Revolution - Masami Okui (Revolutionary Girl Utena)",
         "range": [
-          2856,
+          2861,
           3131
         ]
       },
       {
         "name": "Shounen yo Ware ni Kaere - Yakushimaru Etsuko (Mawaru Penguindrum)",
         "range": [
-          3281,
-          3581
+          3286,
+          3670
         ]
       },
       {
         "name": "Honey - Chihiro (Cardcaptor Sakura)",
         "range": [
-          3790,
+          3793,
           4047
         ]
       },
       {
         "name": "Kami-Iro Awase - Binaria (Danganronpa 3)",
         "range": [
-          4213,
-          4453
+          4216,
+          4483
         ]
       },
       {
@@ -1755,8 +1755,8 @@
       {
         "name": "KICK BACK - Kenshi Yonezu (Chainsaw Man)",
         "range": [
-          5910,
-          6103
+          5913,
+          6106
         ]
       }
     ]
@@ -1768,92 +1768,92 @@
       {
         "name": "Ikanaide - Kaai Yuki",
         "range": [
-          1257,
-          1473
+          1266,
+          1520
         ]
       },
       {
         "name": "Autumn Leaves - Nat King Cole",
         "range": [
-          1566,
-          1736
+          1574,
+          1816
         ]
       },
       {
         "name": "Creep - Radiohead",
         "range": [
-          1954,
-          2192
+          1968,
+          2273
         ]
       },
       {
         "name": "The End of the World - Skeeter Davis",
         "range": [
-          2414,
-          2572
+          2421,
+          2656
         ]
       },
       {
         "name": "Unbreak My Heart - Toni Braxton",
         "range": [
-          2751,
-          3021
+          2759,
+          3037
         ]
       },
       {
         "name": "Hurt - Johnny Cash",
         "range": [
-          3105,
-          3323
+          3114,
+          3355
         ]
       },
       {
         "name": "Calc. - JimmyThumbP",
         "range": [
-          3462,
-          3692
+          3471,
+          3783
         ]
       },
       {
         "name": "Kainé / Salvation - Emi Evans (NieR)",
         "range": [
-          3862,
-          4045
+          3870,
+          4047
         ]
       },
       {
         "name": "Brothers - Vic Mignogna (Fullmetal Alchemist)",
         "range": [
-          4229,
-          4469
+          4237,
+          4496
         ]
       },
       {
         "name": "Last Regrets - Ayana (Kanon)",
         "range": [
-          4656,
-          4946
+          4664,
+          5037
         ]
       },
       {
-        "name": "Promise - Akira Yamaoka (Silent Hill 2)",
+        "name": "Akuma no Ko - Ai Higuchi (Attack on Titan)",
         "range": [
-          5235,
-          5515
+          5243,
+          5465
         ]
       },
       {
-        "name": "Viva La Vida - Coldplay",
+        "name": "Without you - Mariah Carey",
         "range": [
-          5618,
-          5860
+          5536,
+          5760
         ]
       },
       {
-        "name": "Breaking the Habit - Linkin Park",
+        "name": "Mayonaka no Door - Miki Matsubara",
         "range": [
-          5909,
-          6105
+          5933,
+          6120
         ]
       }
     ]
@@ -1865,85 +1865,85 @@
       {
         "name": "Heb je even voor mij - Frans Bauer",
         "range": [
-          1133,
-          1330
+          1177,
+          1373
         ]
       },
       {
         "name": "Dromen zijn bedrog - Marco Borsato",
         "range": [
-          1617,
-          1820
+          1663,
+          1908
         ]
       },
       {
         "name": "De vlieger - André Hazes",
         "range": [
-          2159,
-          2395
+          2205,
+          2416
         ]
       },
       {
         "name": "Ding-a-dong - Teach-In",
         "range": [
-          2563,
-          2803
+          2610,
+          2755
         ]
       },
       {
         "name": "Zoutelande - Bløf",
         "range": [
           2945,
-          3162
+          3159
         ]
       },
       {
         "name": "Maak me gek - Gerard Joling",
         "range": [
-          3212,
-          3457
+          3258,
+          3442
         ]
       },
       {
         "name": "Hart van mijn gevoel - De Kast",
         "range": [
-          3605,
-          3825
+          3654,
+          3919
         ]
       },
       {
         "name": "Het land van Maas en Waal - Boudewijn de Groot",
         "range": [
-          4004,
-          4224
+          4046,
+          4235
         ]
       },
       {
         "name": "Bloed zweet en tranen - André Hazes",
         "range": [
-          4286,
-          4496
+          4334,
+          4574
         ]
       },
       {
         "name": "'k heb je lief - Paul de Leeuw",
         "range": [
-          4609,
-          4824
+          4652,
+          4895
         ]
       },
       {
         "name": "Kom van dat dak af - Peter Koelewijn",
         "range": [
-          4972,
-          5162
+          5019,
+          5184
         ]
       },
       {
         "name": "VIVA HOLANDIA - Wolter Kroes",
         "range": [
-          5317,
-          5527
+          5364,
+          5533
         ]
       }
     ]
@@ -1955,29 +1955,29 @@
       {
         "name": "Lovefool - The Cardigans",
         "range": [
-          248,
-          443
+          249,
+          494
         ]
       },
       {
         "name": "Stupid Cupid - Connie Francis",
         "range": [
           518,
-          651
+          650
         ]
       },
       {
         "name": "Love of My Life - Queen",
         "range": [
           719,
-          938
+          932
         ]
       },
       {
         "name": "Whole Lotta Love - Led Zeppelin",
         "range": [
           982,
-          1316
+          1170
         ]
       }
     ]
@@ -1989,78 +1989,78 @@
       {
         "name": "Hotel California - Eagles",
         "range": [
-          950,
-          1356
+          967,
+          1357
         ]
       },
       {
         "name": "Drops of Jupiter - Train",
         "range": [
-          1585,
+          1603,
           1860
         ]
       },
       {
         "name": "Dani California - Red Hot Chili Peppers",
         "range": [
-          1955,
-          2252
+          1975,
+          2253
         ]
       },
       {
         "name": "I Can't Give You Anything but Love - Adelaide Hall",
         "range": [
-          2349,
-          2494
+          2364,
+          2520
         ]
       },
       {
         "name": "Desperado - Eagles",
         "range": [
-          2636,
-          2864
+          2655,
+          2872
         ]
       },
       {
         "name": "At Last - Etta James",
         "range": [
-          2994,
-          3189
+          3013,
+          3190
         ]
       },
       {
-        "name": "Habits (Stay High) - Tove Lo",
+        "name": "Habits - Tove Lo (Jazz ver.)",
         "range": [
-          3229,
-          3476
+          3249,
+          3464
         ]
       },
       {
-        "name": "Blue (Da Ba Dee) - Eiffel 65",
+        "name": "Blue - Leann Rimes",
         "range": [
-          3612,
-          3822
+          3628,
+          3791
         ]
       },
       {
         "name": "Take It Easy - Eagles",
         "range": [
-          3935,
-          4162
+          3950,
+          4153
         ]
       },
       {
         "name": "This Love - Maroon 5",
         "range": [
-          4418,
-          4630
+          4414,
+          4622
         ]
       },
       {
         "name": "Bink's Sake - Brook (One Piece)",
         "range": [
           4790,
-          5218
+          4986
         ]
       }
     ]
@@ -2072,57 +2072,57 @@
       {
         "name": "Despacito - Luis Fonsi",
         "range": [
-          951,
-          1179
+          971,
+          1175
         ]
       },
       {
         "name": "KICK BACK - Kenshi Yonezu (Chainsaw Man, Spanish ver.)",
         "range": [
-          1513,
-          1706
+          1534,
+          1752
         ]
       },
       {
         "name": "Suerte - Shakira",
         "range": [
-          2104,
-          2300
+          2125,
+          2320
         ]
       },
       {
         "name": "Besame Mucho - Consuelo Velázquez",
         "range": [
-          2502,
-          2682
+          2522,
+          2777
         ]
       },
       {
         "name": "Lamento Boliviano - Enanitos Verdes",
         "range": [
-          3013,
-          3235
+          3034,
+          3254
         ]
       },
       {
         "name": "L'Via L'Viaquez - The Mars Volta",
         "range": [
-          3403,
-          3943
+          3424,
+          3691
         ]
       },
       {
         "name": "De Música Ligera - Soda Stereo",
         "range": [
-          4078,
-          4290
+          4099,
+          4308
         ]
       },
       {
         "name": "La Bamba - Ritchie Valens",
         "range": [
-          4747,
-          4902
+          4766,
+          4928
         ]
       }
     ]
@@ -2149,41 +2149,14 @@
         "name": "What Is and What Should Never Be - Led Zeppelin",
         "range": [
           785,
-          1069
+          1095
         ]
       },
       {
         "name": "I Surrender - Celine Dion",
         "range": [
           1156,
-          1396
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Challenging myself to learn and sing some classical songs",
-    "videoId": "DtDmnU4dRCk",
-    "songs": [
-      {
-        "name": "Nessun Dorma - Puccini",
-        "range": [
-          1543,
-          1723
-        ]
-      },
-      {
-        "name": "Ruhe sanft, mein holdes Leben - Mozart",
-        "range": [
-          3939,
-          4299
-        ]
-      },
-      {
-        "name": "Ode to Joy - Beethoven",
-        "range": [
-          5577,
-          5817
+          1399
         ]
       }
     ]
@@ -2195,106 +2168,106 @@
       {
         "name": "Why Don't You Do Right - Peggy Lee",
         "range": [
-          1259,
-          1407
+          1279,
+          1429
         ]
       },
       {
         "name": "Diamonds Are a Girl's Best Friend - Marilyn Monroe",
         "range": [
-          1700,
+          1722,
           1932
         ]
       },
       {
         "name": "Beyond the Sea - Bobby Darin",
         "range": [
-          2134,
-          2304
+          2156,
+          2332
         ]
       },
       {
         "name": "Hello, Dolly! - Louis Armstrong",
         "range": [
-          2559,
-          2704
+          2582,
+          2695
         ]
       },
       {
         "name": "At Last - Etta James",
         "range": [
-          2819,
-          2999
+          2846,
+          3024
         ]
       },
       {
         "name": "I Am a Good Girl - Christina Aguilera",
         "range": [
-          3065,
-          3215
+          3089,
+          3237
         ]
       },
       {
-        "name": "Say That You Love Me - Fleetwood Mac",
+        "name": "Lovefool - The Cardigans (Jazz ver.)",
         "range": [
-          3337,
-          3547
+          3357,
+          3600
         ]
       },
       {
         "name": "I Can't Give You Anything but Love - Billie Holiday",
         "range": [
-          3685,
-          3830
+          3710,
+          3863
         ]
       },
       {
         "name": "Cry Me a River - Julie London",
         "range": [
-          3907,
-          4173
+          3932,
+          4083
         ]
       },
       {
         "name": "Fever - Peggy Lee",
         "range": [
-          4173,
-          4373
+          4251,
+          4384
         ]
       },
       {
         "name": "Love Is a Losing Game - Amy Winehouse",
         "range": [
-          4448,
-          4603
+          4443,
+          4581
         ]
       },
       {
-        "name": "Master of Jazz - Roxynight (Original)",
+        "name": "Habits - Tove Lo (Jazz ver.)",
         "range": [
-          4734,
-          4914
+          4660,
+          4874
         ]
       },
       {
-        "name": "At Last - Etta James",
+        "name": "Fly me to the Moon - Kaye Ballard",
         "range": [
-          5090,
-          5270
+          4979,
+          5327
         ]
       },
       {
-        "name": "Blue (Da Ba Dee) - Eiffel 65",
+        "name": "L-O-V-E - Nat King Cole",
         "range": [
-          5367,
-          5547
+          5421,
+          5607
         ]
       },
       {
-        "name": "That Man - Caro Emerald",
+        "name": "Creep - Radiohead",
         "range": [
-          5728,
-          5878
+          6023,
+          6305
         ]
       }
     ]
