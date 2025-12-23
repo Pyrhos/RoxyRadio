@@ -3302,5 +3302,39 @@
         ]
       }
     ]
+  },
+  {
+    "name": "BIRTHDAY PARTAY",
+    "videoId": "gQEDf7VLWVw",
+    "songs": [
+      {
+        "name": "Heart - Alone",
+        "range": [
+          2669,
+          2890
+        ]
+      },
+      {
+        "name": "My Immortal - Evanescence",
+        "range": [
+          2891,
+          3153
+        ]
+      },
+      {
+        "name": "Breakaway - Kelly Clarkson",
+        "range": [
+          3154,
+          3391
+        ]
+      },
+      {
+        "name": "Hopelessly Devoted To You - Olivia Newton John",
+        "range": [
+          3392,
+          3577
+        ]
+      }
+    ]
   }
 ]
