@@ -2279,64 +2279,64 @@
       {
         "name": "Nevereverland - Nano",
         "range": [
-          1021,
-          1246
+          1034,
+          1318
         ]
       },
       {
         "name": "Can Do - GRANRODEO",
         "range": [
-          1447,
-          1657
+          1468,
+          1730
         ]
       },
       {
-        "name": "Again - YUI (Fullmetal Alchemist: Brotherhood)",
+        "name": "Again - YUI (Fullmetal Alchemist: Brotherhood, interrupted)",
         "range": [
-          1887,
-          1989
+          1907,
+          1966
         ]
       },
       {
         "name": "Again - YUI (Fullmetal Alchemist: Brotherhood, Take 02)",
         "range": [
-          1989,
-          2244
+          2009,
+          2257
         ]
       },
       {
         "name": "Sobakasu - Judy and Mary",
         "range": [
-          2437,
-          2692
+          2575,
+          2828
         ]
       },
       {
         "name": "Butterfly - Wada Kouji",
         "range": [
-          3023,
-          3243
+          3042,
+          3438
         ]
       },
       {
         "name": "Zoetrope - Yanagi Nagi",
         "range": [
-          3620,
-          3833
+          3641,
+          3734
         ]
       },
       {
         "name": "99.9 - MOB CHOIR",
         "range": [
-          3833,
-          4048
+          3854,
+          4037
         ]
       },
       {
         "name": "The Beginning - One Ok Rock",
         "range": [
-          4239,
-          4532
+          4271,
+          4563
         ]
       }
     ]
@@ -2348,35 +2348,35 @@
       {
         "name": "I Write Sins not Tragedies - Panic! At The Disco",
         "range": [
-          991,
-          1177
+          994,
+          1179
         ]
       },
       {
         "name": "Bring Me to Life - Evanescence",
         "range": [
-          1485,
-          1722
+          1486,
+          1724
         ]
       },
       {
         "name": "In the End - Linkin Park",
         "range": [
-          1938,
+          1941,
           2154
         ]
       },
       {
         "name": "Dear Maria, Count Me In - All Time Low",
         "range": [
-          2347,
-          2529
+          2351,
+          2536
         ]
       },
       {
         "name": "Perfect - Simple Plan",
         "range": [
-          2690,
+          2691,
           2967
         ]
       },
@@ -2390,28 +2390,28 @@
       {
         "name": "Thnks fr th Mmrs - Fall Out Boy",
         "range": [
-          3603,
+          3607,
           3806
         ]
       },
       {
         "name": "Hey There Delilah - Plain White T's",
         "range": [
-          3911,
+          3915,
           4143
         ]
       },
       {
         "name": "I'm Not a Vampire - Falling In Reverse",
         "range": [
-          4224,
-          4456
+          4229,
+          4460
         ]
       },
       {
         "name": "Numb - Linkin Park",
         "range": [
-          4554,
+          4556,
           4741
         ]
       },
@@ -2431,7 +2431,7 @@
       {
         "name": "Release - Pearl Jam",
         "range": [
-          779,
+          781,
           1093
         ]
       },
@@ -2439,14 +2439,14 @@
         "name": "Interstate Love Song - Stone Temple Pilots",
         "range": [
           1225,
-          1439
+          1437
         ]
       },
       {
         "name": "Black Hole Sun - Soundgarden",
         "range": [
           1521,
-          1775
+          1842
         ]
       },
       {
@@ -2474,21 +2474,21 @@
         "name": "Creep - Radiohead",
         "range": [
           3018,
-          3261
+          3260
         ]
       },
       {
         "name": "Zombie - The Cranberries",
         "range": [
           3320,
-          3573
+          3572
         ]
       },
       {
         "name": "Heart Shaped Box - Nirvana",
         "range": [
           3707,
-          4003
+          4002
         ]
       },
       {
@@ -2502,13 +2502,13 @@
         "name": "Man in the Box - Alice in Chains",
         "range": [
           4584,
-          4875
+          4874
         ]
       },
       {
         "name": "Smells Like Teen Spirit - Nirvana",
         "range": [
-          5037,
+          5038,
           5340
         ]
       }
@@ -2521,71 +2521,71 @@
       {
         "name": "Tokyo Metropolis Rock City - Hatsune Miku",
         "range": [
-          747,
-          967
+          748,
+          1085
         ]
       },
       {
         "name": "Dream-Eating Monochrome Baku - Nem",
         "range": [
           1221,
-          1441
+          1435
         ]
       },
       {
         "name": "Gekokujou - Ichigyou-P",
         "range": [
           1488,
-          1703
+          1692
         ]
       },
       {
         "name": "Rin Rin Signal - Dios/Signal-P",
         "range": [
           1750,
-          1960
+          1991
         ]
       },
       {
         "name": "Cantarella - WhiteFlame",
         "range": [
           2030,
-          2210
+          2209
         ]
       },
       {
         "name": "Calc. - JimmyThumbP",
         "range": [
           2292,
-          2522
+          2603
         ]
       },
       {
         "name": "Alien Alien - Nayutalien",
         "range": [
           2641,
-          2823
+          2820
         ]
       },
       {
         "name": "Just Be Friends - Dixie Flatline",
         "range": [
           2837,
-          3127
+          3201
         ]
       },
       {
         "name": "Koshitantan - Umetora",
         "range": [
-          3266,
-          3486
+          3267,
+          3493
         ]
       },
       {
-        "name": "Thousand Year Solo - yanagiP",
+        "name": "Thousand Year Solo - yanagiP (cut short)",
         "range": [
           3525,
-          3785
+          3720
         ]
       }
     ]
@@ -2597,71 +2597,71 @@
       {
         "name": "RUNNING IN THE 90S! - Max Coveri",
         "range": [
-          1108,
-          1393
+          1113,
+          1397
         ]
       },
       {
         "name": "Lily Lily ☆ Burning Night - samfree",
         "range": [
-          1716,
-          1916
+          1720,
+          1957
         ]
       },
       {
         "name": "Seventies - Mega NRG Man",
         "range": [
-          2053,
-          2263
+          2061,
+          2217
         ]
       },
       {
         "name": "Give me the Night - Cherry",
         "range": [
-          2266,
-          2506
+          2274,
+          2634
         ]
       },
       {
         "name": "Believe - Folder 5",
         "range": [
-          2827,
-          3052
+          2834,
+          3058
         ]
       },
       {
         "name": "FINAL BREATH - Odyseee",
         "range": [
-          3361,
-          3601
+          3366,
+          3641
         ]
       },
       {
         "name": "Carbonated Love - IRyS",
         "range": [
-          3956,
-          4166
+          3963,
+          4225
         ]
       },
       {
         "name": "Gas Gas Gas - Manuel (Initial D)",
         "range": [
-          4390,
-          4660
+          4395,
+          4636
         ]
       },
       {
         "name": "Déjà Vu - Dave Rodgers (Initial D)",
         "range": [
           4733,
-          4993
+          4988
         ]
       },
       {
         "name": "September - Earth, Wind & Fire (Eurobeat Remix)",
         "range": [
           5215,
-          5455
+          5411
         ]
       }
     ]
@@ -2681,14 +2681,14 @@
         "name": "Burn - The Cure",
         "range": [
           1870,
-          2269
+          2257
         ]
       },
       {
         "name": "Bite my Hip - Bauhaus",
         "range": [
           2794,
-          2969
+          2967
         ]
       },
       {
@@ -2702,21 +2702,21 @@
         "name": "The Cat Lady - La Scaltra",
         "range": [
           4047,
-          4287
+          4340
         ]
       },
       {
         "name": "Lovesong - The Cure",
         "range": [
-          4584,
+          4586,
           4792
         ]
       },
       {
         "name": "Goo Goo Muck - The Cramps",
         "range": [
-          4983,
-          5140
+          4984,
+          5165
         ]
       }
     ]
@@ -2833,14 +2833,14 @@
         "name": "I Will Survive - Gloria Gaynor",
         "range": [
           1014,
-          1242
+          1243
         ]
       },
       {
         "name": "Blame it on the Boogie - The Jackson 5",
         "range": [
-          1403,
-          1621
+          1405,
+          1620
         ]
       },
       {
@@ -2853,7 +2853,7 @@
       {
         "name": "Lady Marmalade - Labelle",
         "range": [
-          2027,
+          2030,
           2237
         ]
       },
@@ -2881,7 +2881,7 @@
       {
         "name": "It's Raining Men - The Weather Girls",
         "range": [
-          3608,
+          3612,
           3835
         ]
       },
@@ -2889,7 +2889,7 @@
         "name": "Disco Inferno - The Trammps",
         "range": [
           3998,
-          4244
+          4243
         ]
       },
       {
