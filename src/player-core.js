@@ -3,7 +3,7 @@ export const LOOP_TRACK = 1;
 export const LOOP_STREAM = 2;
 export const RESTART_THRESHOLD_SECONDS = 5;
 const HISTORY_LIMIT = 20;
-const SEAMLESS_GAP_SECONDS = 0.05; // Threshold to treat neighboring segments as seamless in Yap Off
+const SEAMLESS_GAP_SECONDS = 1.0; // Threshold to treat neighboring segments as seamless in Yap Off
 
 export class PlayerCore {
   constructor(callbacks = {}) {
