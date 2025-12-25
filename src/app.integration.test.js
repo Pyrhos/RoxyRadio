@@ -8,6 +8,7 @@ import {
   clearStorage,
 } from './test-setup.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
+import { sortSearchResultsByCurrentStream, normalizeSongBaseName } from './search-helpers.js';
 
 // ============================================================================
 // SEARCH MODAL TESTS
@@ -1173,6 +1174,163 @@ describe('Accessibility', () => {
       const boltTrigger = document.getElementById('bolt-trigger');
       expect(boltTrigger.getAttribute('aria-label')).toBe('Secret');
     });
+  });
+});
+
+// ============================================================================
+// SEARCH RESULT SORTING TESTS
+// ============================================================================
+
+describe('Search Result Sorting', () => {
+  it('moves current stream to the end among exact matches', () => {
+    const items = [
+      { name: 'Love Song', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: 'Love Song', streamId: 1, streamName: 'Stream B', songId: 0 },
+      { name: 'Love Song', streamId: 2, streamName: 'Stream C', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(3);
+    expect(sorted[0].streamId).toBe(0);
+    expect(sorted[1].streamId).toBe(2);
+    expect(sorted[2].streamId).toBe(1); // Current stream (1) is last
+  });
+
+  it('treats names with and without parentheses as exact matches', () => {
+    const items = [
+      { name: 'Love Song (Live)', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: 'Love Song', streamId: 1, streamName: 'Stream B', songId: 0 },
+      { name: 'LOVE SONG', streamId: 2, streamName: 'Stream C', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(3);
+    // Current stream (1) should be last
+    expect(sorted[2].streamId).toBe(1);
+    // Other two streams should come first
+    expect([sorted[0].streamId, sorted[1].streamId]).toContain(0);
+    expect([sorted[0].streamId, sorted[1].streamId]).toContain(2);
+  });
+
+  it('preserves order for items without duplicates', () => {
+    const items = [
+      { name: 'Song A', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: 'Song B', streamId: 1, streamName: 'Stream B', songId: 0 },
+      { name: 'Song C', streamId: 2, streamName: 'Stream C', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(3);
+    expect(sorted[0].name).toBe('Song A');
+    expect(sorted[1].name).toBe('Song B');
+    expect(sorted[2].name).toBe('Song C');
+  });
+
+  it('handles multiple groups of duplicates correctly', () => {
+    const items = [
+      { name: 'Love Song', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: 'Love Song', streamId: 1, streamName: 'Stream B', songId: 1 },
+      { name: 'Different Song', streamId: 2, streamName: 'Stream C', songId: 0 },
+      { name: 'Different Song', streamId: 1, streamName: 'Stream B', songId: 2 },
+      { name: 'Unique Song', streamId: 3, streamName: 'Stream D', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(5);
+    
+    // Find positions of each song
+    const loveSongPositions = sorted
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => normalizeSongBaseName(item.name).toLowerCase() === 'love song');
+    
+    const differentSongPositions = sorted
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => normalizeSongBaseName(item.name).toLowerCase() === 'different song');
+
+    // For "Love Song" group, stream 1 should be last
+    const loveSongFromStream1 = loveSongPositions.find(({ item }) => item.streamId === 1);
+    const loveSongFromStream0 = loveSongPositions.find(({ item }) => item.streamId === 0);
+    expect(loveSongFromStream1.idx).toBeGreaterThan(loveSongFromStream0.idx);
+
+    // For "Different Song" group, stream 1 should be last
+    const differentSongFromStream1 = differentSongPositions.find(({ item }) => item.streamId === 1);
+    const differentSongFromStream2 = differentSongPositions.find(({ item }) => item.streamId === 2);
+    expect(differentSongFromStream1.idx).toBeGreaterThan(differentSongFromStream2.idx);
+  });
+
+  it('handles case when current stream has no duplicates in results', () => {
+    const items = [
+      { name: 'Love Song', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: 'Love Song', streamId: 2, streamName: 'Stream C', songId: 0 },
+      { name: 'Different Song', streamId: 1, streamName: 'Stream B', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(3);
+    // Different Song from stream 1 should be in its original position (no reordering)
+    const differentSongIdx = sorted.findIndex(item => item.name === 'Different Song');
+    expect(sorted[differentSongIdx].streamId).toBe(1);
+  });
+
+  it('handles Japanese song names with parentheses', () => {
+    const items = [
+      { name: '終わりなき旅', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: '終わりなき旅 (生)', streamId: 1, streamName: 'Stream B', songId: 0 },
+      { name: '終わりなき旅', streamId: 2, streamName: 'Stream C', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(3);
+    // Current stream (1) should be last
+    expect(sorted[2].streamId).toBe(1);
+    expect([sorted[0].streamId, sorted[1].streamId]).toContain(0);
+    expect([sorted[0].streamId, sorted[1].streamId]).toContain(2);
+  });
+
+  it('handles empty array', () => {
+    const sorted = sortSearchResultsByCurrentStream([], 0);
+    expect(sorted).toEqual([]);
+  });
+
+  it('handles null/undefined input', () => {
+    expect(sortSearchResultsByCurrentStream(null, 0)).toBeNull();
+    expect(sortSearchResultsByCurrentStream(undefined, 0)).toBeUndefined();
+  });
+
+  it('handles single item', () => {
+    const items = [
+      { name: 'Only Song', streamId: 0, streamName: 'Stream A', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 0);
+
+    expect(sorted).toHaveLength(1);
+    expect(sorted[0]).toEqual(items[0]);
+  });
+
+  it('maintains relative order of non-current streams', () => {
+    const items = [
+      { name: 'Love Song', streamId: 0, streamName: 'Stream A', songId: 0 },
+      { name: 'Love Song', streamId: 2, streamName: 'Stream C', songId: 0 },
+      { name: 'Love Song', streamId: 1, streamName: 'Stream B', songId: 0 },
+      { name: 'Love Song', streamId: 3, streamName: 'Stream D', songId: 0 }
+    ];
+
+    const sorted = sortSearchResultsByCurrentStream(items, 1);
+
+    expect(sorted).toHaveLength(4);
+    // Current stream (1) should be last
+    expect(sorted[3].streamId).toBe(1);
+    // Other streams should maintain their relative order
+    expect(sorted[0].streamId).toBe(0);
+    expect(sorted[1].streamId).toBe(2);
+    expect(sorted[2].streamId).toBe(3);
   });
 });
 

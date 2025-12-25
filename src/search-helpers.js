@@ -71,3 +71,32 @@ export function buildDuplicateNameIndex(items) {
 
   return map;
 }
+
+export function sortSearchResultsByCurrentStream(items, currentStreamId) {
+  if (!items || items.length === 0) return items;
+
+  // Group by normalized base name
+  const groups = new Map();
+
+  items.forEach((item) => {
+    const baseName = normalizeSongBaseName(item.name).toLocaleLowerCase('en-US');
+    if (!groups.has(baseName)) {
+      groups.set(baseName, []);
+    }
+    groups.get(baseName).push(item);
+  });
+
+  const sorted = [];
+  groups.forEach((group) => {
+    if (group.length > 1) {
+      // Partition by current stream
+      const otherStreams = group.filter(item => item.streamId !== currentStreamId);
+      const currentStreamItems = group.filter(item => item.streamId === currentStreamId);
+      sorted.push(...otherStreams, ...currentStreamItems);
+    } else {
+      sorted.push(...group);
+    }
+  });
+
+  return sorted;
+}

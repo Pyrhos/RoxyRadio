@@ -2,7 +2,7 @@ import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
 import messagesData from './data/messages.json';
-import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, FUSE_CONFIG } from './search-helpers.js';
+import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, sortSearchResultsByCurrentStream, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
 import { MessageQueue, validateMessages } from './message-bar.js';
 
@@ -1007,11 +1007,15 @@ searchInput.addEventListener('input', (e) => {
 });
 
 function renderResults(items) {
-    searchResults = items;
+    // Sort results to place the currently opened stream last among exact matches
+    const currentStreamId = core.vIdx;
+    const sortedItems = sortSearchResultsByCurrentStream(items, currentStreamId);
+    
+    searchResults = sortedItems;
     searchSelIdx = 0;
     resultsContainer.innerHTML = '';
 
-    items.forEach((item, idx) => {
+    sortedItems.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'result-item';
         if (idx === 0) div.classList.add('selected');
