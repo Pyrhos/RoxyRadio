@@ -992,6 +992,22 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
+    if (e.key === 'C' && e.shiftKey && !modalOpen) {
+        e.preventDefault();
+        const stream = core.getCurrentStream();
+        if (stream && stream.videoId) {
+            const currentTime = getSafeCurrentTime();
+            const timeParam = Math.floor(currentTime);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                console.log(`[Share] Copied URL to clipboard: ${shareUrl}`);
+            }).catch(err => {
+                console.error('[Share] Failed to copy URL to clipboard', err);
+            });
+        }
+        return;
+    }
+
     if (e.key === 'Shift' && !e.repeat) {
         const now = Date.now();
         if (now - lastShiftTime < 300) {

@@ -1017,6 +1017,121 @@ describe('Global Keyboard Shortcuts', () => {
       expect(statusPanel.classList.contains('open')).toBe(false);
     });
   });
+
+  describe('Shift+C (Share URL)', () => {
+    let writeTextSpy;
+    let shareHandler;
+    let originalClipboard;
+
+    beforeEach(() => {
+      // Mock clipboard API
+      writeTextSpy = vi.fn().mockResolvedValue();
+      originalClipboard = navigator.clipboard;
+      
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {
+          writeText: writeTextSpy,
+        },
+        writable: true,
+        configurable: true,
+      });
+
+      // Mock core.getCurrentStream on window for access in handler
+      window.mockCore = {
+        getCurrentStream: () => ({
+          videoId: '-j397NNQ2Ok',
+          title: 'Test Stream'
+        })
+      };
+
+      // Mock getSafeCurrentTime
+      window.mockGetSafeCurrentTime = () => 1587.456;
+
+      // Set up share keybind handler (mirrors app.js logic)
+      shareHandler = (e) => {
+        if (e.key === 'C' && e.shiftKey && !modalOpen) {
+          e.preventDefault();
+          const stream = window.mockCore.getCurrentStream();
+          if (stream && stream.videoId) {
+            const currentTime = window.mockGetSafeCurrentTime();
+            const timeParam = Math.floor(currentTime);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
+            navigator.clipboard.writeText(shareUrl).catch(() => {});
+          }
+        }
+      };
+      document.addEventListener('keydown', shareHandler);
+    });
+
+    afterEach(() => {
+      document.removeEventListener('keydown', shareHandler);
+      
+      // Restore original clipboard
+      Object.defineProperty(navigator, 'clipboard', {
+        value: originalClipboard,
+        writable: true,
+        configurable: true,
+      });
+      
+      delete window.mockCore;
+      delete window.mockGetSafeCurrentTime;
+    });
+
+    it('copies share URL with videoId and time to clipboard', async () => {
+      pressKey('C', { shiftKey: true });
+      
+      // Wait a tick for the promise
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(writeTextSpy).toHaveBeenCalledTimes(1);
+      const copiedUrl = writeTextSpy.mock.calls[0][0];
+      expect(copiedUrl).toMatch(/\?v=-j397NNQ2Ok&t=1587$/);
+    });
+
+    it('floors timestamp to integer seconds', async () => {
+      window.mockGetSafeCurrentTime = () => 1587.999;
+      
+      pressKey('C', { shiftKey: true });
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(writeTextSpy).toHaveBeenCalled();
+      const copiedUrl = writeTextSpy.mock.calls[0][0];
+      expect(copiedUrl).toContain('t=1587');
+      expect(copiedUrl).not.toContain('t=1588');
+    });
+
+    it('does NOT copy when modal is open', async () => {
+      modalOpen = true;
+      modal.classList.add('open');
+      
+      pressKey('C', { shiftKey: true });
+      
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      expect(writeTextSpy).not.toHaveBeenCalled();
+    });
+
+    it('includes current pathname in share URL', async () => {
+      pressKey('C', { shiftKey: true });
+      
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      expect(writeTextSpy).toHaveBeenCalled();
+      const copiedUrl = writeTextSpy.mock.calls[0][0];
+      expect(copiedUrl).toContain(window.location.pathname);
+    });
+
+    it('does nothing when stream has no videoId', async () => {
+      window.mockCore.getCurrentStream = () => ({ title: 'No Video' });
+      
+      pressKey('C', { shiftKey: true });
+      
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
+      expect(writeTextSpy).not.toHaveBeenCalled();
+    });
+  });
 });
 
 // ============================================================================
