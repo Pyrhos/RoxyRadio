@@ -10,6 +10,7 @@ import { MessageQueue, validateMessages } from './message-bar.js';
 const TICK_MS = 200;
 const TITLE_REFRESH_MS = 2000;
 const YAP_TOGGLE_DEBOUNCE_MS = 300;
+const VIDEO_LOAD_DEBOUNCE_MS = 300;
 
 // ======== STATE ========
 let tickHandle = null;
@@ -21,6 +22,7 @@ let lastKnownTime = 0;
 let modalToggleTime = 0;
 let yapToggleTime = 0;
 let currentLoadedVideoId = null;
+let lastVideoLoadTime = 0;
 
 // Search State
 let fuse = null;
@@ -157,6 +159,15 @@ function playVideoAt(stream, desiredStart, endSeconds, forceReload = false) {
         seekToSafe(safeStart, stream);
         return;
     }
+
+    const now = Date.now();
+    const timeSinceLastLoad = now - lastVideoLoadTime;
+    if (timeSinceLastLoad < VIDEO_LOAD_DEBOUNCE_MS) {
+        const delay = VIDEO_LOAD_DEBOUNCE_MS - timeSinceLastLoad;
+        setTimeout(() => playVideoAt(stream, desiredStart, endSeconds, forceReload), delay);
+        return;
+    }
+    lastVideoLoadTime = now;
 
     // Different video or forced reload - do full load
     console.log(`Loading ${stream.videoId} [${safeStart}-${safeEnd ?? 'end'}]`);
@@ -352,7 +363,7 @@ function initializePlaylist() {
 window.onYouTubeIframeAPIReady = function () {
     player = new YT.Player('player', {
         videoId: '',
-        host: 'https://www.youtube-nocookie.com',
+        host: 'https://www.youtube.com',
         playerVars: {
             controls: 1,
             disablekb: 0,
