@@ -986,7 +986,7 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    if (e.key === 'A' && e.shiftKey) {
+    if (e.key === 'A' && e.shiftKey && !modalOpen) {
         e.preventDefault();
         toggleStatusPanel();
         return;
