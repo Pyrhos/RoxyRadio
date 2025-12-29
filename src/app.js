@@ -20,6 +20,7 @@ let pendingStart = false;
 let lastKnownTime = 0;
 let modalToggleTime = 0;
 let yapToggleTime = 0;
+let currentLoadedVideoId = null;
 
 // Search State
 let fuse = null;
@@ -141,16 +142,27 @@ function getSafeCurrentTime() {
     return playerTime;
 }
 
-function playVideoAt(stream, desiredStart, endSeconds) {
+function playVideoAt(stream, desiredStart, endSeconds, forceReload = false) {
     if (!stream) return;
     const safeStart = core.sanitizeStartTime(desiredStart, stream);
     let safeEnd = Number.isFinite(endSeconds) && endSeconds > 0 ? endSeconds : undefined;
     if (safeEnd !== undefined && safeEnd <= safeStart) {
         safeEnd = undefined;
     }
+
+    if (!player || !player.loadVideoById) return;
+
+    const isSameVideo = currentLoadedVideoId === stream.videoId;
+    if (isSameVideo && !forceReload) {
+        seekToSafe(safeStart, stream);
+        return;
+    }
+
+    // Different video or forced reload - do full load
     console.log(`Loading ${stream.videoId} [${safeStart}-${safeEnd ?? 'end'}]`);
     lastKnownTime = safeStart;
-    if (!player || !player.loadVideoById) return;
+    currentLoadedVideoId = stream.videoId;
+
     const payload = {
         videoId: stream.videoId,
         startSeconds: safeStart,
@@ -349,12 +361,16 @@ window.onYouTubeIframeAPIReady = function () {
             playsinline: 1,
             iv_load_policy: 3,
             origin: window.location.origin,
+            widget_referrer: window.location.href,
             autoplay: 1
         },
         events: {
             onReady: onPlayerReady,
             onStateChange: onStateChange,
-            onError: (e) => setStatus('YouTube error: ' + e.data)
+            onError: (e) => {
+                currentLoadedVideoId = null; // Reset so next play attempt does full reload
+                setStatus('YouTube error: ' + e.data);
+            }
         }
     });
 };
@@ -1010,7 +1026,7 @@ function renderResults(items) {
     // Sort results to place the currently opened stream last among exact matches
     const currentStreamId = core.vIdx;
     const sortedItems = sortSearchResultsByCurrentStream(items, currentStreamId);
-    
+
     searchResults = sortedItems;
     searchSelIdx = 0;
     resultsContainer.innerHTML = '';
