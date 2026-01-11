@@ -3552,5 +3552,123 @@
         ]
       }
     ]
+  },
+  {
+    "name": "First KARAOKE of the new year~ (ITS ALIVE)",
+    "videoId": "yQPR9vfeF98",
+    "songs": [
+      {
+        "name": "From the Start - Laufey",
+        "range": [
+          1125,
+          1296
+        ]
+      },
+      {
+        "name": "Wake Me Up - Avicii",
+        "range": [
+          1449,
+          1627
+        ]
+      },
+      {
+        "name": "Espresso - Sabrina Carpenter",
+        "range": [
+          1752,
+          1901
+        ]
+      },
+      {
+        "name": "Material Girl - Madonna",
+        "range": [
+          2097,
+          2328
+        ]
+      },
+      {
+        "name": "Kiss from a Rose - Seal",
+        "range": [
+          2473,
+          2693
+        ]
+      },
+      {
+        "name": "Feel Good Inc. - Gorillaz",
+        "range": [
+          2823,
+          3043
+        ]
+      },
+      {
+        "name": "Can't help falling in Love - Elvis Presley",
+        "range": [
+          3194,
+          3369
+        ]
+      },
+      {
+        "name": "Habits - Tove Lo (Jazz ver.)",
+        "range": [
+          3469,
+          3683
+        ]
+      },
+      {
+        "name": "Venus - Shocking Blue",
+        "range": [
+          3751,
+          3904
+        ]
+      },
+      {
+        "name": "Your Song - Elton John",
+        "range": [
+          4039,
+          4277
+        ]
+      },
+      {
+        "name": "Just the Two of Us - Bill Withers, Grover Washington, Jr.",
+        "range": [
+          4348,
+          4521
+        ]
+      },
+      {
+        "name": "Still got the Blues - Gary Moore",
+        "range": [
+          4631,
+          4894
+        ]
+      },
+      {
+        "name": "Always - Bon Jovi",
+        "range": [
+          4960,
+          5314
+        ]
+      },
+      {
+        "name": "How deep is your love - Bee Gees",
+        "range": [
+          5424,
+          5656
+        ]
+      },
+      {
+        "name": "Flyday Chinatown - Yasuha",
+        "range": [
+          5707,
+          5916
+        ]
+      },
+      {
+        "name": "I'm So Excited - The Pointer Sisters",
+        "range": [
+          6197,
+          6434
+        ]
+      }
+    ]
   }
 ]
