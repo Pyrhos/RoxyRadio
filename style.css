@@ -168,6 +168,7 @@ button {
   box-shadow: 4px 4px 0 #000;
   text-transform: uppercase;
   transition: transform 0.1s, box-shadow 0.1s;
+  box-sizing: border-box;
   contain: layout style; /* Prevent internal changes from triggering parent reflow */
 }
 
