@@ -13,6 +13,117 @@
     ]
   },
   {
+    "name": "Singing songs from my favorite decade",
+    "videoId": "W5Tc9VVOAnA",
+    "songs": [
+      {
+        "name": "Is this Love - Whitesnake",
+        "range": [
+          500,
+          776
+        ]
+      },
+      {
+        "name": "Upside Down - Diana Ross",
+        "range": [
+          890,
+          1133
+        ]
+      },
+      {
+        "name": "Part-Time Lover - Stevie Wonder",
+        "range": [
+          1270,
+          1477
+        ]
+      },
+      {
+        "name": "Human Nature - Michael Jackson",
+        "range": [
+          1719,
+          1963
+        ]
+      },
+      {
+        "name": "It's my Life - Talk Talk",
+        "range": [
+          2042,
+          2280
+        ]
+      },
+      {
+        "name": "All night Long (All Night) - Lionel Richies",
+        "range": [
+          2435,
+          2684
+        ]
+      },
+      {
+        "name": "Maniac - Michael Sembello",
+        "range": [
+          2917,
+          3161
+        ]
+      },
+      {
+        "name": "Cruel Summer - Bananarama",
+        "range": [
+          3308,
+          3517
+        ]
+      },
+      {
+        "name": "Maneater - Daryl Hall & John Oates",
+        "range": [
+          3630,
+          3901
+        ]
+      },
+      {
+        "name": "Big Love - Fleetwood Mac",
+        "range": [
+          3956,
+          4175
+        ]
+      },
+      {
+        "name": "Like a Virgin - Madonna",
+        "range": [
+          4257,
+          4450
+        ]
+      },
+      {
+        "name": "Rosanna - Toto",
+        "range": [
+          4529,
+          4804
+        ]
+      },
+      {
+        "name": "(I Just) Died in Your Arms - Cutting crew",
+        "range": [
+          4879,
+          5146
+        ]
+      },
+      {
+        "name": "Jump - Van Halen",
+        "range": [
+          5168,
+          5412
+        ]
+      },
+      {
+        "name": "I'm Gonna Be (500 Miles) - The Proclaimers",
+        "range": [
+          5433,
+          5644
+        ]
+      }
+    ]
+  },
+  {
     "name": "The Pretender - Foo Fighters",
     "videoId": "8TpVFW9qkkc",
     "songs": [
