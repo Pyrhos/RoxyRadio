@@ -3794,5 +3794,46 @@
         ]
       }
     ]
+  },
+  {
+    "name": "【V-Dere IdolFest】Can I be your Idol?",
+    "videoId": "ZmFlpaikOp4",
+    "songs": [
+      {
+        "name": "Nagai Hikari - JKT48",
+        "range": [
+          348,
+          708
+        ]
+      },
+      {
+        "name": "Kagami no Naka no Jean D'arc - AKB48",
+        "range": [
+          827,
+          1048
+        ]
+      },
+      {
+        "name": "Temodemo no Namida - AKB48",
+        "range": [
+          1104,
+          1319
+        ]
+      },
+      {
+        "name": "Kuroi Tenshi - AKB48",
+        "range": [
+          1421,
+          1685
+        ]
+      },
+      {
+        "name": "Lay Down - AKB48",
+        "range": [
+          1731,
+          2022
+        ]
+      }
+    ]
   }
 ]
