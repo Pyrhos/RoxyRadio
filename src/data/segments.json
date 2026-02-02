@@ -3835,5 +3835,158 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Comfy Acoustic Campfire Stream",
+    "videoId": "sTJfGB4VGJk",
+    "songs": [
+      {
+        "name": "How Do I Live - LeAnn Rimes",
+        "range": [
+          948,
+          1250
+        ]
+      },
+      {
+        "name": "Human Nature - Michael Jackson",
+        "range": [
+          1318,
+          1566
+        ]
+      },
+      {
+        "name": "True - Spandau Ballet",
+        "range": [
+          1627,
+          1986
+        ]
+      },
+      {
+        "name": "Hello - Lionel Richie",
+        "range": [
+          2048,
+          2290
+        ]
+      },
+      {
+        "name": "Flowers - Miley Cyrus",
+        "range": [
+          2332,
+          2537
+        ]
+      },
+      {
+        "name": "It Ain't Over 'Til It's Over - Lenny Kravitz",
+        "range": [
+          2646,
+          2840
+        ]
+      },
+      {
+        "name": "Landslide - Fleetwood Mac",
+        "range": [
+          2893,
+          3095
+        ]
+      },
+      {
+        "name": "Like a Star - Corinne Bailey Rae",
+        "range": [
+          3165,
+          3411
+        ]
+      },
+      {
+        "name": "Besame Mucho - Consuelo Velázquez",
+        "range": [
+          3519,
+          3685
+        ]
+      },
+      {
+        "name": "Killing Me Softly With His Song - Fugees",
+        "range": [
+          3819,
+          4073
+        ]
+      },
+      {
+        "name": "Jolene - Dolly Parton",
+        "range": [
+          4306,
+          4473
+        ]
+      },
+      {
+        "name": "I Don't Want to Miss a Thing - Aerosmith",
+        "range": [
+          4614,
+          4873
+        ]
+      },
+      {
+        "name": "Never Say Goodbye - Bon Jovi",
+        "range": [
+          4965,
+          5258
+        ]
+      },
+      {
+        "name": "Rock with You - Michael Jackson",
+        "range": [
+          5293,
+          5513
+        ]
+      },
+      {
+        "name": "Sunny - Boney M",
+        "range": [
+          5626,
+          5857
+        ]
+      },
+      {
+        "name": "At Last - Etta James",
+        "range": [
+          5946,
+          6105
+        ]
+      },
+      {
+        "name": "Fast Car - Tracy Chapman",
+        "range": [
+          6129,
+          6350
+        ]
+      },
+      {
+        "name": "Wonderwall - Oasis (Copyrightwall)",
+        "range": [
+          6405,
+          6650
+        ]
+      },
+      {
+        "name": "When You Were Young - The Killers",
+        "range": [
+          6727,
+          6973
+        ]
+      },
+      {
+        "name": "Baby Come Back - Player",
+        "range": [
+          7033,
+          7286
+        ]
+      },
+      {
+        "name": "Desperado - Eagles (J.R. instrumental)",
+        "range": [
+          7472,
+          7685
+        ]
+      }
+    ]
   }
 ]
