@@ -1,17 +1,21 @@
-/* COLORS */
-/* Very dark charcoal — #0A0B0D */
-/* Dark blue-grey — #1A1D23 */
-/* Slate blue-grey — #353947 */
-/* Medium purple — #7659B9 */
-/* Light peach-pink — #F4C2C1 */
-/* Dusty rose — #D97587 */
-/* Neon pink — #FE77FE */
-/* Magenta — #CE55CC */
+:root {
+  --color-charcoal: #0A0B0D;
+  --color-dark-grey: #1A1D23;
+  --color-slate: #353947;
+  --color-purple: #7659B9;
+  --color-peach: #F4C2C1;
+  --color-peach-light: #FDE9E8;
+  --color-rose: #D97587;
+  --color-neon-pink: #FE77FE;
+  --color-magenta: #CE55CC;
+  --color-black: #000;
+  --color-white: #fff;
+}
 
 html, body, #app { 
     height: 100%; 
     margin: 0; 
-    background: #0A0B0D; /* Very dark charcoal base */
+    background: var(--color-charcoal); /* Very dark charcoal base */
     font-family: 'Comic Sans MS', 'Chalkboard SE', 'Purisa', sans-serif;
 }
 
@@ -38,9 +42,9 @@ html, body, #app {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #0A0B0D;
+  background: var(--color-charcoal);
   overflow: hidden;
-  border-bottom: 4px solid #000; 
+  border-bottom: 4px solid var(--color-black); 
   min-height: 0; /* Crucial for flex container to shrink below content size */
 }
 
@@ -54,11 +58,11 @@ html, body, #app {
 /* Message Bar */
 #message-bar {
   width: 100%;
-  background: #1A1D23;
+  background: var(--color-dark-grey);
   padding: 10px 48px 10px 16px;
   box-sizing: border-box;
-  border-top: 3px solid #000;
-  border-bottom: 3px solid #000;
+  border-top: 3px solid var(--color-black);
+  border-bottom: 3px solid var(--color-black);
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -72,11 +76,11 @@ html, body, #app {
 }
 
 #message-text {
-  color: #F4C2C1;
+  color: var(--color-peach);
   font-size: 15px;
   font-weight: bold;
   text-align: center;
-  text-shadow: 1px 1px 0 #000;
+  text-shadow: 1px 1px 0 var(--color-black);
   line-height: 1.4;
   animation: message-fade-in 0.3s ease-out;
 }
@@ -102,9 +106,9 @@ html, body, #app {
   min-width: 28px;
   padding: 0;
   background: transparent;
-  border: 2px solid #353947;
+  border: 2px solid var(--color-slate);
   box-shadow: none;
-  color: #F4C2C1;
+  color: var(--color-peach);
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -116,8 +120,8 @@ html, body, #app {
 
 #message-close:hover {
   opacity: 1;
-  background: #353947;
-  border-color: #F4C2C1;
+  background: var(--color-slate);
+  border-color: var(--color-peach);
   transform: translateY(-50%);
   box-shadow: none;
 }
@@ -130,11 +134,11 @@ html, body, #app {
 /* Controls bar at bottom */
 #controls-container { 
   width: 100%; 
-  background: #7659B9; 
+  background: var(--color-purple); 
   padding: 16px 20px; 
   box-sizing: border-box; 
   margin-top: 0;
-  border-top: 4px solid #000;
+  border-top: 4px solid var(--color-black);
   flex: 0 0 auto; /* Don't grow, don't shrink */
   display: flex;
   flex-direction: column;
@@ -149,15 +153,15 @@ html, body, #app {
   gap: 16px; 
   justify-content:center; 
   align-items: center; 
-  color:#0A0B0D; 
+  color:var(--color-charcoal); 
   font-size: 16px; 
   flex-wrap: wrap;
 }
 
 button { 
-  background: #F4C2C1; /* Light peach-pink */
-  color: #0A0B0D; 
-  border: 3px solid #000; 
+  background: var(--color-peach); /* Light peach-pink */
+  color: var(--color-charcoal); 
+  border: 3px solid var(--color-black); 
   border-radius: 0; 
   padding: 10px 16px; 
   cursor:pointer; 
@@ -165,7 +169,7 @@ button {
   min-width: 44px;
   font-family: inherit;
   font-weight: bold;
-  box-shadow: 4px 4px 0 #000;
+  box-shadow: 4px 4px 0 var(--color-black);
   text-transform: uppercase;
   transition: transform 0.1s, box-shadow 0.1s;
   box-sizing: border-box;
@@ -233,9 +237,9 @@ button {
   }
 
   button:hover { 
-      background: #fff; 
+      background: var(--color-white); 
       transform: translate(-2px, -2px);
-      box-shadow: 6px 6px 0 #000;
+      box-shadow: 6px 6px 0 var(--color-black);
   }
 
   #yap-btn:not(.active):hover .button-icon {
@@ -245,12 +249,12 @@ button {
 
 button:active {
     transform: translate(2px, 2px);
-    box-shadow: 0 0 0 #000;
+    box-shadow: 0 0 0 var(--color-black);
 }
 
 button.active { 
-    background: #FE77FE; /* Neon pink for active state */
-    color: #0A0B0D;
+    background: var(--color-neon-pink); /* Neon pink for active state */
+    color: var(--color-charcoal);
 }
 
 @keyframes yap-chatter {
@@ -405,15 +409,15 @@ button.active {
 
 #status { 
     text-align:center; 
-    color: #F4C2C1; /* Light peach-pink text on purple */
+    color: var(--color-peach); /* Light peach-pink text on purple */
     font-size: 16px; 
     margin-top: 12px; 
     font-weight: bold;
-    text-shadow: 2px 2px 0 #000;
-    background: #0A0B0D;
-    border: 2px solid #000;
+    text-shadow: 2px 2px 0 var(--color-black);
+    background: var(--color-charcoal);
+    border: 2px solid var(--color-black);
     padding: 2px 12px 6px;
-    box-shadow: 4px 4px 0 #000;
+    box-shadow: 4px 4px 0 var(--color-black);
     max-width: 80%;
     
     /* Centering Fix */
@@ -423,7 +427,7 @@ button.active {
 }
 
 .status-icon {
-    color: #CE55CC;
+    color: var(--color-magenta);
     margin-right: 8px;
     display: inline-block;
     transition: transform 0.2s ease;
@@ -431,11 +435,11 @@ button.active {
 
 #status:hover .status-icon {
     transform: translateY(-2px);
-    color: #FE77FE;
+    color: var(--color-neon-pink);
 }
 
 #status[aria-expanded="true"] .status-icon {
-    color: #FE77FE;
+    color: var(--color-neon-pink);
 }
 
 #status-panel {
@@ -451,9 +455,9 @@ button.active {
     transition: max-height 0.3s ease, opacity 0.2s ease;
     z-index: 950;
     pointer-events: none;
-    border: 5px solid #FE77FE;
-    box-shadow: 10px 10px 0 #000;
-    background: #F4C2C1;
+    border: 5px solid var(--color-neon-pink);
+    box-shadow: 10px 10px 0 var(--color-black);
+    background: var(--color-peach);
     box-sizing: border-box;
 }
 
@@ -479,11 +483,11 @@ button.active {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    color: #0A0B0D;
+    color: var(--color-charcoal);
     cursor: pointer;
     text-transform: none;
-    border-bottom: 3px solid #000;
-    background: #fff;
+    border-bottom: 3px solid var(--color-black);
+    background: var(--color-white);
     transition: background 0.12s ease, color 0.12s ease;
     outline: none;
 }
@@ -493,24 +497,24 @@ button.active {
 }
 
 .status-song:nth-child(even) {
-    background: #FDE9E8;
+    background: var(--color-peach-light);
 }
 
 .status-song:hover,
 .status-song:focus-visible {
     background: rgba(118, 89, 185, 0.3); /* Light purple hover */
-    color: #0A0B0D;
+    color: var(--color-charcoal);
 }
 
 .status-song.active {
-    background: #D97587; /* Dusty rose for currently playing track */
-    color: #0A0B0D;
+    background: var(--color-rose); /* Dusty rose for currently playing track */
+    color: var(--color-charcoal);
 }
 
 .status-song.nav-focus {
-    background: #FE77FE; /* Neon pink reserved for keyboard focus */
-    color: #0A0B0D;
-    box-shadow: inset 0 0 0 3px #000;
+    background: var(--color-neon-pink); /* Neon pink reserved for keyboard focus */
+    color: var(--color-charcoal);
+    box-shadow: inset 0 0 0 3px var(--color-black);
 }
 
 .status-song-index {
@@ -622,9 +626,9 @@ button.active {
 }
 
 #comic-box {
-  background: #F4C2C1; /* Light peach-pink bg */
-  border: 4px solid #000;
-  box-shadow: 12px 12px 0 #000;
+  background: var(--color-peach); /* Light peach-pink bg */
+  border: 4px solid var(--color-black);
+  box-shadow: 12px 12px 0 var(--color-black);
   padding: 20px;
   width: min(90vw, 600px);
   max-height: 80vh;
@@ -638,47 +642,47 @@ button.active {
 #comic-box::after {
   content: ''; position: absolute; bottom: -24px; left: 40px;
   border-width: 24px 24px 0; border-style: solid;
-  border-color: #000 transparent; display: block; width: 0;
+  border-color: var(--color-black) transparent; display: block; width: 0;
 }
 #comic-box::before {
   content: ''; position: absolute; bottom: -15px; left: 45px;
   border-width: 19px 19px 0; border-style: solid;
-  border-color: #F4C2C1 transparent; display: block; width: 0; z-index: 1;
+  border-color: var(--color-peach) transparent; display: block; width: 0; z-index: 1;
 }
 
 #comic-title {
   font-size: 1.8em; font-weight: bold; text-transform: uppercase; margin-bottom: 15px;
-  text-align: center; border-bottom: 4px solid #000; padding-bottom: 5px;
-  color: #0A0B0D;
-  text-shadow: 2px 2px 0 #fff;
+  text-align: center; border-bottom: 4px solid var(--color-black); padding-bottom: 5px;
+  color: var(--color-charcoal);
+  text-shadow: 2px 2px 0 var(--color-white);
 }
 
 #search-input {
   width: 100%; box-sizing: border-box; font-size: 1.4em; padding: 12px;
-  border: 3px solid #000; outline: none; font-family: inherit;
+  border: 3px solid var(--color-black); outline: none; font-family: inherit;
   text-transform: uppercase; margin-bottom: 15px;
-  background: #fff;
+  background: var(--color-white);
   box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
 }
 
 #search-results {
-  flex-grow: 1; overflow-y: auto; border: 3px solid #000;
+  flex-grow: 1; overflow-y: auto; border: 3px solid var(--color-black);
   min-height: 100px; max-height: 300px;
-  background: #fff;
+  background: var(--color-white);
 }
 
 .result-item {
-  padding: 10px; border-bottom: 2px solid #000; cursor: pointer;
+  padding: 10px; border-bottom: 2px solid var(--color-black); cursor: pointer;
   display: flex; flex-direction: column;
   transition: background 0.1s;
 }
 .result-item:last-child { border-bottom: none; }
 
-.result-item.selected { background: #FE77FE; /* Neon pink selection */ }
-.result-item:hover { background: #D97587; /* Dusty rose hover */ }
+.result-item.selected { background: var(--color-neon-pink); /* Neon pink selection */ }
+.result-item:hover { background: var(--color-rose); /* Dusty rose hover */ }
 
-.result-title { font-weight: bold; font-size: 1.2em; color: #0A0B0D; }
-.result-sub { font-size: 0.9em; color: #353947; font-style: italic; }
+.result-title { font-weight: bold; font-size: 1.2em; color: var(--color-charcoal); }
+.result-sub { font-size: 0.9em; color: var(--color-slate); font-style: italic; }
 
 /* Pin modal to top on mobile so keyboard doesn't obscure it */
 @media (pointer: coarse) {
@@ -693,8 +697,8 @@ button.active {
 }
 
 /* Scrollbar styling */
-::-webkit-scrollbar { width: 12px; background: #0A0B0D; }
-::-webkit-scrollbar-thumb { background: #F4C2C1; border: 2px solid #000; }
+::-webkit-scrollbar { width: 12px; background: var(--color-charcoal); }
+::-webkit-scrollbar-thumb { background: var(--color-peach); border: 2px solid var(--color-black); }
 
 /* ====== Lightning Bolt ====== */
 #bolt-trigger {
@@ -753,16 +757,16 @@ button.active {
   background:
     linear-gradient(135deg, transparent 0%, rgba(139, 90, 43, 0.08) 50%, transparent 100%),
     linear-gradient(to bottom, #f0e4cc 0%, #e5d5b5 20%, #dccaa5 50%, #e5d5b5 80%, #f0e4cc 100%);
-  border: 5px solid #000;
+  border: 5px solid var(--color-black);
   padding: 28px 44px 24px;
   width: min(92vw, 720px);
   font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
   position: relative;
   text-align: center;
-  color: #0A0B0D;
+  color: var(--color-charcoal);
   box-shadow:
     inset 0 0 50px rgba(139, 90, 43, 0.2),
-    8px 8px 0 #000;
+    8px 8px 0 var(--color-black);
   transform: rotate(-0.5deg);
 }
 
@@ -773,8 +777,8 @@ button.active {
   position: absolute;
   top: 8px;
   font-size: 14px;
-  color: #7659B9;
-  text-shadow: 1px 1px 0 #000;
+  color: var(--color-purple);
+  text-shadow: 1px 1px 0 var(--color-black);
 }
 
 #wanted-poster::before { left: 12px; }
@@ -786,23 +790,23 @@ button.active {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 0;
-  text-shadow: 3px 3px 0 #D97587;
-  -webkit-text-stroke: 1px #000;
-  color: #0A0B0D;
+  text-shadow: 3px 3px 0 var(--color-rose);
+  -webkit-text-stroke: 1px var(--color-black);
+  color: var(--color-charcoal);
 }
 
 .wanted-subheader {
   font-size: 0.85em;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  border-top: 3px solid #000;
-  border-bottom: 3px solid #000;
+  border-top: 3px solid var(--color-black);
+  border-bottom: 3px solid var(--color-black);
   padding: 6px 0;
   margin: 8px auto 20px;
-  background: #7659B9;
-  color: #fff;
+  background: var(--color-purple);
+  color: var(--color-white);
   max-width: 90%;
-  text-shadow: 1px 1px 0 #000;
+  text-shadow: 1px 1px 0 var(--color-black);
 }
 
 .wanted-men {
@@ -819,7 +823,7 @@ button.active {
   flex-direction: column;
   align-items: center;
   background: rgba(255, 255, 255, 0.4);
-  border: 3px solid #000;
+  border: 3px solid var(--color-black);
   padding: 16px 12px 12px;
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
 }
@@ -828,7 +832,7 @@ button.active {
   width: 100px;
   height: 125px;
   background: linear-gradient(to bottom, #c9b896 0%, #b8a886 100%);
-  border: 3px solid #000;
+  border: 3px solid var(--color-black);
   box-shadow:
     inset 0 0 20px rgba(42, 26, 10, 0.25),
     3px 3px 0 rgba(0, 0, 0, 0.3);
@@ -869,10 +873,10 @@ button.active {
   letter-spacing: 0.08em;
   margin-bottom: 8px;
   text-transform: uppercase;
-  background: #FE77FE;
+  background: var(--color-neon-pink);
   padding: 2px 12px;
-  border: 2px solid #000;
-  box-shadow: 2px 2px 0 #000;
+  border: 2px solid var(--color-black);
+  box-shadow: 2px 2px 0 var(--color-black);
 }
 
 .wanted-crimes {
@@ -906,19 +910,19 @@ button.active {
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #353947;
+  color: var(--color-slate);
   border-bottom: 1px dashed rgba(0, 0, 0, 0.3);
   padding-bottom: 4px;
   margin-bottom: 2px;
 }
 
 .wanted-contact a {
-  color: #0A0B0D;
+  color: var(--color-charcoal);
   text-decoration: none;
   padding: 6px 10px;
-  background: #F4C2C1;
-  border: 2px solid #000;
-  box-shadow: 2px 2px 0 #000;
+  background: var(--color-peach);
+  border: 2px solid var(--color-black);
+  box-shadow: 2px 2px 0 var(--color-black);
   transition: transform 0.1s, box-shadow 0.1s;
   display: block;
   text-align: center;
@@ -926,14 +930,14 @@ button.active {
 }
 
 .wanted-contact a:hover {
-  background: #fff;
+  background: var(--color-white);
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 #000;
+  box-shadow: 4px 4px 0 var(--color-black);
 }
 
 .wanted-contact a:active {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #000;
+  box-shadow: 1px 1px 0 var(--color-black);
 }
 
 .wanted-reward {
@@ -941,11 +945,11 @@ button.active {
   font-weight: bold;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-top: 3px solid #000;
+  border-top: 3px solid var(--color-black);
   padding-top: 12px;
   margin-top: 8px;
-  color: #7659B9;
-  text-shadow: 1px 1px 0 #000;
+  color: var(--color-purple);
+  text-shadow: 1px 1px 0 var(--color-black);
 }
 
 @media (max-width: 700px) {
