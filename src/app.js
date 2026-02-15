@@ -54,6 +54,7 @@ const btnSearch = document.getElementById('search-btn');
 const btnDuplicates = document.getElementById('duplicates-btn');
 const iconYap = document.getElementById('yap-icon');
 const iconLoop = document.getElementById('loop-icon');
+const controlsContainer = document.getElementById('controls-container');
 
 const statusEl = document.getElementById('status');
 const statusTextEl = document.getElementById('status-text');
@@ -69,6 +70,7 @@ let statusPanelOpen = false;
 let statusPanelSelIdx = -1;
 let lastStatusText = '';
 let lastTitleText = document.title;
+let lastAppliedTheme = 0;
 let titleRefreshHandle = null;
 
 if (statusSongList) {
@@ -325,6 +327,15 @@ function parseUrlParams() {
 // ======== LOAD SEGMENTS ========
 initializePlaylist();
 
+function rebuildPlaylistDerivedState() {
+    const searchIndex = buildSearchIndexFromPlaylist(core.playlist);
+    duplicateNameIndex = buildDuplicateNameIndex(searchIndex);
+    fuse = new Fuse(searchIndex, FUSE_CONFIG);
+    searchResults = [];
+    searchSelIdx = 0;
+    refreshStatusSongList(true);
+}
+
 function initializePlaylist() {
     try {
         core.init(segmentsData); // Core handles the filtering logic
@@ -343,15 +354,9 @@ function initializePlaylist() {
         // Update buttons state based on core init (e.g. persisted Yap mode)
         updateButtons();
 
-        // Index for search
-        const searchIndex = buildSearchIndexFromPlaylist(core.playlist);
-
-        duplicateNameIndex = buildDuplicateNameIndex(searchIndex);
-
-        fuse = new Fuse(searchIndex, FUSE_CONFIG);
+        rebuildPlaylistDerivedState();
 
         playlistReady = true;
-        refreshStatusSongList(true);
         setStatus('Ready. Click Start.');
         maybeStartPlayback();
     } catch (err) {
@@ -399,6 +404,21 @@ function onPlayerReady() {
     requestStartPlayback();
 }
 
+const THEME_NAMES = [null, 'starry-night'];
+
+function syncTheme() {
+    const song = core.getCurrentSong();
+    const theme = (song && song.theme) || 0;
+    if (theme === lastAppliedTheme) return;
+    lastAppliedTheme = theme;
+    const name = THEME_NAMES[theme];
+    if (name) {
+        document.documentElement.setAttribute('data-theme', name);
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+}
+
 function updateStatus(forcedTime) {
     if (!player || !player.getCurrentTime) return;
     const t = Number.isFinite(forcedTime) ? forcedTime : player.getCurrentTime();
@@ -412,6 +432,7 @@ function updateStatus(forcedTime) {
         document.title = newTitle;
     }
 
+    syncTheme();
     updateDuplicateButtonForCurrentSong();
     syncStatusPanelActiveState(t);
 }
@@ -445,6 +466,11 @@ function updateButtons() {
     // Shuffle button
     const shuffleOn = core.shuffleMode;
     updateButtonLabel(btnShuffle, `Shuffle: ${shuffleOn ? 'On' : 'Off'}`, shuffleOn);
+
+    // Member mode indicator on controls bar
+    if (controlsContainer) {
+        controlsContainer.classList.toggle('member-mode', core.memberMode);
+    }
 }
 
 function requestStartPlayback() {
@@ -989,6 +1015,43 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'A' && e.shiftKey && !modalOpen) {
         e.preventDefault();
         toggleStatusPanel();
+        return;
+    }
+
+    if (e.key === 'M' && e.shiftKey && !modalOpen) {
+        e.preventDefault();
+        const wasOnMemberStream = core.getCurrentStream()?.memberOnly === true;
+        const deactivating = core.memberMode; // about to flip off
+        let targetVideoId = null;
+
+        // When deactivating while on a member-only stream, find the next
+        // non-member stream in the original segment order to land on.
+        if (deactivating && wasOnMemberStream) {
+            const curId = core.getCurrentStream().videoId;
+            const origIdx = segmentsData.findIndex(v => v.videoId === curId);
+            for (let i = 1; i <= segmentsData.length; i++) {
+                const candidate = segmentsData[(origIdx + i) % segmentsData.length];
+                if (!candidate.memberOnly) {
+                    targetVideoId = candidate.videoId;
+                    break;
+                }
+            }
+        }
+
+        core.toggleMemberMode();
+        core.init(segmentsData);
+
+        if (targetVideoId) {
+            const idx = core.playlist.findIndex(p => p.videoId === targetVideoId);
+            if (idx !== -1) {
+                core.vIdx = idx;
+                core.rIdx = 0;
+            }
+        }
+
+        rebuildPlaylistDerivedState();
+        updateButtons();
+        loadCurrentContent(true);
         return;
     }
 

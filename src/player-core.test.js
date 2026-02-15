@@ -888,6 +888,93 @@ describe('PlayerCore', () => {
       });
   });
 
+  describe('Member-Only Streams', () => {
+      const MEMBER_SEGMENTS = [
+          { videoId: 'v1', title: 'Normal', songs: [{ name: 'S1', range: [0, 10] }] },
+          { videoId: 'v2', title: 'Members', songs: [{ name: 'S2', range: [0, 10] }], memberOnly: true },
+          { videoId: 'v3', title: 'Also Normal', songs: [{ name: 'S3', range: [0, 10] }] }
+      ];
+
+      it('preserves memberOnly flag through init() when memberMode is on', () => {
+          callbacks.getSettings = vi.fn(() => ({ memberMode: 'true' }));
+          const c = new PlayerCore(callbacks);
+          c.init(MEMBER_SEGMENTS);
+          expect(c.playlist.length).toBe(3);
+          expect(c.playlist[0].memberOnly).toBe(false);
+          expect(c.playlist[1].memberOnly).toBe(true);
+          expect(c.playlist[2].memberOnly).toBe(false);
+      });
+
+      it('filters out memberOnly entries when memberMode is off (default)', () => {
+          callbacks.getSettings = vi.fn(() => ({}));
+          const c = new PlayerCore(callbacks);
+          c.init(MEMBER_SEGMENTS);
+          expect(c.playlist.length).toBe(2);
+          expect(c.playlist.every(s => !s.memberOnly)).toBe(true);
+          expect(c.playlist[0].videoId).toBe('v1');
+          expect(c.playlist[1].videoId).toBe('v3');
+      });
+
+      it('keeps memberOnly entries when memberMode is on', () => {
+          callbacks.getSettings = vi.fn(() => ({ memberMode: true }));
+          const c = new PlayerCore(callbacks);
+          c.init(MEMBER_SEGMENTS);
+          expect(c.playlist.length).toBe(3);
+          expect(c.playlist[1].videoId).toBe('v2');
+          expect(c.playlist[1].memberOnly).toBe(true);
+      });
+
+      it('toggleMemberMode() flips the boolean and clears history', () => {
+          const c = new PlayerCore(callbacks);
+          c.init(MEMBER_SEGMENTS);
+          c.history = [{ vIdx: 0, rIdx: 0 }];
+
+          expect(c.memberMode).toBe(false);
+          const result = c.toggleMemberMode();
+          expect(result).toBe(true);
+          expect(c.memberMode).toBe(true);
+          expect(c.history).toEqual([]);
+          expect(callbacks.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ memberMode: true }));
+      });
+
+      it('restores stream position after re-init with changed filter', () => {
+          // Start with memberMode on, positioned at v3 (index 2)
+          callbacks.getSettings = vi.fn(() => ({ memberMode: 'true', videoId: 'v3' }));
+          const c = new PlayerCore(callbacks);
+          c.init(MEMBER_SEGMENTS);
+          expect(c.vIdx).toBe(2);
+          expect(c.playlist[c.vIdx].videoId).toBe('v3');
+
+          // Toggle member mode off — toggleMemberMode persists via _saveState
+          c.toggleMemberMode();
+          expect(c.memberMode).toBe(false);
+
+          // Re-init reads memberMode from getSettings; update the stored callback
+          c.cb.getSettings = vi.fn(() => ({ memberMode: false, videoId: 'v3' }));
+          c.init(MEMBER_SEGMENTS);
+          expect(c.playlist.length).toBe(2);
+          expect(c.vIdx).toBe(1);
+          expect(c.playlist[c.vIdx].videoId).toBe('v3');
+      });
+
+      it('clamps vIdx when current stream is filtered out', () => {
+          // Start with memberMode on, positioned at v2 (the member-only stream, index 1)
+          callbacks.getSettings = vi.fn(() => ({ memberMode: 'true', videoId: 'v2' }));
+          const c = new PlayerCore(callbacks);
+          c.init(MEMBER_SEGMENTS);
+          expect(c.vIdx).toBe(1);
+          expect(c.playlist[c.vIdx].videoId).toBe('v2');
+
+          // Toggle member mode off — v2 disappears from playlist
+          c.toggleMemberMode();
+          c.cb.getSettings = vi.fn(() => ({ memberMode: false, videoId: 'v2', vIdx: '5' }));
+          c.init(MEMBER_SEGMENTS);
+          expect(c.playlist.length).toBe(2);
+          expect(c.vIdx).toBeLessThan(c.playlist.length);
+          expect(c.getCurrentStream()).toBeDefined();
+      });
+  });
+
   describe('Start time sanitization', () => {
       it('keeps valid numeric times unchanged', () => {
           expect(core.sanitizeStartTime(12.34)).toBe(12.34);

@@ -25,6 +25,7 @@ export class PlayerCore {
     this.loopMode = LOOP_NONE;
     this.yapMode = false;
     this.shuffleMode = false;
+    this.memberMode = false;
 
     // Stream history powers deterministic back navigation (behavior §4C).
     // Session-only: cleared when tab closes, capped at HISTORY_LIMIT.
@@ -34,17 +35,22 @@ export class PlayerCore {
   }
 
   init(segmentData) {
-    // Preserve empty song lists so Rule 0 streams play as a single track.
-    this.playlist = segmentData.map(v => ({
-      videoId: v.videoId,
-      name: v.name || '',
-      title: v.title || v.videoId, // Fallback title if provided or ID
-      songs: (v.songs && v.songs.length > 0) ? v.songs : null
-    }));
-
     const saved = this.cb.getSettings();
     this.yapMode = saved.yapMode === 'true' || saved.yapMode === true;
     this.shuffleMode = saved.shuffleMode === 'true' || saved.shuffleMode === true;
+    this.memberMode = saved.memberMode === 'true' || saved.memberMode === true;
+
+    // Filter out member-only streams unless member mode is enabled.
+    const filtered = this.memberMode ? segmentData : segmentData.filter(v => !v.memberOnly);
+
+    // Preserve empty song lists so Rule 0 streams play as a single track.
+    this.playlist = filtered.map(v => ({
+      videoId: v.videoId,
+      name: v.name || '',
+      title: v.title || v.videoId, // Fallback title if provided or ID
+      songs: (v.songs && v.songs.length > 0) ? v.songs : null,
+      memberOnly: !!v.memberOnly
+    }));
     
     // Parse Loop Mode (default to 0)
     const savedLoop = parseInt(saved.loopMode, 10);
@@ -65,6 +71,8 @@ export class PlayerCore {
         const savedVIdx = parseInt(saved.vIdx, 10);
         if (!isNaN(savedVIdx) && savedVIdx >= 0 && savedVIdx < this.playlist.length) {
             this.vIdx = savedVIdx;
+        } else if (this.vIdx >= this.playlist.length) {
+            this.vIdx = 0;
         }
     }
     
@@ -100,6 +108,7 @@ export class PlayerCore {
       this.cb.saveSettings({
           yapMode: this.yapMode,
           shuffleMode: this.shuffleMode,
+          memberMode: this.memberMode,
           loopMode: this.loopMode,
           vIdx: this.vIdx,
           videoId: stream ? stream.videoId : '',
@@ -226,6 +235,13 @@ export class PlayerCore {
       }
       this._saveState();
       return this.shuffleMode;
+  }
+
+  toggleMemberMode() {
+      this.memberMode = !this.memberMode;
+      this.history = []; // Playlist indices change, history is invalid
+      this._saveState();
+      return this.memberMode;
   }
 
   // ================= NAVIGATION =================
