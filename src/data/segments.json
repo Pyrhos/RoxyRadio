@@ -3988,5 +3988,170 @@
         ]
       }
     ]
+  },
+  {
+    "name": "LOVE vs. HEARTBREAK (Rare Saturday Karaoke)",
+    "videoId": "pthV_BUWbL0",
+    "memberOnly": true,
+    "songs": [
+      {
+        "name": "Un-Break My Heart - Toni Braxton",
+        "theme": 1,
+        "range": [
+          1806,
+          2071
+        ]
+      },
+      {
+        "name": "Can't Help Falling in Love with You - Elvis Presley",
+        "range": [
+          2130,
+          2302
+        ]
+      },
+      {
+        "name": "Lovefool - The Cardigans",
+        "theme": 1,
+        "range": [
+          2391,
+          2632
+        ]
+      },
+      {
+        "name": "You to Me Are Everything - The Real Thing",
+        "range": [
+          2785,
+          2984
+        ]
+      },
+      {
+        "name": "Always - Bon Jovi",
+        "theme": 1,
+        "range": [
+          3199,
+          3555
+        ]
+      },
+      {
+        "name": "Heaven - Bryan Adams",
+        "range": [
+          3626,
+          3861
+        ]
+      },
+      {
+        "name": "Cry Me a River - Julie London",
+        "theme": 1,
+        "range": [
+          3945,
+          4098
+        ]
+      },
+      {
+        "name": "Your Song - Elton John",
+        "range": [
+          4168,
+          4406
+        ]
+      },
+      {
+        "name": "You Give Love a Bad Name - Bon Jovi",
+        "theme": 1,
+        "range": [
+          4510,
+          4739
+        ]
+      },
+      {
+        "name": "How Deep Is Your Love - Bee Gees",
+        "range": [
+          4816,
+          5070
+        ]
+      },
+      {
+        "name": "Love of My Life - Queen",
+        "theme": 1,
+        "range": [
+          5102,
+          5317
+        ]
+      },
+      {
+        "name": "L-O-V-E - Nat King Cole",
+        "range": [
+          5442,
+          5634
+        ]
+      },
+      {
+        "name": "You Oughta Know - Alanis Morissette",
+        "theme": 1,
+        "range": [
+          5753,
+          6008
+        ]
+      },
+      {
+        "name": "Fever - Peggy Lee",
+        "range": [
+          6393,
+          6593
+        ]
+      },
+      {
+        "name": "Love Hurts - Nazareth",
+        "theme": 1,
+        "range": [
+          6634,
+          6863
+        ]
+      },
+      {
+        "name": "Nothing's Gonna Change My Love for You - George Benson",
+        "range": [
+          6909,
+          7155
+        ]
+      },
+      {
+        "name": "Don't Speak - No Doubt",
+        "theme": 1,
+        "range": [
+          7187,
+          7448
+        ]
+      },
+      {
+        "name": "Hallelujah I Love Her So - Ray Charles",
+        "range": [
+          7492,
+          7641
+        ]
+      },
+      {
+        "name": "Still Loving You - Scorpions",
+        "theme": 1,
+        "range": [
+          7688,
+          8086
+        ]
+      },
+      {
+        "name": "My Funny Valentine - Frank Sinatra",
+        "range": [
+          8159,
+          8321
+        ]
+      },
+      {
+        "name": "I Will Survive - Gloria Gaynor",
+        "theme": 1,
+        "range": [
+          8499,
+          8704
+        ]
+      }
+    ]
   }
 ]
