@@ -3079,7 +3079,7 @@
         ]
       },
       {
-        "name": "You Give Love A Bad Name - Bon Jovi",
+        "name": "You Give Love a Bad Name - Bon Jovi",
         "range": [
           2725,
           2954
@@ -3724,7 +3724,7 @@
         ]
       },
       {
-        "name": "Can't help falling in Love - Elvis Presley",
+        "name": "Can't Help Falling in Love - Elvis Presley",
         "range": [
           3194,
           3369
@@ -3773,7 +3773,7 @@
         ]
       },
       {
-        "name": "How deep is your love - Bee Gees",
+        "name": "How Deep Is Your Love - Bee Gees",
         "range": [
           5424,
           5656
@@ -4003,9 +4003,9 @@
         ]
       },
       {
-        "name": "Can't Help Falling in Love with You - Elvis Presley",
+        "name": "Can't Help Falling in Love - Elvis Presley",
         "range": [
-          2130,
+          2131,
           2302
         ]
       },
@@ -4028,7 +4028,7 @@
         "name": "Always - Bon Jovi",
         "theme": 1,
         "range": [
-          3199,
+          3200,
           3555
         ]
       },
@@ -4043,7 +4043,7 @@
         "name": "Cry Me a River - Julie London",
         "theme": 1,
         "range": [
-          3945,
+          3946,
           4098
         ]
       },
@@ -4058,7 +4058,7 @@
         "name": "You Give Love a Bad Name - Bon Jovi",
         "theme": 1,
         "range": [
-          4510,
+          4511,
           4739
         ]
       },
@@ -4088,7 +4088,7 @@
         "name": "You Oughta Know - Alanis Morissette",
         "theme": 1,
         "range": [
-          5753,
+          5755,
           6008
         ]
       },
