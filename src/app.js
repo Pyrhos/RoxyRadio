@@ -1,10 +1,13 @@
-import Fuse from 'fuse.js';
 import { PlayerCore } from './player-core.js';
 import segmentsData from './data/segments.json';
 import messagesData from './data/messages.json';
-import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, sortSearchResultsByCurrentStream, FUSE_CONFIG } from './search-helpers.js';
-import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
-import { MessageQueue, validateMessages } from './message-bar.js';
+import { createMessageBarController } from './message-bar-ui.js';
+import { initWantedPoster } from './wanted-poster.js';
+import { createSearchController } from './search-modal.js';
+import { createStatusPanelController } from './status-panel.js';
+import { createImportAndMoreController } from './import-ui.js';
+import { createPlaybackController } from './playback.js';
+import { validateSegmentData } from './import-helpers.js';
 
 // ======== CONFIG ========
 const TICK_MS = 200;
@@ -13,28 +16,17 @@ const YAP_TOGGLE_DEBOUNCE_MS = 300;
 const VIDEO_LOAD_DEBOUNCE_MS = 300;
 
 // ======== STATE ========
-let tickHandle = null;
 let player = null;
 let isReady = false;
 let playlistReady = false;
 let pendingStart = false;
-let lastKnownTime = 0;
-let modalToggleTime = 0;
 let yapToggleTime = 0;
-let currentLoadedVideoId = null;
-let lastVideoLoadTime = 0;
-
-// Search State
-let fuse = null;
-let searchResults = [];
-let searchSelIdx = 0;
-
-// Duplicate Song State
-let duplicateNameIndex = new Map();
-let duplicateSearchName = '';
 
 // URL parameter override (YouTube-style ?v= and ?t= params)
 let urlOverride = null;
+
+// Active segment source — defaults to built-in, overridden by import
+let activeSegments = segmentsData;
 
 const loopLabels = ['None', 'Track', 'Stream'];
 const loopIcons = ['./loop.png', './loop-active-track.png', './loop-active.png'];
@@ -64,25 +56,27 @@ const statusSongList = document.getElementById('status-song-list');
 const modal = document.getElementById('modal-overlay');
 const searchInput = document.getElementById('search-input');
 const resultsContainer = document.getElementById('search-results');
-let statusPanelStreamId = '';
-let statusPanelSongCount = 0;
-let statusPanelOpen = false;
-let statusPanelSelIdx = -1;
+
+const importModal = document.getElementById('import-overlay');
+const importReplaceBtn = document.getElementById('import-replace-btn');
+const importAppendBtn = document.getElementById('import-extend-btn');
+const importStatus = document.getElementById('import-status');
+
+const moreOverlay = document.getElementById('more-overlay');
+const moreBtn = document.getElementById('more-btn');
+const moreMemberBtn = document.getElementById('more-member-btn');
+const moreImportBtn = document.getElementById('more-import-btn');
+const moreCopyBtn = document.getElementById('more-copy-btn');
+const moreCloseBtn = document.getElementById('more-close-btn');
 let lastStatusText = '';
 let lastTitleText = document.title;
 let lastAppliedTheme = 0;
-let titleRefreshHandle = null;
-
-if (statusSongList) {
-    statusSongList.setAttribute('role', 'listbox');
-    statusSongList.setAttribute('aria-label', 'Current karaoke songs');
-}
 
 // Core Logic Instance
 const core = new PlayerCore({
     playVideo: (forceStart = true) => loadCurrentContent(forceStart),
     seekTo: (time) => {
-        seekToSafe(time);
+        playbackCtrl.seekToSafe(time);
     },
     saveSettings: (settings) => {
         for (const [key, val] of Object.entries(settings)) {
@@ -114,128 +108,170 @@ const core = new PlayerCore({
     onStatus: () => updateStatus()
 });
 
-function seekToSafe(time, stream = core.getCurrentStream()) {
-    const safeStart = core.sanitizeStartTime(time, stream);
-    if (player && player.seekTo) {
-        player.seekTo(safeStart, true);
-    }
-    lastKnownTime = safeStart;
-    updateStatus();
-}
+// ======== CONTROLLERS ========
 
-function getSafeCurrentTime() {
-    if (!player) {
-        return lastKnownTime;
-    }
-
-    const playerTime = player.getCurrentTime();
-
-    // If player returns a valid time > 0, use it and update lastKnownTime
-    if (Number.isFinite(playerTime) && playerTime > 0) {
-        lastKnownTime = playerTime;
-        return playerTime;
-    }
-
-    // If player returns 0 or invalid, prefer lastKnownTime if it's valid
-    // This guards against race conditions during video loading transitions
-    if (Number.isFinite(lastKnownTime) && lastKnownTime > 0) {
-        return lastKnownTime;
-    }
-
-    // Both are 0/invalid - return what the player says (likely 0 at stream start)
-    return playerTime;
-}
-
-function playVideoAt(stream, desiredStart, endSeconds, forceReload = false) {
-    if (!stream) return;
-    const safeStart = core.sanitizeStartTime(desiredStart, stream);
-    let safeEnd = Number.isFinite(endSeconds) && endSeconds > 0 ? endSeconds : undefined;
-    if (safeEnd !== undefined && safeEnd <= safeStart) {
-        safeEnd = undefined;
-    }
-
-    if (!player || !player.loadVideoById) return;
-
-    const isSameVideo = currentLoadedVideoId === stream.videoId;
-    if (isSameVideo && !forceReload) {
-        seekToSafe(safeStart, stream);
-        return;
-    }
-
-    const now = Date.now();
-    const timeSinceLastLoad = now - lastVideoLoadTime;
-    if (timeSinceLastLoad < VIDEO_LOAD_DEBOUNCE_MS) {
-        const delay = VIDEO_LOAD_DEBOUNCE_MS - timeSinceLastLoad;
-        setTimeout(() => playVideoAt(stream, desiredStart, endSeconds, forceReload), delay);
-        return;
-    }
-    lastVideoLoadTime = now;
-
-    // Different video or forced reload - do full load
-    console.log(`Loading ${stream.videoId} [${safeStart}-${safeEnd ?? 'end'}]`);
-    lastKnownTime = safeStart;
-    currentLoadedVideoId = stream.videoId;
-
-    const payload = {
-        videoId: stream.videoId,
-        startSeconds: safeStart,
-        suggestedQuality: 'default'
-    };
-    if (safeEnd !== undefined) {
-        payload.endSeconds = safeEnd;
-    }
-    player.loadVideoById(payload);
-}
-
-function startTickLoop() {
-    if (tickHandle) return;
-    tickHandle = setInterval(tick, TICK_MS);
-}
-
-function stopTickLoop() {
-    if (!tickHandle) return;
-    clearInterval(tickHandle);
-    tickHandle = null;
-}
-
-function shouldTickRun() {
-    if (!player || typeof player.getPlayerState !== 'function') return false;
-    if (typeof YT === 'undefined' || !YT.PlayerState) return false;
-
-    const state = player.getPlayerState();
-    if (state !== YT.PlayerState.PLAYING) return false;
-
-    if (document.hidden) {
-        const stream = core.getCurrentStream();
-        const needsGapSkipping = stream && stream.songs && stream.songs.length > 0 && !core.yapMode;
-        if (!needsGapSkipping) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-function evaluateTickLoop() {
-    if (shouldTickRun()) {
-        startTickLoop();
-    } else {
-        stopTickLoop();
-    }
-}
-
-function ensureTitleRefreshLoop() {
-    if (titleRefreshHandle) return;
-    titleRefreshHandle = setInterval(() => {
-        const t = player && player.getCurrentTime ? player.getCurrentTime() : lastKnownTime;
+const playbackCtrl = createPlaybackController({
+    getPlayer: () => player,
+    getCurrentStream: () => core.getCurrentStream(),
+    sanitizeStartTime: (time, stream) => core.sanitizeStartTime(time, stream),
+    isYapMode: () => core.yapMode,
+    onTick: (t) => {
         updateStatus(t);
-    }, TITLE_REFRESH_MS);
-}
+        core.checkTick(t);
+    },
+    onSeek: (t) => {
+        updateStatus(t);
+    },
+    TICK_MS,
+    VIDEO_LOAD_DEBOUNCE_MS,
+    TITLE_REFRESH_MS,
+});
 
-ensureTitleRefreshLoop();
+const searchCtrl = createSearchController({
+    modal, searchInput, resultsContainer, btnSearch, btnDuplicates,
+    getCurrentStreamIdx: () => core.vIdx,
+    getCurrentSong: () => core.getCurrentSong(),
+    onSelectResult: (vIdx, rIdx) => {
+        core.vIdx = vIdx;
+        core.rIdx = rIdx;
+        loadCurrentContent(true);
+    },
+});
+
+const statusCtrl = createStatusPanelController({
+    statusEl, statusPanel, statusSongList,
+    getCurrentStream: () => core.getCurrentStream(),
+    getCurrentStreamIdx: () => core.vIdx,
+    getCoreRIdx: () => core.rIdx,
+    getStreamDefaultStart: (stream) => core.getStreamDefaultStart(stream),
+    getPlayerTime: () => player && typeof player.getCurrentTime === 'function'
+        ? player.getCurrentTime()
+        : undefined,
+    isPlaylistReady: () => playlistReady,
+    onSongPick: (safeIdx) => {
+        const stream = core.getCurrentStream();
+        if (!stream) return;
+
+        core.rIdx = safeIdx;
+
+        const songs = stream.songs || [{ name: stream.title || stream.name || 'Full Stream', range: [core.getStreamDefaultStart(stream) || 0, null] }];
+        const targetRange = songs[safeIdx].range;
+        const startSeconds = Array.isArray(targetRange) && Number.isFinite(targetRange[0])
+            ? targetRange[0]
+            : core.getStreamDefaultStart(stream);
+
+        if (!stream.songs || !stream.songs.length || core.yapMode) {
+            playbackCtrl.seekToSafe(startSeconds, stream);
+        } else {
+            loadCurrentContent(true, startSeconds);
+        }
+    },
+});
+
+const importCtrl = createImportAndMoreController({
+    importModal, importStatus,
+    moreOverlay, moreMemberBtn, moreBtn, moreCopyBtn, moreImportBtn, moreCloseBtn,
+    importReplaceBtn, importAppendBtn,
+    importResetBtn: document.getElementById('import-reset-btn'),
+    onImportReplace: (data) => {
+        core.init(data);
+        if (!core.playlist.length) {
+            importCtrl.setImportStatus('Import produced an empty playlist', 'error');
+            console.warn('[Import] Imported data produced an empty playlist');
+            core.init(activeSegments);
+            rebuildPlaylistDerivedState();
+            return;
+        }
+
+        activeSegments = data;
+        persistCustomSegments(data);
+
+        core.vIdx = 0;
+        core.rIdx = 0;
+        rebuildPlaylistDerivedState();
+        updateButtons();
+        loadCurrentContent(true);
+        importCtrl.setImportStatus(`Replaced \u2014 ${core.playlist.length} streams loaded`, 'ok');
+        importCtrl.toggleImportModal();
+        console.log(`[Import] Replaced with ${core.playlist.length} streams from clipboard`);
+    },
+    onImportAppend: (data) => {
+        const importedIds = new Set(data.map(entry => entry.videoId));
+        const kept = activeSegments.filter(entry => !importedIds.has(entry.videoId));
+        const merged = [...kept, ...data];
+
+        core.init(merged);
+        if (!core.playlist.length) {
+            importCtrl.setImportStatus('Merge produced an empty playlist', 'error');
+            console.warn('[Import] Merged data produced an empty playlist');
+            core.init(activeSegments);
+            rebuildPlaylistDerivedState();
+            return;
+        }
+
+        activeSegments = merged;
+        persistCustomSegments(merged);
+
+        core.vIdx = 0;
+        core.rIdx = 0;
+        rebuildPlaylistDerivedState();
+        updateButtons();
+        loadCurrentContent(true);
+        importCtrl.setImportStatus(`Extended \u2014 ${core.playlist.length} streams total`, 'ok');
+        importCtrl.toggleImportModal();
+        console.log(`[Import] Appended ${data.length} streams (${importedIds.size} unique), total ${core.playlist.length}`);
+    },
+    onImportReset: () => {
+        activeSegments = segmentsData;
+        localStorage.removeItem('roxy_customSegments');
+
+        core.init(activeSegments);
+        core.vIdx = 0;
+        core.rIdx = 0;
+        rebuildPlaylistDerivedState();
+        updateButtons();
+        loadCurrentContent(true);
+        importCtrl.setImportStatus(`Reset \u2014 ${core.playlist.length} default streams restored`, 'ok');
+        importCtrl.toggleImportModal();
+        console.log(`[Import] Reset to default playlist (${core.playlist.length} streams)`);
+    },
+    onMemberToggle: () => performMemberModeToggle(),
+    onCopyShareUrl: (buttonEl) => {
+        const stream = core.getCurrentStream();
+        if (stream && stream.videoId) {
+            const currentTime = playbackCtrl.getSafeCurrentTime();
+            const timeParam = Math.floor(currentTime);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const original = buttonEl.textContent;
+                buttonEl.textContent = 'Copied!';
+                setTimeout(() => { buttonEl.textContent = original; }, 1500);
+            }).catch(err => {
+                console.error('[Share] Failed to copy URL to clipboard', err);
+            });
+        }
+    },
+    isMemberMode: () => core.memberMode,
+});
+
+const messageBarCtrl = createMessageBarController({
+    messageBar: document.getElementById('message-bar'),
+    messageText: document.getElementById('message-text'),
+    messageClose: document.getElementById('message-close'),
+    messagesData,
+});
+
+initWantedPoster({
+    boltTrigger: document.getElementById('bolt-trigger'),
+    wantedOverlay: document.getElementById('wanted-overlay'),
+});
+
+// ======== PLAYBACK LIFECYCLE ========
+
+playbackCtrl.ensureTitleRefreshLoop((t) => updateStatus(t));
 
 window.addEventListener('beforeunload', () => {
-    let time = lastKnownTime;
+    let time = playbackCtrl.getLastKnownTime();
     if (player && typeof player.getCurrentTime === 'function') {
         try {
             const live = player.getCurrentTime();
@@ -285,7 +321,6 @@ function parseUrlParams() {
 
         if (!videoId) return null;
 
-        // Find the stream index by videoId
         const streamIdx = core.playlist.findIndex(s => s.videoId === videoId);
         if (streamIdx === -1) {
             console.log(`[URL] v=${videoId} not found in playlist, ignoring`);
@@ -294,13 +329,11 @@ function parseUrlParams() {
 
         const result = { streamIdx, time: null };
 
-        // Parse timestamp if provided
         if (timestamp !== null) {
             const t = parseFloat(timestamp);
             if (Number.isFinite(t) && t >= 0) {
                 const stream = core.playlist[streamIdx];
 
-                // Validate timestamp is within outer bounds
                 if (stream.songs && stream.songs.length > 0) {
                     const firstStart = stream.songs[0].range[0];
                     const lastEnd = stream.songs[stream.songs.length - 1].range[1];
@@ -311,7 +344,6 @@ function parseUrlParams() {
                         console.log(`[URL] t=${t} is outside segment bounds [${firstStart}, ${lastEnd}], ignoring timestamp`);
                     }
                 } else {
-                    // Rule 0 stream (no songs array) - accept any non-negative timestamp
                     result.time = t;
                 }
             }
@@ -328,17 +360,37 @@ function parseUrlParams() {
 initializePlaylist();
 
 function rebuildPlaylistDerivedState() {
-    const searchIndex = buildSearchIndexFromPlaylist(core.playlist);
-    duplicateNameIndex = buildDuplicateNameIndex(searchIndex);
-    fuse = new Fuse(searchIndex, FUSE_CONFIG);
-    searchResults = [];
-    searchSelIdx = 0;
-    refreshStatusSongList(true);
+    searchCtrl.rebuild(core.playlist);
+    statusCtrl.refresh(true);
+}
+
+function persistCustomSegments(data) {
+    try {
+        localStorage.setItem('roxy_customSegments', JSON.stringify(data));
+    } catch (err) {
+        console.warn('[Import] Failed to persist custom segments:', err.message);
+    }
 }
 
 function initializePlaylist() {
     try {
-        core.init(segmentsData); // Core handles the filtering logic
+        // Restore custom playlist from localStorage if present
+        const savedSegments = localStorage.getItem('roxy_customSegments');
+        if (savedSegments) {
+            try {
+                const parsed = JSON.parse(savedSegments);
+                if (validateSegmentData(parsed)) {
+                    activeSegments = parsed;
+                    console.log(`[Import] Restored ${parsed.length} custom streams from localStorage`);
+                } else {
+                    localStorage.removeItem('roxy_customSegments');
+                }
+            } catch {
+                localStorage.removeItem('roxy_customSegments');
+            }
+        }
+
+        core.init(activeSegments);
 
         if (!core.playlist.length) throw new Error('Empty playlist');
 
@@ -351,7 +403,6 @@ function initializePlaylist() {
                 (urlOverride.time !== null ? ` at t=${urlOverride.time}` : ''));
         }
 
-        // Update buttons state based on core init (e.g. persisted Yap mode)
         updateButtons();
 
         rebuildPlaylistDerivedState();
@@ -384,7 +435,7 @@ window.onYouTubeIframeAPIReady = function () {
             onReady: onPlayerReady,
             onStateChange: onStateChange,
             onError: (e) => {
-                currentLoadedVideoId = null; // Reset so next play attempt does full reload
+                playbackCtrl.resetLoadedVideoId();
                 setStatus('YouTube error: ' + e.data);
             }
         }
@@ -433,8 +484,8 @@ function updateStatus(forcedTime) {
     }
 
     syncTheme();
-    updateDuplicateButtonForCurrentSong();
-    syncStatusPanelActiveState(t);
+    searchCtrl.updateDuplicateButton();
+    statusCtrl.syncActiveState(t);
 }
 
 function updateButtonLabel(btn, text, isActive) {
@@ -450,6 +501,76 @@ function updateButtonIcon(icon, src, alt) {
         icon.setAttribute('src', src);
         icon.setAttribute('alt', alt);
     }
+}
+
+// Debug button logic
+if (import.meta.env.DEV) {
+    const debugBtn = document.getElementById('debug-btn');
+    const debugEndBtn = document.getElementById('debug-end-btn');
+    const debugContainer = document.getElementById('debug-container');
+
+    if (debugContainer) {
+        debugContainer.style.display = 'flex';
+
+        if (debugBtn) {
+            debugBtn.addEventListener('click', () => {
+                if (player && typeof player.getCurrentTime === 'function') {
+                    const t = player.getCurrentTime();
+                    const val = Math.ceil(t).toString();
+                    navigator.clipboard.writeText(val).then(() => {
+                        const originalText = debugBtn.textContent;
+                        debugBtn.textContent = 'Copied!';
+                        setTimeout(() => debugBtn.textContent = originalText, 1000);
+                    }).catch(err => {
+                        console.error('Failed to copy timestamp', err);
+                    });
+                }
+            });
+        }
+
+        if (debugEndBtn) {
+            debugEndBtn.addEventListener('click', () => {
+                const song = core.getCurrentSong();
+                if (song && song.range) {
+                    const time = Math.max(song.range[0], song.range[1] - 5);
+                    playbackCtrl.seekToSafe(time);
+                }
+            });
+        }
+    }
+}
+
+function performMemberModeToggle() {
+    const wasOnMemberStream = core.getCurrentStream()?.memberOnly === true;
+    const deactivating = core.memberMode;
+    let targetVideoId = null;
+
+    if (deactivating && wasOnMemberStream) {
+        const curId = core.getCurrentStream().videoId;
+        const origIdx = activeSegments.findIndex(v => v.videoId === curId);
+        for (let i = 1; i <= activeSegments.length; i++) {
+            const candidate = activeSegments[(origIdx + i) % activeSegments.length];
+            if (!candidate.memberOnly) {
+                targetVideoId = candidate.videoId;
+                break;
+            }
+        }
+    }
+
+    core.toggleMemberMode();
+    core.init(activeSegments);
+
+    if (targetVideoId) {
+        const idx = core.playlist.findIndex(p => p.videoId === targetVideoId);
+        if (idx !== -1) {
+            core.vIdx = idx;
+            core.rIdx = 0;
+        }
+    }
+
+    rebuildPlaylistDerivedState();
+    updateButtons();
+    loadCurrentContent(true);
 }
 
 function updateButtons() {
@@ -471,6 +592,8 @@ function updateButtons() {
     if (controlsContainer) {
         controlsContainer.classList.toggle('member-mode', core.memberMode);
     }
+
+    importCtrl.updateMoreMemberBtn();
 }
 
 function requestStartPlayback() {
@@ -490,13 +613,10 @@ function startPlaybackInternal() {
 
     let startTime = null;
 
-    // URL param override takes priority over saved state
     if (urlOverride) {
         if (urlOverride.time !== null) {
             startTime = core.normalizeResumeTime(urlOverride.time);
         }
-        // When URL specifies a video, don't use saved time from a different video
-        // startTime stays null if no valid t= was provided, which loads from song start
         urlOverride = null;
     } else {
         const savedTime = core.getStartSeconds();
@@ -506,17 +626,8 @@ function startPlaybackInternal() {
 
     loadCurrentContent(true, startTime);
 
-    stopTickLoop();
-    evaluateTickLoop();
-}
-
-function tick() {
-    if (!player || !player.getCurrentTime) return;
-    const t = player.getCurrentTime();
-    if (Number.isFinite(t)) lastKnownTime = t;
-
-    updateStatus(t);
-    core.checkTick(t);
+    playbackCtrl.stopTickLoop();
+    playbackCtrl.evaluateTickLoop();
 }
 
 function onStateChange(ev) {
@@ -539,7 +650,7 @@ function onStateChange(ev) {
         }
     }
 
-    evaluateTickLoop();
+    playbackCtrl.evaluateTickLoop();
 }
 
 function loadCurrentContent(autoplay, startTimeOverride = null) {
@@ -552,14 +663,11 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
     let endSeconds = undefined;
 
     if (core.yapMode && stream.songs) {
-        // Yap mode plays continuously from the first to the last segment.
         startSeconds = stream.songs[0].range[0];
         endSeconds = stream.songs[stream.songs.length - 1].range[1];
     } else if (!core.yapMode && !stream.songs) {
-        // Rule 0: single-song video – keep a hard end bound.
         endSeconds = song.range[1];
     } else if (core.yapMode && !stream.songs) {
-        // Single song video in yap mode behaves same as standard.
         endSeconds = song.range[1];
     }
 
@@ -572,16 +680,15 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
     }
 
     if (endSeconds === 0 || !endSeconds) {
-        endSeconds = undefined; // Let it play to end
+        endSeconds = undefined;
     }
 
-    playVideoAt(stream, startSeconds, endSeconds);
-    refreshStatusSongList();
+    playbackCtrl.playVideoAt(stream, startSeconds, endSeconds);
+    statusCtrl.refresh();
 }
 
 // ======== UI WIRES ========
 btnPrevStream.addEventListener('click', (event) => {
-    // Shift+click bypasses history and goes to actual previous stream (when shuffle is ON)
     if (core.prevStream({ skipHistory: event.shiftKey })) loadCurrentContent(true);
 });
 
@@ -590,7 +697,7 @@ btnNextStream.addEventListener('click', () => {
 });
 
 btnPrevSong.addEventListener('click', () => {
-    const curTime = getSafeCurrentTime();
+    const curTime = playbackCtrl.getSafeCurrentTime();
     const action = core.prevSong(curTime);
     if (action.type === 'load') {
         loadCurrentContent(true);
@@ -603,7 +710,7 @@ btnPrevSong.addEventListener('click', () => {
 });
 
 btnNextSong.addEventListener('click', () => {
-    const curTime = getSafeCurrentTime();
+    const curTime = playbackCtrl.getSafeCurrentTime();
     const action = core.nextSong(curTime);
     if (action.type === 'load') loadCurrentContent(true);
     if (action.type === 'seek') core.cb.seekTo(action.time);
@@ -619,40 +726,6 @@ btnShuffle.addEventListener('click', () => {
     updateButtons();
 });
 
-if (btnSearch) {
-    btnSearch.addEventListener('click', () => {
-        const now = Date.now();
-        if (now - modalToggleTime < 400) return; // Debounce rapid clicks
-        modalToggleTime = now;
-        toggleModal();
-    });
-}
-
-if (btnDuplicates && fuse) {
-    btnDuplicates.addEventListener('click', () => {
-        if (!duplicateSearchName) return;
-        if (!modal.classList.contains('open')) {
-            toggleModal();
-        }
-
-        searchInput.value = duplicateSearchName;
-        if (fuse) {
-            const results = fuse.search(duplicateSearchName, { limit: 20 });
-            renderResults(results.map(r => r.item));
-        }
-    });
-}
-
-if (statusEl) {
-    statusEl.addEventListener('click', () => toggleStatusPanel());
-    statusEl.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            toggleStatusPanel();
-        }
-    });
-}
-
 btnYap.addEventListener('click', () => {
     const now = Date.now();
     if (now - yapToggleTime < YAP_TOGGLE_DEBOUNCE_MS) return;
@@ -661,7 +734,7 @@ btnYap.addEventListener('click', () => {
     core.toggleYap();
     updateButtons();
 
-    const t = getSafeCurrentTime();
+    const t = playbackCtrl.getSafeCurrentTime();
     core.syncToTime(t);
 
     if (!core.yapMode) { // Switched TO Standard
@@ -678,14 +751,12 @@ btnYap.addEventListener('click', () => {
 
     let endSeconds = undefined;
     if (core.yapMode && stream.songs) {
-        // Switching into Yap: play continuously to the end of the last song.
         endSeconds = stream.songs[stream.songs.length - 1].range[1];
     } else if (!core.yapMode && !stream.songs) {
-        // Switching out of Yap on a Rule 0 stream keeps a bounded end.
         endSeconds = song.range[1];
     }
 
-    playVideoAt(stream, t, endSeconds);
+    playbackCtrl.playVideoAt(stream, t, endSeconds);
 });
 
 btnStart.addEventListener('click', () => requestStartPlayback());
@@ -697,361 +768,71 @@ function setStatus(msg) {
     statusTextEl.textContent = msg;
 }
 
-function toggleStatusPanel(forceState) {
-    if (!statusEl || !statusPanel || !statusSongList || !playlistReady) return;
-
-    refreshStatusSongList();
-
-    const hasSongs = statusSongList.children.length > 0;
-    let nextState = typeof forceState === 'boolean' ? forceState : !statusPanelOpen;
-    if (nextState && !hasSongs) {
-        nextState = false;
-    }
-    statusPanelOpen = nextState;
-
-    statusPanel.classList.toggle('open', statusPanelOpen);
-    statusPanel.setAttribute('aria-hidden', statusPanelOpen ? 'false' : 'true');
-    statusPanel.inert = !statusPanelOpen;
-    statusEl.setAttribute('aria-expanded', statusPanelOpen ? 'true' : 'false');
-
-    if (statusPanelOpen) {
-        initializeStatusPanelSelection(true);
-    } else {
-        clearStatusPanelSelection();
-    }
-}
-
-function refreshStatusSongList(force = false) {
-    if (!statusSongList || !playlistReady) return;
-    const stream = core.getCurrentStream();
-    if (!stream) return;
-
-    const songs = getStatusSongsForStream(stream);
-    const streamId = stream.videoId || `stream-${core.vIdx}`;
-
-    if (!force && statusPanelStreamId === streamId && statusPanelSongCount === songs.length) {
-        syncStatusPanelActiveState();
-        return;
-    }
-
-    statusPanelStreamId = streamId;
-    statusPanelSongCount = songs.length;
-
-    statusSongList.innerHTML = '';
-    songs.forEach((song, idx) => {
-        const item = document.createElement('li');
-        item.className = 'status-song';
-        item.dataset.songIndex = String(idx);
-        item.tabIndex = 0;
-        item.setAttribute('role', 'option');
-        item.innerHTML = `
-            <span class="status-song-index">${idx + 1}.</span>
-            <span class="status-song-name">${song.name || `Track ${idx + 1}`}</span>
-        `;
-        item.addEventListener('click', () => handleStatusSongPick(idx));
-        item.addEventListener('focus', () => {
-            if (!statusPanelOpen) return;
-            statusPanelSelIdx = idx;
-            applyStatusPanelSelection(false);
-        });
-        statusSongList.appendChild(item);
-    });
-
-    syncStatusPanelActiveState();
-    if (statusPanelOpen) {
-        initializeStatusPanelSelection();
-    }
-}
-
-function getStatusSongsForStream(stream) {
-    if (stream && Array.isArray(stream.songs) && stream.songs.length) {
-        return stream.songs;
-    }
-    if (!stream) return [];
-    return [{
-        name: stream.title || stream.name || 'Full Stream',
-        range: [core.getStreamDefaultStart(stream) || 0, null]
-    }];
-}
-
-function handleStatusSongPick(songIndex) {
-    const stream = core.getCurrentStream();
-    if (!stream) return;
-
-    const songs = getStatusSongsForStream(stream);
-    if (!songs.length) return;
-
-    const safeIdx = Math.min(Math.max(songIndex, 0), songs.length - 1);
-    core.rIdx = safeIdx;
-
-    const targetRange = songs[safeIdx].range;
-    const startSeconds = Array.isArray(targetRange) && Number.isFinite(targetRange[0])
-        ? targetRange[0]
-        : core.getStreamDefaultStart(stream);
-
-    if (!stream.songs || !stream.songs.length || core.yapMode) {
-        seekToSafe(startSeconds, stream);
-    } else {
-        loadCurrentContent(true, startSeconds);
-    }
-
-    syncStatusPanelActiveState();
-    toggleStatusPanel(false);
-}
-
-function getActiveStatusSongIndex(currentTime) {
-    const stream = core.getCurrentStream();
-    if (!stream) return 0;
-
-    const songs = getStatusSongsForStream(stream);
-    if (!songs.length) return 0;
-
-    if (!stream.songs || !stream.songs.length) {
-        return 0;
-    }
-
-    if (Number.isFinite(currentTime)) {
-        const matchIdx = stream.songs.findIndex(
-            (song) => currentTime >= song.range[0] && currentTime < song.range[1]
-        );
-        if (matchIdx !== -1) {
-            return Math.min(Math.max(matchIdx, 0), songs.length - 1);
-        }
-        return -1;
-    }
-
-    const fallbackIdx = Number.isFinite(core.rIdx) ? core.rIdx : 0;
-    return Math.min(Math.max(fallbackIdx, 0), songs.length - 1);
-}
-
-function initializeStatusPanelSelection(ensureVisible = false) {
-    if (!statusPanelOpen || !statusSongList || !statusSongList.children.length) {
-        statusPanelSelIdx = -1;
-        return;
-    }
-    const currentTime = player && typeof player.getCurrentTime === 'function'
-        ? player.getCurrentTime()
-        : undefined;
-    statusPanelSelIdx = getActiveStatusSongIndex(currentTime);
-    applyStatusPanelSelection(ensureVisible);
-}
-
-function clearStatusPanelSelection() {
-    statusPanelSelIdx = -1;
-    if (!statusSongList) return;
-    statusSongList.querySelectorAll('.status-song').forEach((row) => {
-        row.classList.remove('nav-focus');
-    });
-}
-
-function applyStatusPanelSelection(ensureVisible = false) {
-    if (!statusSongList) return;
-    const rows = statusSongList.querySelectorAll('.status-song');
-    if (!rows.length) {
-        statusPanelSelIdx = -1;
-        return;
-    }
-
-    const shouldHighlight = statusPanelOpen && statusPanelSelIdx >= 0;
-    const clampedIdx = shouldHighlight
-        ? Math.min(Math.max(statusPanelSelIdx, 0), rows.length - 1)
-        : -1;
-
-    rows.forEach((row, idx) => {
-        row.classList.toggle('nav-focus', shouldHighlight && idx === clampedIdx);
-    });
-
-    if (!shouldHighlight) return;
-
-    if (clampedIdx !== statusPanelSelIdx) {
-        statusPanelSelIdx = clampedIdx;
-    }
-
-    if (ensureVisible) {
-        const target = rows[statusPanelSelIdx];
-        target.scrollIntoView({ block: 'nearest' });
-        target.focus({ preventScroll: true });
-    }
-}
-
-function syncStatusPanelActiveState(currentTime) {
-    if (!statusSongList || !statusSongList.children.length) return;
-    const rows = statusSongList.querySelectorAll('.status-song');
-    if (!rows.length) return;
-
-    const candidateIdx = getActiveStatusSongIndex(currentTime);
-    const activeIdx = candidateIdx >= 0
-        ? Math.min(Math.max(candidateIdx, 0), rows.length - 1)
-        : -1;
-
-    rows.forEach((row, idx) => {
-        const isActive = idx === activeIdx;
-        row.classList.toggle('active', isActive);
-        row.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
-
-    if (!statusPanelOpen) return;
-
-    if (statusPanelSelIdx === -1 && activeIdx >= 0) {
-        statusPanelSelIdx = activeIdx;
-    }
-
-    applyStatusPanelSelection(false);
-}
-
-// ======== SEARCH LOGIC ========
-let lastShiftTime = 0;
-
-function updateSearchButtonFullscreenVisibility() {
-    if (!btnSearch) return;
-    const isFullscreen =
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement;
-
-    btnSearch.style.display = isFullscreen ? 'none' : 'flex';
-
-    if (btnDuplicates) {
-        if (isFullscreen) {
-            btnDuplicates.style.display = 'none';
-        } else {
-            // Restore visibility based on current song / duplicate state
-            updateDuplicateButtonForCurrentSong();
-        }
-    }
-}
-
-document.addEventListener('fullscreenchange', updateSearchButtonFullscreenVisibility);
-document.addEventListener('webkitfullscreenchange', updateSearchButtonFullscreenVisibility);
-document.addEventListener('mozfullscreenchange', updateSearchButtonFullscreenVisibility);
-document.addEventListener('MSFullscreenChange', updateSearchButtonFullscreenVisibility);
 document.addEventListener('visibilitychange', () => {
-    evaluateTickLoop();
+    playbackCtrl.evaluateTickLoop();
     if (!document.hidden) {
         updateStatus();
     }
 });
 
-function toggleModal() {
-    const isOpen = modal.classList.toggle('open');
-    modal.inert = !isOpen;
-    if (isOpen) {
-        searchInput.value = '';
-        renderResults([]);
-        searchInput.focus();
-    }
-}
-
-modal.addEventListener('click', (e) => {
-    // Only close when clicking the overlay backdrop, not the wrapper or comic-box
-    if (e.target === modal) {
-        toggleModal();
-    }
-});
-
-function handleGlobalPointerDown(event) {
-    if (!statusPanelOpen || !statusPanel || !statusEl) return;
-    if (statusPanel.contains(event.target) || statusEl.contains(event.target)) return;
-    toggleStatusPanel(false);
-}
-
-document.addEventListener('pointerdown', handleGlobalPointerDown, true);
-window.addEventListener('blur', () => {
-    if (statusPanelOpen) {
-        toggleStatusPanel(false);
-    }
-});
-
+// ======== KEYBOARD DISPATCHER ========
 document.addEventListener('keydown', (e) => {
-    const modalOpen = modal.classList.contains('open');
+    const modalOpen = searchCtrl.isOpen();
+    const importOpen = importCtrl.isImportOpen();
+    const moreOpen = importCtrl.isMoreOpen();
 
     if (e.key === 'Escape') {
-        if (modalOpen) {
+        if (moreOpen) {
             e.preventDefault();
-            toggleModal();
+            importCtrl.toggleMoreOverlay();
             return;
         }
-        if (statusPanelOpen) {
+        if (importOpen) {
             e.preventDefault();
-            toggleStatusPanel(false);
+            importCtrl.toggleImportModal();
+            return;
+        }
+        if (modalOpen) {
+            e.preventDefault();
+            searchCtrl.toggle();
+            return;
+        }
+        if (statusCtrl.isOpen()) {
+            e.preventDefault();
+            statusCtrl.close();
             return;
         }
     }
 
-    if (!modalOpen && statusPanelOpen) {
-        const totalItems = statusSongList ? statusSongList.children.length : 0;
-        const computedIdx = statusPanelSelIdx >= 0
-            ? statusPanelSelIdx
-            : getActiveStatusSongIndex(player && typeof player.getCurrentTime === 'function'
-                ? player.getCurrentTime()
-                : undefined);
-        const currentIdx = computedIdx >= 0 ? computedIdx : 0;
+    if (moreOpen || importOpen) return;
 
-        const handledStatusNav = handleListKeyEvent(e, {
-            currentIndex: currentIdx,
-            totalItems,
-            onMove: (nextIndex) => {
-                statusPanelSelIdx = nextIndex;
-                applyStatusPanelSelection(true);
-            },
-            onSelect: (nextIndex) => {
-                statusPanelSelIdx = nextIndex;
-                handleStatusSongPick(nextIndex);
-            }
-        });
-
-        if (handledStatusNav) {
+    if (!modalOpen && statusCtrl.isOpen()) {
+        if (statusCtrl.handleKeyEvent(e)) {
             return;
         }
     }
 
     if (e.key === 'S' && e.shiftKey) {
         e.preventDefault();
-        toggleModal();
+        searchCtrl.toggle();
         return;
     }
 
     if (e.key === 'A' && e.shiftKey && !modalOpen) {
         e.preventDefault();
-        toggleStatusPanel();
+        statusCtrl.toggle();
         return;
     }
 
     if (e.key === 'M' && e.shiftKey && !modalOpen) {
         e.preventDefault();
-        const wasOnMemberStream = core.getCurrentStream()?.memberOnly === true;
-        const deactivating = core.memberMode; // about to flip off
-        let targetVideoId = null;
+        performMemberModeToggle();
+        return;
+    }
 
-        // When deactivating while on a member-only stream, find the next
-        // non-member stream in the original segment order to land on.
-        if (deactivating && wasOnMemberStream) {
-            const curId = core.getCurrentStream().videoId;
-            const origIdx = segmentsData.findIndex(v => v.videoId === curId);
-            for (let i = 1; i <= segmentsData.length; i++) {
-                const candidate = segmentsData[(origIdx + i) % segmentsData.length];
-                if (!candidate.memberOnly) {
-                    targetVideoId = candidate.videoId;
-                    break;
-                }
-            }
-        }
-
-        core.toggleMemberMode();
-        core.init(segmentsData);
-
-        if (targetVideoId) {
-            const idx = core.playlist.findIndex(p => p.videoId === targetVideoId);
-            if (idx !== -1) {
-                core.vIdx = idx;
-                core.rIdx = 0;
-            }
-        }
-
-        rebuildPlaylistDerivedState();
-        updateButtons();
-        loadCurrentContent(true);
+    if (e.key === 'I' && e.shiftKey && !modalOpen) {
+        e.preventDefault();
+        importCtrl.toggleImportModal();
         return;
     }
 
@@ -1059,7 +840,7 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         const stream = core.getCurrentStream();
         if (stream && stream.videoId) {
-            const currentTime = getSafeCurrentTime();
+            const currentTime = playbackCtrl.getSafeCurrentTime();
             const timeParam = Math.floor(currentTime);
             const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
             navigator.clipboard.writeText(shareUrl).then(() => {
@@ -1071,228 +852,8 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    if (e.key === 'Shift' && !e.repeat) {
-        const now = Date.now();
-        if (now - lastShiftTime < 300) {
-            toggleModal();
-        }
-        lastShiftTime = now;
-    }
-
-    if (modalOpen) {
-        const handledSearchNav = handleListKeyEvent(e, {
-            currentIndex: searchSelIdx,
-            totalItems: searchResults.length,
-            onMove: (nextIndex) => {
-                searchSelIdx = nextIndex;
-                updateSelection();
-            },
-            onSelect: (nextIndex) => {
-                if (searchResults[nextIndex]) {
-                    selectResult(searchResults[nextIndex]);
-                }
-            }
-        });
-
-        if (handledSearchNav) {
-            // noinspection UnnecessaryReturnStatementJS
-            return;
-        }
-    }
+    // Double-shift and search nav (handled by searchCtrl)
+    searchCtrl.handleKeyEvent(e);
 });
 
-searchInput.addEventListener('input', (e) => {
-    if (!fuse) return;
-    const query = e.target.value;
-    if (!query) {
-        renderResults([]);
-        return;
-    }
-    const results = fuse.search(query, { limit: 20 });
-    renderResults(results.map(r => r.item));
-});
-
-function renderResults(items) {
-    // Sort results to place the currently opened stream last among exact matches
-    const currentStreamId = core.vIdx;
-    const sortedItems = sortSearchResultsByCurrentStream(items, currentStreamId);
-
-    searchResults = sortedItems;
-    searchSelIdx = 0;
-    resultsContainer.innerHTML = '';
-
-    sortedItems.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'result-item';
-        if (idx === 0) div.classList.add('selected');
-
-        div.innerHTML = `
-                <span class="result-title">${item.name}</span>
-                <span class="result-sub">${item.streamName} • Song ${item.songId + 1}</span>
-            `;
-
-        div.addEventListener('click', () => selectResult(item));
-        resultsContainer.appendChild(div);
-    });
-}
-
-function updateSelection() {
-    const rows = resultsContainer.querySelectorAll('.result-item');
-    rows.forEach((r, i) => {
-        r.classList.toggle('selected', i === searchSelIdx);
-        if (i === searchSelIdx) r.scrollIntoView({ block: 'nearest' });
-    });
-}
-
-function selectResult(item) {
-    core.vIdx = item.streamId;
-    core.rIdx = item.songId;
-    loadCurrentContent(true);
-    toggleModal();
-}
-
-function handleListKeyEvent(event, { currentIndex, totalItems, onMove, onSelect }) {
-    const nav = resolveListNavigation(event.key, currentIndex, totalItems);
-    if (!nav.handled) return false;
-
-    event.preventDefault();
-
-    if (nav.action === NAV_ACTION_MOVE) {
-        if (typeof onMove === 'function') {
-            onMove(nav.nextIndex);
-        }
-    } else if (nav.action === NAV_ACTION_SELECT) {
-        if (typeof onSelect === 'function') {
-            onSelect(nav.nextIndex);
-        }
-    }
-
-    return true;
-}
-
-function updateDuplicateButtonForCurrentSong() {
-    if (!btnDuplicates || !playlistReady) return;
-
-    const stream = core.getCurrentStream();
-    const song = core.getCurrentSong();
-
-    if (!stream || !song || !song.name) {
-        btnDuplicates.style.display = 'none';
-        duplicateSearchName = '';
-        return;
-    }
-
-    const baseName = normalizeSongBaseName(song.name);
-    const key = baseName.toLocaleLowerCase('en-US');
-    const entry = duplicateNameIndex.get(key);
-
-    if (!entry || entry.count <= 1) {
-        btnDuplicates.style.display = 'none';
-        duplicateSearchName = '';
-        return;
-    }
-
-    const otherCount = entry.count - 1;
-
-    duplicateSearchName = entry.baseName || baseName;
-    btnDuplicates.style.display = 'flex';
-    const countSpan = btnDuplicates.querySelector('.note-count');
-    if (countSpan) {
-        countSpan.textContent = String(otherCount);
-    }
-    btnDuplicates.title = `Search other versions of "${duplicateSearchName}"`;
-}
-
-// ======== Wanted Poster ========
-const boltTrigger = document.getElementById('bolt-trigger');
-const wantedOverlay = document.getElementById('wanted-overlay');
-
-if (boltTrigger && wantedOverlay) {
-    boltTrigger.addEventListener('click', () => {
-        wantedOverlay.classList.add('open');
-    });
-
-    wantedOverlay.addEventListener('click', (e) => {
-        if (e.target === wantedOverlay) {
-            wantedOverlay.classList.remove('open');
-        }
-    });
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && wantedOverlay.classList.contains('open')) {
-            wantedOverlay.classList.remove('open');
-        }
-    });
-}
-
-// ======== Message Bar ========
-const messageBar = document.getElementById('message-bar');
-const messageText = document.getElementById('message-text');
-const messageClose = document.getElementById('message-close');
-
-const MESSAGE_WPM = 70;
-const MESSAGE_MIN_SECONDS = 10;
-
-let messageQueueInstance = null;
-let messageTimeoutHandle = null;
-
-function showNextMessage() {
-    if (!messageBar || !messageText || !messageQueueInstance) return;
-
-    const next = messageQueueInstance.next();
-    if (!next) return;
-
-    // Trigger re-animation by briefly removing the element content
-    messageText.style.animation = 'none';
-    messageText.offsetHeight; // Force reflow
-    messageText.style.animation = '';
-    messageText.textContent = next.message;
-
-    messageTimeoutHandle = setTimeout(showNextMessage, next.duration * 1000);
-}
-
-function stopMessageCycle() {
-    if (messageTimeoutHandle) {
-        clearTimeout(messageTimeoutHandle);
-        messageTimeoutHandle = null;
-    }
-}
-
-function hideMessageBar() {
-    stopMessageCycle();
-    if (messageBar) {
-        messageBar.hidden = true;
-    }
-}
-
-function initMessageBar() {
-    try {
-        const validMessages = validateMessages(messagesData);
-
-        if (validMessages.length === 0) {
-            console.log('[Messages] No valid messages found in messages.json');
-            return;
-        }
-
-        messageQueueInstance = new MessageQueue(validMessages, {
-            wpm: MESSAGE_WPM,
-            minSeconds: MESSAGE_MIN_SECONDS
-        });
-
-        if (messageBar) {
-            messageBar.hidden = false;
-        }
-
-        showNextMessage();
-
-        console.log(`[Messages] Loaded ${messageQueueInstance.size} messages`);
-    } catch (err) {
-        console.warn('[Messages] Failed to initialize message bar:', err.message);
-    }
-}
-
-if (messageClose) {
-    messageClose.addEventListener('click', hideMessageBar);
-}
-
-setTimeout(initMessageBar, 500);
+setTimeout(() => messageBarCtrl.init(), 500);

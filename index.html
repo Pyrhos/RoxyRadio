@@ -121,6 +121,12 @@
           <span class="note-icon">🎵</span><span class="note-count">0</span>
         </button>
         <button id="search-btn" title="Search (Shift+S)" aria-label="Search songs">🔍</button>
+        <!-- Debug buttons: Left side, hidden in prod -->
+        <div id="debug-container" style="display:none;">
+          <button id="debug-btn" title="Copy Timestamp">Stamp! 📋</button>
+          <button id="debug-end-btn" title="Jump to End">End ⏭</button>
+        </div>
+        <button id="more-btn" title="More options">More stuff</button>
       </div>
     </div>
 
@@ -139,6 +145,36 @@
         <div id="comic-title">Search-O-Matic!</div>
           <input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
         <div id="search-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="import-overlay" inert>
+    <div id="import-wrapper">
+      <img src="./jamstone.png" alt="" class="modal-jamstone" />
+      <div id="import-box">
+        <div id="import-title">Import Playlist</div>
+        <div id="import-status">&nbsp;</div>
+        <div id="import-buttons">
+          <button id="import-replace-btn">Replace</button>
+          <button id="import-extend-btn">Extend</button>
+          <button id="import-reset-btn">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="more-overlay" inert>
+    <div id="more-wrapper">
+      <img src="./jamstone.png" alt="" class="modal-jamstone" />
+      <div id="more-box">
+        <div id="more-title">More Stuff!</div>
+        <div id="more-buttons">
+          <button id="more-member-btn">Member Mode: Off</button>
+          <button id="more-import-btn">Import Playlist</button>
+          <button id="more-copy-btn">Copy Stream URL</button>
+          <button id="more-close-btn">Close</button>
+        </div>
       </div>
     </div>
   </div>
