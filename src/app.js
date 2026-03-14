@@ -191,7 +191,7 @@ const importCtrl = createImportAndMoreController({
         rebuildPlaylistDerivedState();
         updateButtons();
         loadCurrentContent(true);
-        importCtrl.setImportStatus(`Replaced \u2014 ${core.playlist.length} streams loaded`, 'ok');
+        importCtrl.setImportStatus(`Replaced - ${core.playlist.length} streams loaded`, 'ok');
         importCtrl.toggleImportModal();
         console.log(`[Import] Replaced with ${core.playlist.length} streams from clipboard`);
     },
@@ -217,8 +217,7 @@ const importCtrl = createImportAndMoreController({
         rebuildPlaylistDerivedState();
         updateButtons();
         loadCurrentContent(true);
-        importCtrl.setImportStatus(`Extended \u2014 ${core.playlist.length} streams total`, 'ok');
-        importCtrl.toggleImportModal();
+        importCtrl.setImportStatus(`Extended - ${core.playlist.length} streams total`, 'ok');
         console.log(`[Import] Appended ${data.length} streams (${importedIds.size} unique), total ${core.playlist.length}`);
     },
     onImportReset: () => {
@@ -231,7 +230,7 @@ const importCtrl = createImportAndMoreController({
         rebuildPlaylistDerivedState();
         updateButtons();
         loadCurrentContent(true);
-        importCtrl.setImportStatus(`Reset \u2014 ${core.playlist.length} default streams restored`, 'ok');
+        importCtrl.setImportStatus(`Reset - ${core.playlist.length} default streams restored`, 'ok');
         importCtrl.toggleImportModal();
         console.log(`[Import] Reset to default playlist (${core.playlist.length} streams)`);
     },

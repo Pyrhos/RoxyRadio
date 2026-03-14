@@ -1,4 +1,4 @@
-import { validateSegmentData } from './import-helpers.js';
+import { validateSegmentData, parseYouTubeUrls } from './import-helpers.js';
 
 /**
  * @param {object} deps
@@ -33,14 +33,31 @@ export function createImportAndMoreController({
         importStatus.className = type || '';
     }
 
-    function readAndValidateClipboard() {
+    function readAndValidateClipboard({ urlFallback = false } = {}) {
         return navigator.clipboard.readText().then(text => {
             let data;
             try {
                 data = JSON.parse(text);
             } catch {
-                setImportStatus('Clipboard doesn\u2019t contain valid JSON', 'error');
-                console.warn('[Import] Clipboard does not contain valid JSON');
+                if (urlFallback) {
+                    try {
+                        const result = parseYouTubeUrls(text);
+                        if (result && result.entries.length > 0) {
+                            if (result.failed.length > 0) {
+                                setImportStatus(`Skipped ${result.failed.length} unrecognized link(s): ${result.failed.join(', ')}`, 'warning');
+                                console.warn('[Import] Failed to parse:', result.failed);
+                            }
+                            return result.entries;
+                        }
+                    } catch (err) {
+                        console.warn('[Import] URL parsing failed:', err.message);
+                    }
+                }
+                const msg = urlFallback
+                    ? 'No valid YouTube links or JSON found'
+                    : 'Clipboard doesn\u2019t contain valid JSON';
+                setImportStatus(msg, 'error');
+                console.warn('[Import]', msg);
                 return null;
             }
 
@@ -98,7 +115,7 @@ export function createImportAndMoreController({
     });
 
     importAppendBtn.addEventListener('click', () => {
-        readAndValidateClipboard().then(data => {
+        readAndValidateClipboard({ urlFallback: true }).then(data => {
             if (!data) return;
             onImportAppend(data);
         });
