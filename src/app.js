@@ -643,6 +643,18 @@ function onStateChange(ev) {
                     const data = player.getVideoData();
                     if (data && data.title) {
                         stream.title = data.title;
+                        // Enrich bare imports so they appear in search
+                        if (!stream.name) {
+                            stream.name = data.title;
+                            const seg = activeSegments.find(s => s.videoId === stream.videoId);
+                            if (seg && !seg.name) {
+                                seg.name = data.title;
+                                if (activeSegments !== segmentsData) {
+                                    persistCustomSegments(activeSegments);
+                                }
+                            }
+                        }
+                        rebuildPlaylistDerivedState();
                     }
                 }
             }
