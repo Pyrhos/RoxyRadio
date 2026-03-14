@@ -30,6 +30,12 @@ export class PlayerCore {
     // Stream history powers deterministic back navigation (behavior §4C).
     // Session-only: cleared when tab closes, capped at HISTORY_LIMIT.
     this.history = [];
+    // Persistent queue: FIFO of {videoId, rIdx} items (behavior §13).
+    this.queue = [];
+    // Tracks whether current playback was initiated from the queue.
+    // Guards circular backward navigation in prevSong under Loop Queue —
+    // only allows queue-aware prev when we're actively cycling queue items.
+    this._lastPlayWasQueue = false;
     // Rule 0 streams cache their durations once YouTube reports them.
     this.durations = {};
   }
@@ -96,6 +102,21 @@ export class PlayerCore {
     if (this.history.length > HISTORY_LIMIT) {
         this.history = this.history.slice(-HISTORY_LIMIT);
     }
+
+    // Restore queue from localStorage (persistent across sessions, §13)
+    if (saved.queue) {
+        try {
+            const parsed = JSON.parse(saved.queue);
+            this.queue = Array.isArray(parsed)
+                ? parsed.filter(item => item && typeof item.videoId === 'string' && typeof item.rIdx === 'number')
+                : [];
+        } catch {
+            this.queue = [];
+        }
+    } else {
+        this.queue = [];
+    }
+    this._lastPlayWasQueue = false;
   }
 
   // Force save state
@@ -112,7 +133,8 @@ export class PlayerCore {
           loopMode: this.loopMode,
           vIdx: this.vIdx,
           videoId: stream ? stream.videoId : '',
-          lastTime: currentTime.toFixed(2)
+          lastTime: currentTime.toFixed(2),
+          queue: JSON.stringify(this.queue)
       });
       // Session-only history (cleared on tab close)
       this.cb.saveSessionData({
@@ -244,6 +266,109 @@ export class PlayerCore {
       return this.memberMode;
   }
 
+  // ================= QUEUE (§13) =================
+
+  enqueue(videoId, rIdx = 0) {
+      if (this.yapMode) {
+          this.yapMode = false;
+      }
+      this.queue.push({ videoId, rIdx });
+      this._saveState();
+  }
+
+  removeFromQueue(index) {
+      if (index >= 0 && index < this.queue.length) {
+          this.queue.splice(index, 1);
+          this._saveState();
+      }
+  }
+
+  clearQueue() {
+      this.queue = [];
+      this._saveState();
+  }
+
+  getQueue() {
+      return this.queue.slice();
+  }
+
+  isQueueActive() {
+      return this.queue.length > 0;
+  }
+
+  // Pick a queue item, resolve it to a playlist position, and play it.
+  // With shuffle on, a random item is chosen; otherwise the front is taken.
+  // Invalid items are silently dropped until a valid one is found.
+  // In Loop Queue mode, the taken item is recycled to the back.
+  // Returns true if a valid item was loaded, false if queue exhausted.
+  _playFromQueue(pushHist) {
+      while (this.queue.length > 0) {
+          let pickIdx = 0;
+          if (this.shuffleMode) {
+              const current = this.getCurrentStream();
+              // Build list of indices that differ from the currently playing song
+              const candidates = [];
+              for (let i = 0; i < this.queue.length; i++) {
+                  if (!current || this.queue[i].videoId !== current.videoId
+                      || this.queue[i].rIdx !== this.rIdx) {
+                      candidates.push(i);
+                  }
+              }
+              if (candidates.length > 0) {
+                  // In Loop Queue, bias toward the front (items waiting longest)
+                  const r = this.loopMode === LOOP_STREAM
+                      ? Math.random() * Math.random()
+                      : Math.random();
+                  pickIdx = candidates[Math.floor(r * candidates.length)];
+              } else {
+                  // All items are the same song — pick any
+                  pickIdx = Math.floor(Math.random() * this.queue.length);
+              }
+          }
+          const item = this.queue.splice(pickIdx, 1)[0];
+          const idx = this.playlist.findIndex(p => p.videoId === item.videoId);
+          if (idx !== -1) {
+              if (pushHist) this.pushHistory();
+              if (this.loopMode === LOOP_STREAM) {
+                  this.queue.push(item);
+              }
+              this.vIdx = idx;
+              const stream = this.playlist[idx];
+              this.rIdx = (stream.songs && item.rIdx < stream.songs.length)
+                  ? item.rIdx : 0;
+              const song = this.getCurrentSong();
+              this._saveState(song ? song.range[0] : 0);
+              this._lastPlayWasQueue = true;
+              return true;
+          }
+          // Invalid videoId — silently dropped (already shifted out)
+      }
+      this._saveState();
+      return false;
+  }
+
+  // Select a specific queue item by index (e.g. from the queue modal).
+  // In Loop Queue the item stays; in other modes it's removed.
+  // Sets _lastPlayWasQueue so prevSong can navigate the queue afterwards.
+  selectQueueItem(index) {
+      if (index < 0 || index >= this.queue.length) return false;
+      const item = this.queue[index];
+      const streamIdx = this.playlist.findIndex(p => p.videoId === item.videoId);
+      if (streamIdx === -1) return false;
+      this.pushHistory();
+      if (this.loopMode !== LOOP_STREAM) {
+          this.queue.splice(index, 1);
+      }
+      this.vIdx = streamIdx;
+      const stream = this.playlist[streamIdx];
+      this.rIdx = (stream.songs && item.rIdx < stream.songs.length)
+          ? item.rIdx : 0;
+      const song = this.getCurrentSong();
+      this._saveState(song ? song.range[0] : 0);
+      this._lastPlayWasQueue = true;
+      return true;
+  }
+
   // ================= NAVIGATION =================
 
   pushHistory() {
@@ -290,14 +415,23 @@ export class PlayerCore {
 
   nextStream() {
       this.pushHistory();
+
+      if (this.isQueueActive()) {
+          if (this._playFromQueue(false)) {
+              return true;
+          }
+      }
+
+      this._lastPlayWasQueue = false;
       this.vIdx = this._getNextStreamIndex();
       this.rIdx = 0;
       this._saveState(this.getStreamDefaultStart());
-      return true; // Indicates change happened
+      return true;
   }
 
   prevStream(options = {}) {
     const { skipHistory = false } = options;
+    this._lastPlayWasQueue = false;
     let saveTime = 0;
 
     // Shift+prevStream when shuffle ON: bypass history, go to actual prev index
@@ -348,6 +482,24 @@ export class PlayerCore {
 
   nextSong(currentTime) {
       const stream = this.getCurrentStream();
+
+      // Queue active: skip directly to next queue item, bypassing within-stream
+      // advancement. Avoids stale-time issues from _syncIndexToTime and ensures
+      // "the next item to play is always the front of the queue" (§13).
+      if (this.isQueueActive()) {
+          // Loop Track: repeat current song, don't advance or consume the queue
+          if (this.loopMode === LOOP_TRACK) {
+              const song = this.getCurrentSong();
+              return { type: 'seek', time: song.range[0] };
+          }
+          this.pushHistory();
+          if (this._playFromQueue(false)) {
+              return { type: 'load' };
+          }
+          // Queue exhausted (all items invalid), fall through to normal navigation
+      }
+
+      this._lastPlayWasQueue = false;
       const posContext = this._syncIndexToTime(currentTime, stream);
       const jumpToNextStreamStart = () => {
           this.nextStream();
@@ -399,8 +551,6 @@ export class PlayerCore {
           if (this.loopMode === LOOP_STREAM) {
               this.rIdx = 0;
               return { type: 'load' };
-          } else if (this.loopMode === LOOP_TRACK) {
-               return jumpToNextStreamStart();
           } else {
              return jumpToNextStreamStart();
           }
@@ -409,8 +559,73 @@ export class PlayerCore {
 
   prevSong(currentTime = 0) {
       const stream = this.getCurrentStream();
+
+      if (this.isQueueActive()) {
+          // Shuffle + Loop Queue: use history to go back (queue order is randomized).
+          // No _lastPlayWasQueue guard — shuffle has no ordered entry point,
+          // so queue nav is always appropriate in this mode.
+          if (this.loopMode === LOOP_STREAM && this.shuffleMode) {
+              // Walk history for an entry whose stream is still in the queue
+              while (this.history.length > 0) {
+                  const prev = this.history.pop();
+                  const stream = this.playlist[prev.vIdx];
+                  if (stream && this.queue.some(q => q.videoId === stream.videoId)) {
+                      this.vIdx = prev.vIdx;
+                      if (stream.songs && stream.songs.length > 0) {
+                          this.rIdx = Math.min(Math.max(prev.rIdx || 0, 0), stream.songs.length - 1);
+                      } else {
+                          this.rIdx = 0;
+                      }
+                      const song = this.getCurrentSong();
+                      this._saveState(song ? song.range[0] : 0);
+                      this._lastPlayWasQueue = true;
+                      return { type: 'load' };
+                  }
+              }
+              // No valid history — pick random from queue
+              if (this._playFromQueue(true)) {
+                  return { type: 'load' };
+              }
+          }
+          // Non-shuffle Loop Queue: navigate backwards through the circular queue.
+          // The current item sits at the back (recycled by _playFromQueue).
+          if (this.loopMode === LOOP_STREAM && this._lastPlayWasQueue) {
+              if (this.queue.length === 1) {
+                  const song = this.getCurrentSong();
+                  if (song) return { type: 'seek', time: song.range[0] };
+              }
+              if (this.queue.length >= 2) {
+                  const current = this.queue.pop();
+                  while (this.queue.length > 0) {
+                      const previous = this.queue.pop();
+                      const idx = this.playlist.findIndex(p => p.videoId === previous.videoId);
+                      if (idx !== -1) {
+                          this.pushHistory();
+                          this.queue.unshift(current);
+                          this.queue.push(previous);
+                          this.vIdx = idx;
+                          const pStream = this.playlist[idx];
+                          this.rIdx = (pStream.songs && previous.rIdx < pStream.songs.length)
+                              ? previous.rIdx : 0;
+                          const song = this.getCurrentSong();
+                          this._saveState(song ? song.range[0] : 0);
+                          this._lastPlayWasQueue = true;
+                          return { type: 'load' };
+                      }
+                  }
+                  this.queue.push(current);
+              }
+          }
+          // Non-Loop-Queue or not yet playing from queue: restart current song
+          const song = this.getCurrentSong();
+          if (song) {
+              return { type: 'seek', time: song.range[0] };
+          }
+      }
+
+      this._lastPlayWasQueue = false;
       const posContext = this._syncIndexToTime(currentTime, stream);
-      
+
       const jumpToPreviousStreamEnd = () => {
           this.prevStream();
           const prev = this.getCurrentStream();
@@ -536,7 +751,16 @@ export class PlayerCore {
           this.cb.seekTo(this.getCurrentSong().range[0]);
           return;
       }
-      
+
+      if (this.isQueueActive()) {
+          if (this._playFromQueue(true)) {
+              this.cb.playVideo();
+              return;
+          }
+          // Queue exhausted, fall through to normal auto-advance
+      }
+
+      this._lastPlayWasQueue = false;
       const stream = this.getCurrentStream();
       if (!stream.songs) {
            if (this.loopMode === LOOP_STREAM) {

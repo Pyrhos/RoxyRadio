@@ -36,6 +36,13 @@ Rourin Radio is a web player that turns karaoke VODs into a timestamped “radio
 - **Playlist import**
     - **Shift+I** opens the import modal. Paste a valid segments JSON into your clipboard, then choose **Replace** (swap the entire playlist) or **Extend** (merge with the built-in data).
 
+- **Queue**
+    - Build a custom play order by adding songs from search results, the song list panel, or the currently playing song.
+    - The queue overrides normal navigation — the next song always comes from the queue until it's empty.
+    - **Loop Queue** – when Loop Stream is active with a queue, played items cycle back to the end instead of being removed, so the queue repeats indefinitely. Previous song walks backwards through the loop.
+    - **Shuffle** is respected within the queue — a random item is picked instead of the front, avoiding the currently playing song when possible.
+    - Manage the queue via **Shift+Q** or the Queue button. Click any item to play it immediately.
+
 - **Message bar**
     - A rotating announcement bar shows community messages between the player and the controls.
 
@@ -49,6 +56,8 @@ Rourin Radio is a web player that turns karaoke VODs into a timestamped “radio
 | **Shift+C** | Copy shareable URL to clipboard |
 | **Shift+M** | Toggle member-only streams |
 | **Shift+I** | Open / close playlist import |
+| **Shift+Q** | Open / close queue manager |
+| **Shift+E** | Add to queue (highlighted item in a modal, or current song) |
 | **Escape** | Close the topmost open panel or modal |
 | **Arrow Up / Down** | Navigate search results or song list |
 | **Enter** | Select the highlighted search result or song |

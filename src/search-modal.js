@@ -1,6 +1,7 @@
 import Fuse from 'fuse.js';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, sortSearchResultsByCurrentStream, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
+import { flashEnqueue as _flashEnqueue, LONG_PRESS_MS } from './enqueue-flash.js';
 
 /**
  * @param {object} deps
@@ -12,10 +13,11 @@ import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './lis
  * @param {() => number} deps.getCurrentStreamIdx
  * @param {() => object|null} deps.getCurrentSong
  * @param {(vIdx: number, rIdx: number) => void} deps.onSelectResult
+ * @param {((vIdx: number, rIdx: number) => void)|undefined} deps.onEnqueueResult
  */
 export function createSearchController({
     modal, searchInput, resultsContainer, btnSearch, btnDuplicates,
-    getCurrentStreamIdx, getCurrentSong, onSelectResult,
+    getCurrentStreamIdx, getCurrentSong, onSelectResult, onEnqueueResult,
 }) {
     let fuse = null;
     let searchResults = [];
@@ -66,7 +68,48 @@ export function createSearchController({
                 <span class="result-sub">${item.streamName} • Song ${item.songId + 1}</span>
             `;
 
-            div.addEventListener('click', () => selectResult(item));
+            if (onEnqueueResult) {
+                const enqueueBtn = document.createElement('button');
+                enqueueBtn.className = 'enqueue-btn';
+                enqueueBtn.textContent = '+';
+                enqueueBtn.title = 'Add to queue';
+                enqueueBtn.setAttribute('aria-label', `Add ${item.name} to queue`);
+
+                const doEnqueue = () => {
+                    if (enqueueBtn.classList.contains('enqueue-ok')) return;
+                    onEnqueueResult(item.streamId, item.songId);
+                    _flashEnqueue(enqueueBtn);
+                };
+
+                enqueueBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    doEnqueue();
+                });
+                div.appendChild(enqueueBtn);
+
+                // Long-press to enqueue (mobile)
+                let pressTimer = null;
+                let pressTriggered = false;
+                div.addEventListener('pointerdown', () => {
+                    pressTriggered = false;
+                    pressTimer = setTimeout(() => {
+                        pressTriggered = true;
+                        doEnqueue();
+                    }, LONG_PRESS_MS);
+                });
+                div.addEventListener('pointerup', () => clearTimeout(pressTimer));
+                div.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+                div.addEventListener('pointermove', (e) => {
+                    if (pressTimer && (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5)) {
+                        clearTimeout(pressTimer);
+                    }
+                });
+            }
+
+            div.addEventListener('click', (e) => {
+                if (e.target.classList.contains('enqueue-btn')) return;
+                selectResult(item);
+            });
             resultsContainer.appendChild(div);
         });
     }
@@ -82,6 +125,12 @@ export function createSearchController({
     function selectResult(item) {
         onSelectResult(item.streamId, item.songId);
         toggle();
+    }
+
+    function enqueueHighlighted() {
+        if (!searchResults[searchSelIdx]) return null;
+        const item = searchResults[searchSelIdx];
+        return { streamId: item.streamId, songId: item.songId };
     }
 
     function updateDuplicateButton() {
@@ -218,5 +267,6 @@ export function createSearchController({
         updateFullscreenVisibility,
         handleKeyEvent,
         isOpen,
+        enqueueHighlighted,
     };
 }

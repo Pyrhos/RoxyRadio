@@ -1,4 +1,5 @@
-import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
+import {resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT} from './list-navigation.js';
+import {flashEnqueue as _flashEnqueue, LONG_PRESS_MS} from './enqueue-flash.js';
 
 /**
  * @param {object} deps
@@ -12,12 +13,21 @@ import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './lis
  * @param {() => number|undefined} deps.getPlayerTime
  * @param {() => boolean} deps.isPlaylistReady
  * @param {(rIdx: number) => void} deps.onSongPick
+ * @param {((videoId: string, rIdx: number) => void)|undefined} deps.onEnqueueSong
  */
 export function createStatusPanelController({
-    statusEl, statusPanel, statusSongList,
-    getCurrentStream, getCurrentStreamIdx, getCoreRIdx, getStreamDefaultStart,
-    getPlayerTime, isPlaylistReady, onSongPick,
-}) {
+                                                statusEl,
+                                                statusPanel,
+                                                statusSongList,
+                                                getCurrentStream,
+                                                getCurrentStreamIdx,
+                                                getCoreRIdx,
+                                                getStreamDefaultStart,
+                                                getPlayerTime,
+                                                isPlaylistReady,
+                                                onSongPick,
+                                                onEnqueueSong,
+                                            }) {
     let statusPanelOpen = false;
     let statusPanelStreamId = '';
     let statusPanelSongCount = 0;
@@ -98,8 +108,8 @@ export function createStatusPanelController({
 
         if (ensureVisible) {
             const target = rows[statusPanelSelIdx];
-            target.scrollIntoView({ block: 'nearest' });
-            target.focus({ preventScroll: true });
+            target.scrollIntoView({block: 'nearest'});
+            target.focus({preventScroll: true});
         }
     }
 
@@ -180,7 +190,56 @@ export function createStatusPanelController({
             <span class="status-song-index">${idx + 1}.</span>
             <span class="status-song-name">${song.name || `Track ${idx + 1}`}</span>
         `;
-            item.addEventListener('click', () => handleSongPick(idx));
+
+            if (onEnqueueSong) {
+                const enqueueBtn = document.createElement('button');
+                enqueueBtn.className = 'enqueue-btn';
+                enqueueBtn.textContent = '+';
+                enqueueBtn.title = 'Add to queue';
+                enqueueBtn.setAttribute('aria-label', `Add ${song.name || `Track ${idx + 1}`} to queue`);
+
+                const doEnqueue = () => {
+                    if (enqueueBtn.classList.contains('enqueue-ok')) return;
+                    onEnqueueSong(stream.videoId, idx);
+                    _flashEnqueue(enqueueBtn);
+                };
+
+                enqueueBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    doEnqueue();
+                });
+                item.appendChild(enqueueBtn);
+
+                // Long-press to enqueue (mobile)
+                let pressTimer = null;
+                let pressTriggered = false;
+                item.addEventListener('pointerdown', () => {
+                    pressTriggered = false;
+                    pressTimer = setTimeout(() => {
+                        pressTriggered = true;
+                        doEnqueue();
+                    }, LONG_PRESS_MS);
+                });
+                item.addEventListener('pointerup', () => clearTimeout(pressTimer));
+                item.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+                item.addEventListener('pointermove', (e) => {
+                    if (pressTimer && (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5)) {
+                        clearTimeout(pressTimer);
+                    }
+                });
+                item.addEventListener('click', (e) => {
+                    if (pressTriggered) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+                    if (e.target.classList.contains('enqueue-btn')) return;
+                    handleSongPick(idx);
+                });
+            } else {
+                item.addEventListener('click', () => handleSongPick(idx));
+            }
+
             item.addEventListener('focus', () => {
                 if (!statusPanelOpen) return;
                 statusPanelSelIdx = idx;
@@ -272,6 +331,19 @@ export function createStatusPanelController({
         }
     });
 
+    function enqueueHighlighted() {
+        const stream = getCurrentStream();
+        if (!stream) return null;
+        const songs = getStatusSongsForStream(stream);
+        if (!songs.length) return null;
+
+        const idx = statusPanelSelIdx >= 0
+            ? Math.min(statusPanelSelIdx, songs.length - 1)
+            : getActiveStatusSongIndex(getPlayerTime());
+        if (idx < 0) return null;
+        return {videoId: stream.videoId, rIdx: idx};
+    }
+
     return {
         toggle,
         refresh,
@@ -280,5 +352,6 @@ export function createStatusPanelController({
         isOpen: () => statusPanelOpen,
         close,
         handleGlobalPointerDown,
+        enqueueHighlighted,
     };
 }

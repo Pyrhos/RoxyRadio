@@ -127,6 +127,7 @@
           <button id="debug-end-btn" title="Jump to End">End ⏭</button>
         </div>
         <button id="more-btn" title="More options">More stuff</button>
+        <button id="mobile-queue-btn">▶▶ Queue</button>
       </div>
     </div>
 
@@ -134,7 +135,11 @@
       <div id="status-panel" aria-hidden="true" inert>
         <ol id="status-song-list"></ol>
       </div>
-      <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel"><span class="status-icon">𝄞</span><span id="status-text">Loading…</span></div>
+      <div id="status-row">
+        <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel"><span class="status-icon">𝄞</span><span id="status-text">Loading…</span></div>
+        <button id="queue-cell" title="Manage Queue (Shift+Q)"><span class="queue-cell-icon">▶▶</span> Queue</button>
+        <button id="more-cell" title="More options">🪨 More</button>
+      </div>
     </div>
   </main>
 
@@ -160,6 +165,19 @@
           <button id="import-extend-btn">Extend</button>
           <button id="import-reset-btn">Reset</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="queue-overlay" inert>
+    <div id="queue-wrapper">
+      <img src="./jamstone.png" alt="" class="modal-jamstone" />
+      <div id="queue-box">
+        <div id="queue-title">Queue-O-Matic!</div>
+        <div id="queue-header">
+          <button id="queue-clear-btn">Clear All</button>
+        </div>
+        <div id="queue-list"></div>
       </div>
     </div>
   </div>

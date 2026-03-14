@@ -6,8 +6,10 @@ import { initWantedPoster } from './wanted-poster.js';
 import { createSearchController } from './search-modal.js';
 import { createStatusPanelController } from './status-panel.js';
 import { createImportAndMoreController } from './import-ui.js';
+import { createQueueModalController } from './queue-modal.js';
 import { createPlaybackController } from './playback.js';
 import { validateSegmentData } from './import-helpers.js';
+import { flashEnqueue } from './enqueue-flash.js';
 
 // ======== CONFIG ========
 const TICK_MS = 200;
@@ -68,6 +70,14 @@ const moreMemberBtn = document.getElementById('more-member-btn');
 const moreImportBtn = document.getElementById('more-import-btn');
 const moreCopyBtn = document.getElementById('more-copy-btn');
 const moreCloseBtn = document.getElementById('more-close-btn');
+
+const queueOverlay = document.getElementById('queue-overlay');
+const queueListEl = document.getElementById('queue-list');
+const queueClearBtn = document.getElementById('queue-clear-btn');
+const queueCell = document.getElementById('queue-cell');
+const mobileQueueBtn = document.getElementById('mobile-queue-btn');
+const moreCell = document.getElementById('more-cell');
+
 let lastStatusText = '';
 let lastTitleText = document.title;
 let lastAppliedTheme = 0;
@@ -136,6 +146,14 @@ const searchCtrl = createSearchController({
         core.rIdx = rIdx;
         loadCurrentContent(true);
     },
+    onEnqueueResult: (vIdx, rIdx) => {
+        const stream = core.playlist[vIdx];
+        if (stream) {
+            core.enqueue(stream.videoId, rIdx);
+            updateQueueIndicator();
+            updateButtons();
+        }
+    },
 });
 
 const statusCtrl = createStatusPanelController({
@@ -148,6 +166,11 @@ const statusCtrl = createStatusPanelController({
         ? player.getCurrentTime()
         : undefined,
     isPlaylistReady: () => playlistReady,
+    onEnqueueSong: (videoId, rIdx) => {
+        core.enqueue(videoId, rIdx);
+        updateQueueIndicator();
+        updateButtons();
+    },
     onSongPick: (safeIdx) => {
         const stream = core.getCurrentStream();
         if (!stream) return;
@@ -166,6 +189,7 @@ const statusCtrl = createStatusPanelController({
             loadCurrentContent(true, startSeconds);
         }
     },
+    beforeOpen: () => closeAllModals(),
 });
 
 const importCtrl = createImportAndMoreController({
@@ -252,6 +276,52 @@ const importCtrl = createImportAndMoreController({
     },
     isMemberMode: () => core.memberMode,
 });
+
+const queueCtrl = createQueueModalController({
+    overlay: queueOverlay,
+    queueList: queueListEl,
+    clearAllBtn: queueClearBtn,
+    getQueue: () => core.getQueue(),
+    getPlaylist: () => core.playlist,
+    onRemoveItem: (idx) => {
+        core.removeFromQueue(idx);
+        queueCtrl.render();
+        updateQueueIndicator();
+        updateButtons();
+    },
+    onSelectItem: (idx) => {
+        if (!core.selectQueueItem(idx)) return;
+        queueCtrl.toggle();
+        loadCurrentContent(true);
+    },
+    onClearAll: () => {
+        core.clearQueue();
+        queueCtrl.render();
+        updateQueueIndicator();
+        updateButtons();
+    },
+});
+
+if (queueCell) {
+    queueCell.addEventListener('click', () => {
+        closeOtherModals('queue');
+        queueCtrl.toggle();
+    });
+}
+
+if (mobileQueueBtn) {
+    mobileQueueBtn.addEventListener('click', () => {
+        closeOtherModals('queue');
+        queueCtrl.toggle();
+    });
+}
+
+if (moreCell) {
+    moreCell.addEventListener('click', () => {
+        closeOtherModals('more');
+        importCtrl.toggleMoreOverlay();
+    });
+}
 
 const messageBarCtrl = createMessageBarController({
     messageBar: document.getElementById('message-bar'),
@@ -573,19 +643,27 @@ function performMemberModeToggle() {
 }
 
 function updateButtons() {
-    // Yap button
+    const queueActive = core.isQueueActive();
+
+    // Yap button — disabled while queue is active
     const yapOn = core.yapMode;
     updateButtonLabel(btnYap, `Yap: ${yapOn ? 'On' : 'Off'}`, yapOn);
     updateButtonIcon(iconYap, yapOn ? './yap.png' : './noyap.png', yapOn ? 'Yap on' : 'Yap off');
+    btnYap.disabled = queueActive;
 
-    // Loop button
+    // Loop button — third state label changes when queue is active
     const loopMode = core.loopMode;
-    updateButtonLabel(btnLoop, `Loop: ${loopLabels[loopMode]}`, loopMode !== 0);
+    const loopLabel = (loopMode === 2 && queueActive) ? 'Queue' : loopLabels[loopMode];
+    updateButtonLabel(btnLoop, `Loop: ${loopLabel}`, loopMode !== 0);
     updateButtonIcon(iconLoop, loopIcons[loopMode], loopAlts[loopMode]);
 
     // Shuffle button
     const shuffleOn = core.shuffleMode;
     updateButtonLabel(btnShuffle, `Shuffle: ${shuffleOn ? 'On' : 'Off'}`, shuffleOn);
+
+    // Next/prev stream — disabled while queue is active (queue overrides stream nav)
+    btnPrevStream.disabled = queueActive;
+    btnNextStream.disabled = queueActive;
 
     // Member mode indicator on controls bar
     if (controlsContainer) {
@@ -594,6 +672,35 @@ function updateButtons() {
 
     importCtrl.updateMoreMemberBtn();
 }
+
+function updateQueueIndicator() {
+    const queue = core.getQueue();
+    const active = queue.length > 0;
+    if (queueCell) {
+        queueCell.innerHTML = active
+            ? `<span class="queue-cell-icon">▶▶</span> Queue (${queue.length})`
+            : `<span class="queue-cell-icon">▶▶</span> Queue`;
+    }
+    if (mobileQueueBtn) {
+        mobileQueueBtn.textContent = active ? `▶▶ Queue (${queue.length})` : '▶▶ Queue';
+    }
+}
+
+// Close every modal/panel except the one about to open.
+// Each entry: [check, close] — skipped when it matches the exclude key.
+function closeOtherModals(except) {
+    if (except !== 'search' && searchCtrl.isOpen()) searchCtrl.toggle();
+    if (except !== 'queue' && queueCtrl.isOpen()) queueCtrl.toggle();
+    if (except !== 'status' && statusCtrl.isOpen()) statusCtrl.close();
+    if (except !== 'import' && importCtrl.isImportOpen()) importCtrl.toggleImportModal();
+    if (except !== 'more' && importCtrl.isMoreOpen()) importCtrl.toggleMoreOverlay();
+}
+
+// Intercept clicks on internally-wired modal triggers so we close others first.
+// Uses capture phase to run before the controller's own toggle handler.
+if (btnSearch) btnSearch.addEventListener('click', () => closeOtherModals('search'), true);
+if (statusEl) statusEl.addEventListener('click', () => closeOtherModals('status'), true);
+if (moreBtn) moreBtn.addEventListener('click', () => closeOtherModals('more'), true);
 
 function requestStartPlayback() {
     pendingStart = true;
@@ -696,6 +803,8 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
 
     playbackCtrl.playVideoAt(stream, startSeconds, endSeconds);
     statusCtrl.refresh();
+    updateQueueIndicator();
+    updateButtons();
 }
 
 // ======== UI WIRES ========
@@ -738,6 +847,7 @@ btnShuffle.addEventListener('click', () => {
 });
 
 btnYap.addEventListener('click', () => {
+    if (core.isQueueActive()) return;
     const now = Date.now();
     if (now - yapToggleTime < YAP_TOGGLE_DEBOUNCE_MS) return;
     yapToggleTime = now;
@@ -791,6 +901,7 @@ document.addEventListener('keydown', (e) => {
     const modalOpen = searchCtrl.isOpen();
     const importOpen = importCtrl.isImportOpen();
     const moreOpen = importCtrl.isMoreOpen();
+    const queueOpen = queueCtrl.isOpen();
 
     if (e.key === 'Escape') {
         if (moreOpen) {
@@ -801,6 +912,11 @@ document.addEventListener('keydown', (e) => {
         if (importOpen) {
             e.preventDefault();
             importCtrl.toggleImportModal();
+            return;
+        }
+        if (queueOpen) {
+            e.preventDefault();
+            queueCtrl.toggle();
             return;
         }
         if (modalOpen) {
@@ -815,9 +931,12 @@ document.addEventListener('keydown', (e) => {
         }
     }
 
-    if (moreOpen || importOpen) return;
+    // Queue modal keyboard navigation
+    if (queueOpen) {
+        if (queueCtrl.handleKeyEvent(e)) return;
+    }
 
-    if (!modalOpen && statusCtrl.isOpen()) {
+    if (!modalOpen && !queueOpen && statusCtrl.isOpen()) {
         if (statusCtrl.handleKeyEvent(e)) {
             return;
         }
@@ -825,29 +944,80 @@ document.addEventListener('keydown', (e) => {
 
     if (e.key === 'S' && e.shiftKey) {
         e.preventDefault();
+        closeOtherModals('search');
         searchCtrl.toggle();
         return;
     }
 
-    if (e.key === 'A' && e.shiftKey && !modalOpen) {
+    if (e.key === 'Q' && e.shiftKey) {
         e.preventDefault();
+        closeOtherModals('queue');
+        queueCtrl.toggle();
+        return;
+    }
+
+    if (e.key === 'E' && e.shiftKey) {
+        e.preventDefault();
+        if (modalOpen) {
+            const rows = resultsContainer.querySelectorAll('.result-item');
+            const btn = rows.length ? rows[0]?.querySelector('.enqueue-btn') : null;
+            if (btn && btn.classList.contains('enqueue-ok')) return;
+            const item = searchCtrl.enqueueHighlighted();
+            if (item) {
+                const stream = core.playlist[item.streamId];
+                if (stream) {
+                    core.enqueue(stream.videoId, item.songId);
+                    updateQueueIndicator();
+                    updateButtons();
+                    // Flash the highlighted row's button
+                    const selRow = resultsContainer.querySelectorAll('.result-item.selected')[0];
+                    if (selRow) flashEnqueue(selRow.querySelector('.enqueue-btn'));
+                }
+            }
+        } else if (statusCtrl.isOpen()) {
+            const selRow = statusSongList.querySelector('.status-song.nav-focus, .status-song.active');
+            const btn = selRow ? selRow.querySelector('.enqueue-btn') : null;
+            if (btn && btn.classList.contains('enqueue-ok')) return;
+            const item = statusCtrl.enqueueHighlighted();
+            if (item) {
+                core.enqueue(item.videoId, item.rIdx);
+                updateQueueIndicator();
+                updateButtons();
+                if (btn) flashEnqueue(btn);
+            }
+        } else {
+            // No modal open — enqueue currently playing song
+            const stream = core.getCurrentStream();
+            if (stream) {
+                core.enqueue(stream.videoId, core.rIdx);
+                updateQueueIndicator();
+                updateButtons();
+            }
+        }
+        return;
+    }
+
+    if (e.key === 'A' && e.shiftKey) {
+        e.preventDefault();
+        closeOtherModals('status');
         statusCtrl.toggle();
         return;
     }
 
-    if (e.key === 'M' && e.shiftKey && !modalOpen) {
+    if (e.key === 'M' && e.shiftKey && !modalOpen && !queueOpen) {
         e.preventDefault();
         performMemberModeToggle();
         return;
     }
 
-    if (e.key === 'I' && e.shiftKey && !modalOpen) {
+    if (e.key === 'I' && e.shiftKey) {
         e.preventDefault();
+        closeOtherModals('import');
         importCtrl.toggleImportModal();
         return;
     }
 
-    if (e.key === 'C' && e.shiftKey && !modalOpen) {
+    if (e.key === 'C' && e.shiftKey && !modalOpen && !queueOpen) {
         e.preventDefault();
         const stream = core.getCurrentStream();
         if (stream && stream.videoId) {
@@ -863,7 +1033,7 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
-    // Double-shift and search nav (handled by searchCtrl)
+    // Search nav (arrow keys, enter) and double-shift toggle
     searchCtrl.handleKeyEvent(e);
 });
 

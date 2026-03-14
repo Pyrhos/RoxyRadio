@@ -282,7 +282,7 @@ button {
   }
 }
 
-button:active {
+button:active:not(#queue-cell):not(#more-cell) {
     transform: translate(2px, 2px);
     box-shadow: 0 0 0 var(--color-ink);
 }
@@ -429,9 +429,20 @@ button.active {
   }
 
   #more-btn {
+    display: block;
     grid-row: 5;
-    grid-column: 1 / -1;
+    grid-column: 1;
   }
+
+  #mobile-queue-btn {
+    display: block !important;
+    grid-row: 5;
+    grid-column: 2;
+  }
+
+  /* Hide desktop status-row cells on mobile */
+  #queue-cell,
+  #more-cell { display: none !important; }
 
   #controls-container {
     padding: 12px;
@@ -476,23 +487,75 @@ button.active {
     pointer-events: auto;
 }
 
+#status-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    max-width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 #status {
     text-align:center;
     color: var(--color-surface); /* Light peach-pink text on purple */
     font-size: 16px;
-    margin-top: 12px;
     font-weight: bold;
     text-shadow: 2px 2px 0 var(--color-ink);
     background: var(--color-bg);
     border: 2px solid var(--color-ink);
     padding: 2px 12px 6px;
     box-shadow: 4px 4px 0 var(--color-ink);
-    max-width: 80%;
 
-    /* Centering Fix */
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+}
+
+#queue-cell {
+    background: var(--color-bg);
+    border: 2px solid var(--color-ink);
+    padding: 2px 12px 6px;
+    box-shadow: 4px 4px 0 var(--color-ink);
+    color: var(--color-focus);
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 var(--color-ink);
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+}
+
+#queue-cell[hidden] { display: none; }
+
+.queue-cell-icon {
+    font-size: 0.7em;
+    letter-spacing: -3px;
+}
+
+#queue-cell:hover,
+#more-cell:hover {
+    color: var(--color-accent-soft);
+}
+
+#more-cell {
+    background: var(--color-bg);
+    border: 2px solid var(--color-ink);
+    padding: 2px 12px 6px;
+    box-shadow: 4px 4px 0 var(--color-ink);
+    color: var(--color-focus);
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 var(--color-ink);
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
 }
 
 .status-icon {
@@ -600,10 +663,14 @@ button.active {
 /* On small/mobile viewports, left-align the bottom status text bar
    and pin it closer to the left edge instead of centering. */
 @media (max-width: 600px) {
-  #status {
-    text-align: left;
+  #status-row {
     margin-left: 16px;
     margin-right: 16px;
+    max-width: 100%;
+  }
+
+  #status {
+    text-align: left;
     max-width: 100%;
     padding-left: 0;
     padding-right: 0;
@@ -744,6 +811,7 @@ button.active {
   padding: 10px; border-bottom: 2px solid var(--color-ink); cursor: pointer;
   display: flex; flex-direction: column;
   transition: background 0.1s, color 0.8s ease, border-color 0.8s ease;
+  position: relative;
 }
 .result-item:last-child { border-bottom: none; }
 
@@ -904,6 +972,186 @@ button.active {
 #more-close-btn {
   background: var(--color-muted);
   color: var(--color-bright);
+}
+
+/* Queue Modal */
+#queue-overlay {
+  position: fixed; inset: 0; background: rgba(10,11,13,0.8);
+  display: none; place-items: center; z-index: 1000;
+}
+#queue-overlay.open { display: grid; }
+
+#queue-wrapper {
+  position: relative;
+}
+
+#queue-wrapper .modal-jamstone {
+  right: 40px;
+}
+
+#queue-box {
+  background: var(--color-surface);
+  border: 4px solid var(--color-ink);
+  box-shadow: 12px 12px 0 var(--color-ink);
+  padding: 20px;
+  width: min(90vw, 600px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+  position: relative;
+}
+
+#queue-box::after {
+  content: ''; position: absolute; bottom: -24px; left: 40px;
+  border-width: 24px 24px 0; border-style: solid;
+  border-color: var(--color-ink) transparent; display: block; width: 0;
+}
+#queue-box::before {
+  content: ''; position: absolute; bottom: -15px; left: 45px;
+  border-width: 19px 19px 0; border-style: solid;
+  border-color: var(--color-surface) transparent; display: block; width: 0; z-index: 1;
+}
+
+#queue-title {
+  font-size: 1.8em; font-weight: bold; text-transform: uppercase; margin-bottom: 15px;
+  text-align: center; border-bottom: 4px solid var(--color-ink); padding-bottom: 5px;
+  color: var(--color-bg);
+  text-shadow: 2px 2px 0 var(--color-bright);
+}
+
+#queue-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+#queue-clear-btn {
+  font-size: 1em;
+  padding: 8px 16px;
+}
+
+#queue-clear-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+#queue-list {
+  flex-grow: 1; overflow-y: auto; border: 3px solid var(--color-ink);
+  min-height: 80px; max-height: 300px;
+  background: var(--color-bright);
+}
+
+.queue-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 1.1em;
+}
+
+.queue-item {
+  padding: 10px; border-bottom: 2px solid var(--color-ink); cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: background 0.1s, color 0.8s ease, border-color 0.8s ease;
+}
+.queue-item:last-child { border-bottom: none; }
+
+.queue-item.selected { background: var(--color-focus); }
+
+.queue-item-index {
+  font-weight: bold;
+  min-width: 28px;
+  text-align: right;
+  color: var(--color-bg);
+}
+
+.queue-item-name {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--color-bg);
+  flex: 1;
+}
+
+.queue-item-stream {
+  font-size: 0.85em;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.queue-item-remove {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+
+/* Touch devices: hide minus buttons (use long-press instead) */
+@media (pointer: coarse) {
+  .queue-item-remove { display: none; }
+
+  #queue-overlay {
+    place-items: start center;
+    padding-top: 20px;
+  }
+
+  #queue-box {
+    max-height: 60vh;
+  }
+}
+
+/* Enqueue (+) buttons in search results and status panel */
+.enqueue-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  font-size: 1.4em;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0 var(--color-ink);
+}
+
+/* In result items, position the button inline on the right without disrupting text layout */
+.result-item .enqueue-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.result-item:has(.enqueue-btn) { padding-right: 50px; }
+
+/* In status songs, button sits inline after the song name */
+.status-song .enqueue-btn { margin-left: auto; }
+
+/* Checkmark flash after enqueue */
+.enqueue-btn.enqueue-ok {
+  background: var(--color-accent, #4a4);
+  pointer-events: none;
+}
+
+/* Touch devices: hide + buttons (use long-press instead) */
+@media (pointer: coarse) {
+  .enqueue-btn { display: none; }
+}
+
+/* Desktop: hide mobile queue button */
+#mobile-queue-btn { display: none; }
+
+/* Disabled button state (used for yap when queue active) */
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Scrollbar styling */
