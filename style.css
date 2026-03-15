@@ -282,7 +282,7 @@ button {
   }
 }
 
-button:active:not(#queue-cell):not(#more-cell) {
+button:active:not(#queue-cell):not(#more-cell):not(#message-close) {
     transform: translate(2px, 2px);
     box-shadow: 0 0 0 var(--color-ink);
 }
