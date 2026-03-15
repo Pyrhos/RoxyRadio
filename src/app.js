@@ -645,11 +645,14 @@ function performMemberModeToggle() {
 function updateButtons() {
     const queueActive = core.isQueueActive();
 
+    const queueDisabledTitle = 'Unavailable while queue is active';
+
     // Yap button — disabled while queue is active
     const yapOn = core.yapMode;
     updateButtonLabel(btnYap, `Yap: ${yapOn ? 'On' : 'Off'}`, yapOn);
     updateButtonIcon(iconYap, yapOn ? './yap.png' : './noyap.png', yapOn ? 'Yap on' : 'Yap off');
     btnYap.disabled = queueActive;
+    btnYap.title = queueActive ? queueDisabledTitle : 'Toggle Yap Mode';
 
     // Loop button — third state label changes when queue is active
     const loopMode = core.loopMode;
@@ -664,6 +667,8 @@ function updateButtons() {
     // Next/prev stream — disabled while queue is active (queue overrides stream nav)
     btnPrevStream.disabled = queueActive;
     btnNextStream.disabled = queueActive;
+    btnPrevStream.title = queueActive ? queueDisabledTitle : 'Previous Stream (Shift: bypass history)';
+    btnNextStream.title = queueActive ? queueDisabledTitle : 'Next Stream';
 
     // Member mode indicator on controls bar
     if (controlsContainer) {
