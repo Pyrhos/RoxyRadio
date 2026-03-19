@@ -209,6 +209,7 @@ const importCtrl = createImportAndMoreController({
 
         activeSegments = data;
         persistCustomSegments(data);
+        localStorage.setItem('roxy_segmentsMode', 'replaced');
 
         core.vIdx = 0;
         core.rIdx = 0;
@@ -234,7 +235,10 @@ const importCtrl = createImportAndMoreController({
         }
 
         activeSegments = merged;
-        persistCustomSegments(merged);
+        // Defaults always load fresh. Persist non-default custom entries
+        const defaultIds = new Set(segmentsData.map(e => e.videoId));
+        persistCustomSegments(merged.filter(e => !defaultIds.has(e.videoId)));
+        localStorage.removeItem('roxy_segmentsMode');
 
         core.vIdx = 0;
         core.rIdx = 0;
@@ -247,6 +251,7 @@ const importCtrl = createImportAndMoreController({
     onImportReset: () => {
         activeSegments = segmentsData;
         localStorage.removeItem('roxy_customSegments');
+        localStorage.removeItem('roxy_segmentsMode');
 
         core.init(activeSegments);
         core.vIdx = 0;
@@ -449,8 +454,16 @@ function initializePlaylist() {
             try {
                 const parsed = JSON.parse(savedSegments);
                 if (validateSegmentData(parsed)) {
-                    activeSegments = parsed;
-                    console.log(`[Import] Restored ${parsed.length} custom streams from localStorage`);
+                    if (localStorage.getItem('roxy_segmentsMode') === 'replaced') {
+                        activeSegments = parsed;
+                        console.log(`[Import] Restored ${parsed.length} replaced streams from localStorage`);
+                    } else {
+                        // Defaults always load fresh. Append non-default custom entries
+                        const defaultIds = new Set(segmentsData.map(e => e.videoId));
+                        const customOnly = parsed.filter(e => !defaultIds.has(e.videoId));
+                        activeSegments = [...segmentsData, ...customOnly];
+                        console.log(`[Import] Loaded defaults + ${customOnly.length} custom stream(s) from localStorage`);
+                    }
                 } else {
                     localStorage.removeItem('roxy_customSegments');
                 }
@@ -762,7 +775,12 @@ function onStateChange(ev) {
                             if (seg && !seg.name) {
                                 seg.name = data.title;
                                 if (activeSegments !== segmentsData) {
-                                    persistCustomSegments(activeSegments);
+                                    if (localStorage.getItem('roxy_segmentsMode') === 'replaced') {
+                                        persistCustomSegments(activeSegments);
+                                    } else {
+                                        const defaultIds = new Set(segmentsData.map(e => e.videoId));
+                                        persistCustomSegments(activeSegments.filter(e => !defaultIds.has(e.videoId)));
+                                    }
                                 }
                             }
                         }
