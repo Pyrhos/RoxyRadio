@@ -16,6 +16,13 @@ export function initWantedPoster({ boltTrigger, wantedOverlay }) {
         }
     });
 
+    const closeBtn = wantedOverlay.querySelector('#wanted-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            wantedOverlay.classList.remove('open');
+        });
+    }
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && wantedOverlay.classList.contains('open')) {
             wantedOverlay.classList.remove('open');

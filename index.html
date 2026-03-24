@@ -95,7 +95,7 @@
           <img src="./next-song.png" alt="Previous Song" class="button-icon button-icon-flip" />
           Song
         </button>
-        
+
         <button id="loop-btn" class="has-icon" title="Loop Mode: None">
           <img src="./loop.png" alt="Loop off" class="button-icon" id="loop-icon" />
           <span class="btn-label">Loop: None</span>
@@ -108,7 +108,7 @@
           <img src="./noyap.png" alt="Yap off" class="button-icon" id="yap-icon" />
           <span class="btn-label">Yap: Off</span>
         </button>
-        
+
         <button id="next-song" class="has-icon" title="Next Song">
           <img src="./next-song.png" alt="Next Song" class="button-icon" />
           Song
@@ -143,22 +143,22 @@
     </div>
   </main>
 
-  <div id="modal-overlay" inert>
+  <div id="modal-overlay" class="modal-overlay" inert>
     <div id="modal-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
-      <div id="comic-box">
-        <div id="comic-title">Search-O-Matic!</div>
+      <div id="comic-box" class="modal-box">
+        <div id="comic-title" class="modal-title">Search-O-Matic!</div>
           <input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
         <div id="search-results"></div>
       </div>
     </div>
   </div>
 
-  <div id="import-overlay" inert>
+  <div id="import-overlay" class="modal-overlay" inert>
     <div id="import-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
-      <div id="import-box">
-        <div id="import-title">Import Playlist</div>
+      <div id="import-box" class="modal-box">
+        <div id="import-title" class="modal-title">Import Playlist</div>
         <div id="import-status">&nbsp;</div>
         <div id="import-buttons">
           <button id="import-replace-btn">Replace</button>
@@ -169,11 +169,11 @@
     </div>
   </div>
 
-  <div id="queue-overlay" inert>
+  <div id="queue-overlay" class="modal-overlay" inert>
     <div id="queue-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
-      <div id="queue-box">
-        <div id="queue-title">Queue-O-Matic!</div>
+      <div id="queue-box" class="modal-box">
+        <div id="queue-title" class="modal-title">Queue-O-Matic!</div>
         <div id="queue-header">
           <button id="queue-clear-btn">Clear All</button>
         </div>
@@ -182,11 +182,11 @@
     </div>
   </div>
 
-  <div id="more-overlay" inert>
+  <div id="more-overlay" class="modal-overlay" inert>
     <div id="more-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
-      <div id="more-box">
-        <div id="more-title">More Stuff!</div>
+      <div id="more-box" class="modal-box">
+        <div id="more-title" class="modal-title">More Stuff!</div>
         <div id="more-buttons">
           <button id="more-member-btn">Member Mode: Off</button>
           <button id="more-import-btn">Import Playlist</button>
@@ -197,7 +197,7 @@
     </div>
   </div>
 
-  <button id="bolt-trigger" aria-label="Secret">⚡</button>
+  <button id="bolt-trigger" aria-label="Wanted poster"><svg width="14" height="16" viewBox="0 0 14 16" fill="currentColor"><path d="M8 0L0 9h5l-1 7 8-9H7l1-7z"/></svg></button>
 
   <div id="wanted-overlay">
     <div id="wanted-poster">
@@ -215,7 +215,10 @@
           </div>
           <div class="wanted-contact">
             <div class="wanted-contact-label">Feedback and feature requests</div>
-            <a href="https://x.com/pyrhos" target="_blank" rel="noopener">𝕏 @pyrhos</a>
+            <div class="wanted-contact-split">
+              <a href="https://x.com/pyrhos" target="_blank" rel="noopener" class="wanted-contact-link">𝕏 @pyrhos</a>
+              <a href="https://github.com/Pyrhos/RoxyRadio" target="_blank" rel="noopener" class="wanted-contact-link"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.31-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.62-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3"/></svg></a>
+            </div>
           </div>
         </div>
 
@@ -231,12 +234,13 @@
           </div>
           <div class="wanted-contact">
             <div class="wanted-contact-label">Artistry and crafts</div>
-            <a href="https://x.com/sigmaofgestalt" target="_blank" rel="noopener">𝕏 @sigmaofgestalt</a>
+            <a href="https://x.com/sigmaofgestalt" target="_blank" rel="noopener" class="wanted-contact-link">𝕏 @sigmaofgestalt</a>
           </div>
         </div>
       </div>
 
-      <div class="wanted-reward">REWARD: Lifetime Rocinium supply</div>
+      <div class="wanted-reward">REWARD: Lifetime Rocanium supply</div>
+      <button id="wanted-close" type="button">✕ Close</button>
     </div>
   </div>
 

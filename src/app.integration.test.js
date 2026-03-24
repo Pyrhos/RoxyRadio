@@ -1284,10 +1284,10 @@ describe('Accessibility', () => {
     });
   });
 
-  describe('Bolt trigger (easter egg)', () => {
+  describe('Wanted trigger', () => {
     it('has aria-label', () => {
       const boltTrigger = document.getElementById('bolt-trigger');
-      expect(boltTrigger.getAttribute('aria-label')).toBe('Secret');
+      expect(boltTrigger.getAttribute('aria-label')).toBe('Wanted poster');
     });
   });
 });
