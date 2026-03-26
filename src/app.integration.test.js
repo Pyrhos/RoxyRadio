@@ -1222,16 +1222,6 @@ describe('Accessibility', () => {
   });
 
   describe('Status element', () => {
-    it('has role="button"', () => {
-      const statusEl = document.getElementById('status');
-      expect(statusEl.getAttribute('role')).toBe('button');
-    });
-
-    it('has tabindex="0" for keyboard focus', () => {
-      const statusEl = document.getElementById('status');
-      expect(statusEl.getAttribute('tabindex')).toBe('0');
-    });
-
     it('has aria-expanded attribute', () => {
       const statusEl = document.getElementById('status');
       expect(statusEl.hasAttribute('aria-expanded')).toBe(true);

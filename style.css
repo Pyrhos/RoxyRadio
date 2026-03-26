@@ -298,6 +298,7 @@ button::after {
   }
 }
 
+/* Status-row buttons are exempt: their translate would extend the viewport edge and flash the scrollbar */
 button:active:not(#queue-cell):not(#more-cell) {
     translate: 2px 2px;
     box-shadow: 0 0 0 var(--color-ink);
@@ -518,8 +519,17 @@ button.active {
     border: 2px solid var(--color-ink);
     padding: 2px 12px 6px;
     box-shadow: var(--shadow-md);
+    contain: layout style;
+    position: relative;
+    transition: translate 0.1s, box-shadow 0.1s, background-color 0.8s ease, color 0.8s ease, border-color 0.8s ease;
 
     display: block;
+}
+
+/*Anti-flicker*/
+#status::after {
+    position: absolute;
+    inset: -4px;
 }
 
 #queue-cell,
@@ -1299,7 +1309,8 @@ button:disabled {
   background: var(--color-surface);
   border: 2px solid var(--color-ink);
   box-shadow: var(--shadow-sm);
-  transition: translate 0.1s, box-shadow 0.1s, background-color 0.8s ease, color 0.8s ease, border-color 0.8s ease;
+  will-change: translate;
+  transition: translate 0.1s, box-shadow 0.1s;
   display: block;
   text-align: center;
   font-weight: bold;
