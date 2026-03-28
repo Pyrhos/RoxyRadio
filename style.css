@@ -1309,7 +1309,6 @@ button:disabled {
   background: var(--color-surface);
   border: 2px solid var(--color-ink);
   box-shadow: var(--shadow-sm);
-  will-change: translate;
   transition: translate 0.1s, box-shadow 0.1s;
   display: block;
   text-align: center;
