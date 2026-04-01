@@ -44,7 +44,7 @@ export function createImportAndMoreController({
                         const result = parseYouTubeUrls(text);
                         if (result && result.entries.length > 0) {
                             if (result.failed.length > 0) {
-                                setImportStatus(`Skipped ${result.failed.length} unrecognized link(s): ${result.failed.join(', ')}`, 'warning');
+                                setImportStatus(`𓂜 ${result.failed.length} 𓏏𓏏: ${result.failed.join(', ')}`, 'warning');
                                 console.warn('[Import] Failed to parse:', result.failed);
                             }
                             return result.entries;
@@ -54,22 +54,22 @@ export function createImportAndMoreController({
                     }
                 }
                 const msg = urlFallback
-                    ? 'No valid YouTube links or JSON found'
-                    : 'Clipboard doesn\u2019t contain valid JSON';
+                    ? '𓂜 𓈗 𓏏𓏏'
+                    : '𓂧 𓂜 𓏏𓏏';
                 setImportStatus(msg, 'error');
                 console.warn('[Import]', msg);
                 return null;
             }
 
             if (!validateSegmentData(data)) {
-                setImportStatus('Not a valid segment file', 'error');
+                setImportStatus('𓂜 𓏏 𓇋𓏏', 'error');
                 console.warn('[Import] Clipboard JSON is not a valid segment file');
                 return null;
             }
 
             return data;
         }).catch(err => {
-            setImportStatus('Couldn\u2019t read clipboard', 'error');
+            setImportStatus('𓂜 𓂧 𓂝', 'error');
             console.warn('[Import] Failed to read clipboard:', err.message);
             return null;
         });
@@ -88,7 +88,7 @@ export function createImportAndMoreController({
     }
 
     function updateMoreMemberBtn() {
-        moreMemberBtn.textContent = `Member Mode: ${isMemberMode() ? 'On' : 'Off'}`;
+        moreMemberBtn.textContent = `𓅃: ${isMemberMode() ? '𓁹' : '𓂜'}`;
         moreMemberBtn.classList.toggle('active', isMemberMode());
     }
 

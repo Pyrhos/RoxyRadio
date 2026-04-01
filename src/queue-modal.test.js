@@ -119,7 +119,7 @@ describe('Queue Modal Controller', () => {
             ctrl.toggle();
 
             const items = dom.queueList.querySelectorAll('.queue-item');
-            expect(items[0].querySelector('.queue-item-name').textContent).toBe('Unknown');
+            expect(items[0].querySelector('.queue-item-name').textContent).toBe('𓂀');
             expect(items[0].querySelector('.queue-item-stream').textContent).toBe('invalid');
         });
 
