@@ -65,14 +65,14 @@ export function createSearchController({
 
             div.innerHTML = `
                 <span class="result-title">${item.name}</span>
-                <span class="result-sub">${item.streamName} • Song ${item.songId + 1}</span>
+                <span class="result-sub">${item.streamName} • 𓇋𓂋 ${item.songId + 1}</span>
             `;
 
             if (onEnqueueResult) {
                 const enqueueBtn = document.createElement('button');
                 enqueueBtn.className = 'enqueue-btn';
                 enqueueBtn.textContent = '+';
-                enqueueBtn.title = 'Add to queue';
+                enqueueBtn.title = '𓂝 𓀀𓀁𓀂';
                 enqueueBtn.setAttribute('aria-label', `Add ${item.name} to queue`);
 
                 const doEnqueue = () => {
@@ -162,7 +162,7 @@ export function createSearchController({
         if (countSpan) {
             countSpan.textContent = String(otherCount);
         }
-        btnDuplicates.title = `Search other versions of "${duplicateSearchName}"`;
+        btnDuplicates.title = `𓁹 𓇋𓂋 "${duplicateSearchName}"`;
     }
 
     function updateFullscreenVisibility() {

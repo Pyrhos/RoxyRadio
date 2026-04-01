@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
   <meta charset="utf-8" />
-  <title>Rourin Radio!</title>
+  <title>𓂀𓅃 𓂋𓏜𓇋𓂀!</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
 
   <meta name="description" content="Enchanting singing of the VTuber Roca Rourin. Come take a listen!" />
@@ -77,7 +77,7 @@
   <main class="wrap">
     <div id="player-container">
         <div id="player"></div>
-        <div id="overlay"><button id="start">▶ Start</button></div>
+        <div id="overlay"><button id="start">▶ 𓁹𓂝</button></div>
     </div>
 
     <div id="message-bar" hidden>
@@ -87,47 +87,47 @@
     
     <div id="controls-container">
       <div id="buttons">
-        <button id="prev-stream" class="has-icon" title="Previous Stream (Shift: bypass history)">
+        <button id="prev-stream" class="has-icon" title="𓈗 𓂝 (Shift: 𓇳)">
           <img src="./next-stream.png" alt="Previous Stream" class="button-icon button-icon-flip" />
-          Stream
+          𓈗
         </button>
-        <button id="prev-song" class="has-icon" title="Previous Song">
+        <button id="prev-song" class="has-icon" title="𓇋𓂋 𓂝">
           <img src="./next-song.png" alt="Previous Song" class="button-icon button-icon-flip" />
-          Song
+          𓇋𓂋
         </button>
 
-        <button id="loop-btn" class="has-icon" title="Loop Mode: None">
+        <button id="loop-btn" class="has-icon" title="𓇳: 𓂜">
           <img src="./loop.png" alt="Loop off" class="button-icon" id="loop-icon" />
-          <span class="btn-label">Loop: None</span>
+          <span class="btn-label">𓇳: 𓂜</span>
         </button>
-        <button id="shuffle-btn" class="has-icon" title="Toggle Shuffle">
+        <button id="shuffle-btn" class="has-icon" title="𓆣">
           <img src="./shuffle.png" alt="Shuffle" class="button-icon" />
-          <span class="btn-label">Shuffle: Off</span>
+          <span class="btn-label">𓆣: 𓂜</span>
         </button>
-        <button id="yap-btn" class="has-icon" title="Toggle Yap Mode">
+        <button id="yap-btn" class="has-icon" title="𓂋">
           <img src="./noyap.png" alt="Yap off" class="button-icon" id="yap-icon" />
-          <span class="btn-label">Yap: Off</span>
+          <span class="btn-label">𓂋: 𓂜</span>
         </button>
 
-        <button id="next-song" class="has-icon" title="Next Song">
+        <button id="next-song" class="has-icon" title="𓇋𓂋 𓂝">
           <img src="./next-song.png" alt="Next Song" class="button-icon" />
-          Song
+          𓇋𓂋
         </button>
-        <button id="next-stream" class="has-icon" title="Next Stream">
+        <button id="next-stream" class="has-icon" title="𓈗 𓂝">
           <img src="./next-stream.png" alt="Next Stream" class="button-icon" />
-          Stream
+          𓈗
         </button>
-        <button id="duplicates-btn" title="Search other versions of this song" aria-label="Search duplicate songs">
+        <button id="duplicates-btn" title="𓁹 𓇋𓂋 𓂀" aria-label="Search duplicate songs">
           <span class="note-icon">🎵</span><span class="note-count">0</span>
         </button>
-        <button id="search-btn" title="Search (Shift+S)" aria-label="Search songs">🔍</button>
+        <button id="search-btn" title="𓁹𓂀 (Shift+S)" aria-label="Search songs">🔍</button>
         <!-- Debug buttons: Left side, hidden in prod -->
         <div id="debug-container" style="display:none;">
-          <button id="debug-btn" title="Copy Timestamp">Stamp! 📋</button>
-          <button id="debug-end-btn" title="Jump to End">End ⏭</button>
+          <button id="debug-btn" title="𓂧 𓇳">𓂧! 📋</button>
+          <button id="debug-end-btn" title="𓂝 𓂜">𓂜 ⏭</button>
         </div>
-        <button id="more-btn" title="More options">More stuff</button>
-        <button id="mobile-queue-btn">▶▶ Queue</button>
+        <button id="more-btn" title="𓊝𓏏">𓊝𓏏</button>
+        <button id="mobile-queue-btn">▶▶ 𓀀𓀁𓀂</button>
       </div>
     </div>
 
@@ -136,9 +136,9 @@
         <ol id="status-song-list"></ol>
       </div>
       <div id="status-row">
-        <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel"><span class="status-icon">𝄞</span><span id="status-text">Loading…</span></div>
-        <button id="queue-cell" title="Manage Queue (Shift+Q)"><span class="queue-cell-icon">▶▶</span> Queue</button>
-        <button id="more-cell" title="More options">🪨 More</button>
+        <div id="status" role="button" tabindex="0" aria-expanded="false" aria-controls="status-panel"><span class="status-icon">𝄞</span><span id="status-text">𓇳𓏏𓏏…</span></div>
+        <button id="queue-cell" title="𓀀𓀁𓀂 (Shift+Q)"><span class="queue-cell-icon">▶▶</span> 𓀀𓀁𓀂</button>
+        <button id="more-cell" title="𓊝𓏏">🪨 𓊝𓏏</button>
       </div>
     </div>
   </main>
@@ -147,8 +147,8 @@
     <div id="modal-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
       <div id="comic-box" class="modal-box">
-        <div id="comic-title" class="modal-title">Search-O-Matic!</div>
-          <input type="text" id="search-input" placeholder="Type a song..." autocomplete="off">
+        <div id="comic-title" class="modal-title">𓁹𓂀-𓏏-𓇋𓆣!</div>
+          <input type="text" id="search-input" placeholder="𓇋𓂋𓏏…" autocomplete="off">
         <div id="search-results"></div>
       </div>
     </div>
@@ -158,12 +158,12 @@
     <div id="import-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
       <div id="import-box" class="modal-box">
-        <div id="import-title" class="modal-title">Import Playlist</div>
+        <div id="import-title" class="modal-title">𓊝 𓇋𓏏𓂋</div>
         <div id="import-status">&nbsp;</div>
         <div id="import-buttons">
-          <button id="import-replace-btn">Replace</button>
-          <button id="import-extend-btn">Extend</button>
-          <button id="import-reset-btn">Reset</button>
+          <button id="import-replace-btn">𓂝𓏏</button>
+          <button id="import-extend-btn">𓇋𓏏</button>
+          <button id="import-reset-btn">𓇳𓂜</button>
         </div>
       </div>
     </div>
@@ -173,9 +173,9 @@
     <div id="queue-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
       <div id="queue-box" class="modal-box">
-        <div id="queue-title" class="modal-title">Queue-O-Matic!</div>
+        <div id="queue-title" class="modal-title">𓀀𓀁-𓂀-𓏏𓇋𓆣!</div>
         <div id="queue-header">
-          <button id="queue-clear-btn">Clear All</button>
+          <button id="queue-clear-btn">𓂜 𓏏𓏏</button>
         </div>
         <div id="queue-list"></div>
       </div>
@@ -186,12 +186,12 @@
     <div id="more-wrapper">
       <img src="./jamstone.png" alt="" class="modal-jamstone" />
       <div id="more-box" class="modal-box">
-        <div id="more-title" class="modal-title">More Stuff!</div>
+        <div id="more-title" class="modal-title">𓊝𓏏!</div>
         <div id="more-buttons">
-          <button id="more-member-btn">Member Mode: Off</button>
-          <button id="more-import-btn">Import Playlist</button>
-          <button id="more-copy-btn">Copy Stream URL</button>
-          <button id="more-close-btn">Close</button>
+          <button id="more-member-btn">𓅃: 𓂜</button>
+          <button id="more-import-btn">𓊝 𓇋𓏏𓂋</button>
+          <button id="more-copy-btn">𓂧 𓈗</button>
+          <button id="more-close-btn">𓂜</button>
         </div>
       </div>
     </div>
@@ -201,20 +201,20 @@
 
   <div id="wanted-overlay">
     <div id="wanted-poster">
-      <div class="wanted-header">WANTED</div>
-      <div class="wanted-subheader">NOTORIOUS OUTLAWS</div>
+      <div class="wanted-header">𓁹𓂝𓌙</div>
+      <div class="wanted-subheader">𓃭𓆃 𓄿𓅃</div>
 
       <div class="wanted-men">
         <div class="wanted-man">
           <div class="wanted-mugshot"></div>
-          <div class="wanted-name">PYRHOS</div>
+          <div class="wanted-name">𓅃𓇳𓂋𓏏𓋴</div>
           <div class="wanted-crimes">
-            <div class="wanted-crime">• Banned from 27 countries due to his vocabulary</div>
-            <div class="wanted-crime" title="But creating in equal measure">• Professional hater</div>
-            <div class="wanted-crime" title="Not that kind, calm down">• Spreader of profane knowledge</div>
+            <div class="wanted-crime">• 𓂜 𓈗 27 𓏏𓏏 𓂋𓏏𓂋</div>
+            <div class="wanted-crime" title="𓂝 𓊝𓏏 𓇳𓇳">• 𓅃𓂋 𓂜𓁹</div>
+            <div class="wanted-crime" title="𓂜 𓏏, 𓈗">• 𓂝 𓂀 𓏏𓂋𓇋</div>
           </div>
           <div class="wanted-contact">
-            <div class="wanted-contact-label">Feedback and feature requests</div>
+            <div class="wanted-contact-label">𓂋𓏏 𓂝 𓊝𓏏</div>
             <div class="wanted-contact-split">
               <a href="https://x.com/pyrhos" target="_blank" rel="noopener" class="wanted-contact-link">𝕏 @pyrhos</a>
               <a href="https://github.com/Pyrhos/RoxyRadio" target="_blank" rel="noopener" class="wanted-contact-link"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.31-5.47-1.34-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.55 3.29-1.23 3.29-1.23.64 1.66.24 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.8 5.62-5.48 5.92.42.36.81 1.1.81 2.22l-.01 3.29c0 .31.2.69.82.57A12 12 0 0 0 12 .3"/></svg></a>
@@ -226,21 +226,21 @@
           <div class="wanted-mugshot">
             <img src="./sigma.png" alt="Sigma of Gestalt" class="wanted-mugshot-img">
           </div>
-          <div class="wanted-name">SIGMA OF GESTALT</div>
+          <div class="wanted-name">𓆣𓇋𓊝𓂝 𓏏 𓂀𓏏𓏏</div>
           <div class="wanted-crimes">
-            <div class="wanted-crime">• Notorious drawing speed limit exceeder</div>
-            <div class="wanted-crime">• Serial dabbler</div>
-            <div class="wanted-crime">• Unregistered pun dealer</div>
+            <div class="wanted-crime">• 𓃭 𓂧𓏏 𓇳𓇳 𓂝</div>
+            <div class="wanted-crime">• 𓇳𓇳 𓂝𓏏</div>
+            <div class="wanted-crime">• 𓂜 𓂋𓏏 𓂝</div>
           </div>
           <div class="wanted-contact">
-            <div class="wanted-contact-label">Artistry and crafts</div>
+            <div class="wanted-contact-label">𓂧𓏏 𓂝 𓊝𓏏</div>
             <a href="https://x.com/sigmaofgestalt" target="_blank" rel="noopener" class="wanted-contact-link">𝕏 @sigmaofgestalt</a>
           </div>
         </div>
       </div>
 
-      <div class="wanted-reward">REWARD: Lifetime Rocanium supply</div>
-      <button id="wanted-close" type="button">✕ Close</button>
+      <div class="wanted-reward">𓊝𓏏: 𓇳 𓆣𓅃𓇋𓏏</div>
+      <button id="wanted-close" type="button">✕ 𓂜</button>
     </div>
   </div>
 
