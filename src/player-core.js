@@ -789,12 +789,12 @@ export class PlayerCore {
   // Status Text Generation
   getStatusText(currentTime) {
       const stream = this.getCurrentStream();
-      if (!stream) return "𓇳𓏏𓏏…";
+      if (!stream) return "Loading...";
       
-      const suffix = this.yapMode ? ' 𓂋𓂋𓂋' : '';
+      const suffix = this.yapMode ? ' with Yapping' : '';
 
       if (!stream.songs) {
-          const text = stream.title || "𓂀 𓈗";
+          const text = stream.title || "Unknown Video";
           return `${text} (1/1)${suffix}`;
       }
 
@@ -814,7 +814,7 @@ export class PlayerCore {
       const idx = this._findSongIndexForTime(currentTime, songs);
       const safeIdx = (idx >= 0 && idx < songs.length) ? idx : 0;
       const song = songs[safeIdx];
-      const name = song && song.name ? song.name : "𓂀 𓇋𓂋";
+      const name = song && song.name ? song.name : "Unknown Track";
       return { song, name, index: safeIdx };
   }
 
@@ -826,14 +826,14 @@ export class PlayerCore {
           if (this.rIdx > 0 && this.rIdx < songs.length) {
               return null;
           }
-          const text = `𓂝: ${songs[0].name}`;
+          const text = `Next: ${songs[0].name}`;
           const info = `(1/${songs.length})`;
           return `${text} ${info}${suffix}`;
       }
 
       for (let i = 0; i < songs.length - 1; i++) {
           if (currentTime >= songs[i].range[1] && currentTime < songs[i + 1].range[0]) {
-              const text = `𓂝: ${songs[i + 1].name}`;
+              const text = `Next: ${songs[i + 1].name}`;
               const info = `(${i + 2}/${songs.length})`;
               return `${text} ${info}${suffix}`;
           }
@@ -841,7 +841,7 @@ export class PlayerCore {
 
       // Past end
       if (currentTime >= songs[songs.length - 1].range[1]) {
-          return "𓈗 𓂜…";
+          return "Stream Ending...";
       }
       return null;
   }
@@ -859,7 +859,7 @@ export class PlayerCore {
 
   // Returns the active song name for a given time
   // when inside a song segment, or null when outside (gaps / Rule 0).
-  getActiveSongName(currentTime, fallback = "𓂀 𓇋𓂋") {
+  getActiveSongName(currentTime, fallback = "Unknown Track") {
       const stream = this.getCurrentStream();
       if (!stream || !stream.songs || !stream.songs.length) {
           return null;

@@ -270,7 +270,7 @@ describe('PlayerCore', () => {
   describe('Yap Mode', () => {
       it('includes "with Yapping" in status', () => {
           core.toggleYap();
-          expect(core.getStatusText(5)).toContain('𓂋𓂋𓂋');
+          expect(core.getStatusText(5)).toContain('with Yapping');
       });
 
       it('nextSong in Yap mode seeks to start of next song', () => {
@@ -285,7 +285,7 @@ describe('PlayerCore', () => {
       it('shows "Next: " when in gap', () => {
           // v1 Song 1 ends at 10, Song 2 starts at 20
           const text = core.getStatusText(15);
-          expect(text).toContain('𓂝: S1T2');
+          expect(text).toContain('Next: S1T2');
       });
 
       it('does not show "Next: first song" during transitions when rIdx indicates later song', () => {
@@ -304,7 +304,7 @@ describe('PlayerCore', () => {
           const text = core.getStatusText(0);
 
           // Should NOT show "Next: S1T1" - instead should show current song based on rIdx
-          expect(text).not.toContain('𓂝: S1T1');
+          expect(text).not.toContain('Next: S1T1');
           expect(text).toContain('S1T3');
           expect(text).toContain('(3/3)');
       });
@@ -318,7 +318,7 @@ describe('PlayerCore', () => {
           core.rIdx = 0; // rIdx confirms we're at the start
 
           const text = core.getStatusText(5); // Before first song
-          expect(text).toContain('𓂝: S1T1');
+          expect(text).toContain('Next: S1T1');
       });
   });
 

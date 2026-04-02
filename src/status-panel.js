@@ -44,7 +44,7 @@ export function createStatusPanelController({
         }
         if (!stream) return [];
         return [{
-            name: stream.title || stream.name || '𓈗𓏏',
+            name: stream.title || stream.name || 'Full Stream',
             range: [getStreamDefaultStart(stream) || 0, null]
         }];
     }
@@ -188,15 +188,15 @@ export function createStatusPanelController({
             item.setAttribute('role', 'option');
             item.innerHTML = `
             <span class="status-song-index">${idx + 1}.</span>
-            <span class="status-song-name">${song.name || `𓇋𓂋 ${idx + 1}`}</span>
+            <span class="status-song-name">${song.name || `Track ${idx + 1}`}</span>
         `;
 
             if (onEnqueueSong) {
                 const enqueueBtn = document.createElement('button');
                 enqueueBtn.className = 'enqueue-btn';
                 enqueueBtn.textContent = '+';
-                enqueueBtn.title = '𓂝 𓀀𓀁𓀂';
-                enqueueBtn.setAttribute('aria-label', `Add ${song.name || `𓇋𓂋 ${idx + 1}`} to queue`);
+                enqueueBtn.title = 'Add to queue';
+                enqueueBtn.setAttribute('aria-label', `Add ${song.name || `Track ${idx + 1}`} to queue`);
 
                 const doEnqueue = () => {
                     if (enqueueBtn.classList.contains('enqueue-ok')) return;

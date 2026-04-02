@@ -30,7 +30,7 @@ let urlOverride = null;
 // Active segment source — defaults to built-in, overridden by import
 let activeSegments = segmentsData;
 
-const loopLabels = ['𓂜', '𓇋𓂋', '𓈗'];
+const loopLabels = ['None', 'Track', 'Stream'];
 const loopIcons = ['./loop.png', './loop-active-track.png', './loop-active.png'];
 const loopAlts = ['Loop off', 'Loop track', 'Loop stream'];
 
@@ -177,7 +177,7 @@ const statusCtrl = createStatusPanelController({
 
         core.rIdx = safeIdx;
 
-        const songs = stream.songs || [{ name: stream.title || stream.name || '𓈗𓏏', range: [core.getStreamDefaultStart(stream) || 0, null] }];
+        const songs = stream.songs || [{ name: stream.title || stream.name || 'Full Stream', range: [core.getStreamDefaultStart(stream) || 0, null] }];
         const targetRange = songs[safeIdx].range;
         const startSeconds = Array.isArray(targetRange) && Number.isFinite(targetRange[0])
             ? targetRange[0]
@@ -200,7 +200,7 @@ const importCtrl = createImportAndMoreController({
     onImportReplace: (data) => {
         core.init(data);
         if (!core.playlist.length) {
-            importCtrl.setImportStatus('𓊝 𓂜 𓏏𓏏', 'error');
+            importCtrl.setImportStatus('Import produced an empty playlist', 'error');
             console.warn('[Import] Imported data produced an empty playlist');
             core.init(activeSegments);
             rebuildPlaylistDerivedState();
@@ -216,7 +216,7 @@ const importCtrl = createImportAndMoreController({
         rebuildPlaylistDerivedState();
         updateButtons();
         loadCurrentContent(true);
-        importCtrl.setImportStatus(`𓂝𓏏 - ${core.playlist.length} 𓈗 𓁹`, 'ok');
+        importCtrl.setImportStatus(`Replaced - ${core.playlist.length} streams loaded`, 'ok');
         importCtrl.toggleImportModal();
         console.log(`[Import] Replaced with ${core.playlist.length} streams from clipboard`);
     },
@@ -227,7 +227,7 @@ const importCtrl = createImportAndMoreController({
 
         core.init(merged);
         if (!core.playlist.length) {
-            importCtrl.setImportStatus('𓊝 𓂜 𓏏𓏏', 'error');
+            importCtrl.setImportStatus('Merge produced an empty playlist', 'error');
             console.warn('[Import] Merged data produced an empty playlist');
             core.init(activeSegments);
             rebuildPlaylistDerivedState();
@@ -245,7 +245,7 @@ const importCtrl = createImportAndMoreController({
         rebuildPlaylistDerivedState();
         updateButtons();
         loadCurrentContent(true);
-        importCtrl.setImportStatus(`𓇋𓏏 - ${core.playlist.length} 𓈗 𓏏𓏏`, 'ok');
+        importCtrl.setImportStatus(`Extended - ${core.playlist.length} streams total`, 'ok');
         console.log(`[Import] Appended ${data.length} streams (${importedIds.size} unique), total ${core.playlist.length}`);
     },
     onImportReset: () => {
@@ -259,7 +259,7 @@ const importCtrl = createImportAndMoreController({
         rebuildPlaylistDerivedState();
         updateButtons();
         loadCurrentContent(true);
-        importCtrl.setImportStatus(`𓇳𓂜 - ${core.playlist.length} 𓈗 𓇳`, 'ok');
+        importCtrl.setImportStatus(`Reset - ${core.playlist.length} default streams restored`, 'ok');
         importCtrl.toggleImportModal();
         console.log(`[Import] Reset to default playlist (${core.playlist.length} streams)`);
     },
@@ -272,7 +272,7 @@ const importCtrl = createImportAndMoreController({
             const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
             navigator.clipboard.writeText(shareUrl).then(() => {
                 const original = buttonEl.textContent;
-                buttonEl.textContent = '𓂧𓁹!';
+                buttonEl.textContent = 'Copied!';
                 setTimeout(() => { buttonEl.textContent = original; }, 1500);
             }).catch(err => {
                 console.error('[Share] Failed to copy URL to clipboard', err);
@@ -490,10 +490,10 @@ function initializePlaylist() {
         rebuildPlaylistDerivedState();
 
         playlistReady = true;
-        setStatus('𓁹. 𓂝 ▶.');
+        setStatus('Ready. Click Start.');
         maybeStartPlayback();
     } catch (err) {
-        setStatus('𓂜 𓏏𓏏: ' + err.message);
+        setStatus('Failed to load segments: ' + err.message);
     }
 }
 
@@ -518,7 +518,7 @@ window.onYouTubeIframeAPIReady = function () {
             onStateChange: onStateChange,
             onError: (e) => {
                 playbackCtrl.resetLoadedVideoId();
-                setStatus('𓈗 𓂜: ' + e.data);
+                setStatus('YouTube error: ' + e.data);
             }
         }
     });
@@ -533,7 +533,7 @@ if (window.YT && window.YT.Player) {
 
 function onPlayerReady() {
     isReady = true;
-    setStatus('𓁹 𓏏𓂋.');
+    setStatus('Player ready.');
     requestStartPlayback();
 }
 
@@ -559,7 +559,7 @@ function updateStatus(forcedTime) {
     setStatus(msg);
 
     const activeName = core.getActiveSongName(t);
-    const newTitle = activeName ? `𓂀𓅃: ${activeName}` : `𓂀𓅃 ${msg}`;
+    const newTitle = activeName ? `Rourin: ${activeName}` : `Rourin ${msg}`;
     if (newTitle !== lastTitleText) {
         lastTitleText = newTitle;
         document.title = newTitle;
@@ -658,30 +658,30 @@ function performMemberModeToggle() {
 function updateButtons() {
     const queueActive = core.isQueueActive();
 
-    const queueDisabledTitle = '𓂜 𓀀𓀁𓀂 𓁹';
+    const queueDisabledTitle = 'Unavailable while queue is active';
 
     // Yap button — disabled while queue is active
     const yapOn = core.yapMode;
-    updateButtonLabel(btnYap, `𓂋: ${yapOn ? '𓁹' : '𓂜'}`, yapOn);
+    updateButtonLabel(btnYap, `Yap: ${yapOn ? 'On' : 'Off'}`, yapOn);
     updateButtonIcon(iconYap, yapOn ? './yap.png' : './noyap.png', yapOn ? 'Yap on' : 'Yap off');
     btnYap.disabled = queueActive;
-    btnYap.title = queueActive ? queueDisabledTitle : '𓂋';
+    btnYap.title = queueActive ? queueDisabledTitle : 'Toggle Yap Mode';
 
     // Loop button — third state label changes when queue is active
     const loopMode = core.loopMode;
-    const loopLabel = (loopMode === 2 && queueActive) ? '𓀀𓀁𓀂' : loopLabels[loopMode];
-    updateButtonLabel(btnLoop, `𓇳: ${loopLabel}`, loopMode !== 0);
+    const loopLabel = (loopMode === 2 && queueActive) ? 'Queue' : loopLabels[loopMode];
+    updateButtonLabel(btnLoop, `Loop: ${loopLabel}`, loopMode !== 0);
     updateButtonIcon(iconLoop, loopIcons[loopMode], loopAlts[loopMode]);
 
     // Shuffle button
     const shuffleOn = core.shuffleMode;
-    updateButtonLabel(btnShuffle, `𓆣: ${shuffleOn ? '𓁹' : '𓂜'}`, shuffleOn);
+    updateButtonLabel(btnShuffle, `Shuffle: ${shuffleOn ? 'On' : 'Off'}`, shuffleOn);
 
     // Next/prev stream — disabled while queue is active (queue overrides stream nav)
     btnPrevStream.disabled = queueActive;
     btnNextStream.disabled = queueActive;
-    btnPrevStream.title = queueActive ? queueDisabledTitle : '𓈗 𓂝 (Shift: 𓇳)';
-    btnNextStream.title = queueActive ? queueDisabledTitle : '𓈗 𓂝';
+    btnPrevStream.title = queueActive ? queueDisabledTitle : 'Previous Stream (Shift: bypass history)';
+    btnNextStream.title = queueActive ? queueDisabledTitle : 'Next Stream';
 
     // Member mode indicator on controls bar
     if (controlsContainer) {
@@ -696,11 +696,11 @@ function updateQueueIndicator() {
     const active = queue.length > 0;
     if (queueCell) {
         queueCell.innerHTML = active
-            ? `<span class="queue-cell-icon">▶▶</span> 𓀀𓀁𓀂 (${queue.length})`
-            : `<span class="queue-cell-icon">▶▶</span> 𓀀𓀁𓀂`;
+            ? `<span class="queue-cell-icon">▶▶</span> Queue (${queue.length})`
+            : `<span class="queue-cell-icon">▶▶</span> Queue`;
     }
     if (mobileQueueBtn) {
-        mobileQueueBtn.textContent = active ? `▶▶ 𓀀𓀁𓀂 (${queue.length})` : '▶▶ 𓀀𓀁𓀂';
+        mobileQueueBtn.textContent = active ? `▶▶ Queue (${queue.length})` : '▶▶ Queue';
     }
 }
 

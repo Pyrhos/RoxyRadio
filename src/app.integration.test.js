@@ -1208,7 +1208,7 @@ describe('Start Overlay', () => {
   });
 
   it('start button has correct text', () => {
-    expect(startBtn.textContent).toBe('▶ 𓁹𓂝');
+    expect(startBtn.textContent).toBe('▶ Start');
   });
 });
 
@@ -1270,7 +1270,7 @@ describe('Accessibility', () => {
 
     it('has title for tooltip', () => {
       const searchBtn = document.getElementById('search-btn');
-      expect(searchBtn.getAttribute('title')).toBe('𓁹𓂀 (Shift+S)');
+      expect(searchBtn.getAttribute('title')).toBe('Search (Shift+S)');
     });
   });
 
@@ -1316,7 +1316,7 @@ describe('Queue Modal', () => {
 
     it('clear all button exists', () => {
       expect(queueClearBtn).not.toBeNull();
-      expect(queueClearBtn.textContent).toBe('𓂜 𓏏𓏏');
+      expect(queueClearBtn.textContent).toBe('Clear All');
     });
 
     it('queue cell (desktop) exists and is always visible', () => {

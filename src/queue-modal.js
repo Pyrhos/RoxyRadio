@@ -35,13 +35,13 @@ export function createQueueModalController({
         const playlist = getPlaylist();
         const stream = playlist.find(p => p.videoId === item.videoId);
         if (!stream) {
-            return { songName: '𓂀', streamName: item.videoId };
+            return { songName: 'Unknown', streamName: item.videoId };
         }
         let songName;
         if (stream.songs && stream.songs[item.rIdx]) {
-            songName = stream.songs[item.rIdx].name || `𓇋𓂋 ${item.rIdx + 1}`;
+            songName = stream.songs[item.rIdx].name || `Track ${item.rIdx + 1}`;
         } else {
-            songName = stream.title || stream.name || '𓈗𓏏';
+            songName = stream.title || stream.name || 'Full Stream';
         }
         return {
             songName,
@@ -81,7 +81,7 @@ export function createQueueModalController({
             const removeBtn = document.createElement('button');
             removeBtn.className = 'queue-item-remove';
             removeBtn.textContent = '\u2212';
-            removeBtn.title = '𓂜 𓀀𓀁𓀂';
+            removeBtn.title = 'Remove from queue';
             removeBtn.setAttribute('aria-label', `Remove ${info.songName} from queue`);
             removeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
