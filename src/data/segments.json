@@ -246,6 +246,7 @@
     "songs": [
       {
         "name": "Edge of Night - Pippin's Theme (The Lord of the Rings)",
+        "theme": 2,
         "range": [
           0,
           73

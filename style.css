@@ -34,6 +34,24 @@
   --shadow-lg: 12px 12px 0 var(--color-ink);
 }
 
+:root[data-theme="forest-meadow"] {
+  --color-bg: #080B07;
+  --color-bg-raised: #131A11;
+  --color-muted: #2D3527;
+  --color-accent: #4E9479;
+  --color-surface: #D6CDB9;
+  --color-surface-alt: #E4DCCC;
+  --color-highlight: #C47D3E;
+  --color-focus: #E8C572;
+  --color-accent-soft: #9878B4;
+  --color-ink: #040503;
+  --color-bright: #F0EBE0;
+  --font-comic: 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', 'Purisa', sans-serif;
+  --shadow-sm: 2px 2px 0 var(--color-ink);
+  --shadow-md: 4px 4px 0 var(--color-ink);
+  --shadow-lg: 12px 12px 0 var(--color-ink);
+}
+
 /* Smooth theme transitions */
 html, body, #app,
 #player-container,

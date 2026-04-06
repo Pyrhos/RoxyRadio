@@ -16,6 +16,7 @@ const TICK_MS = 200;
 const TITLE_REFRESH_MS = 2000;
 const YAP_TOGGLE_DEBOUNCE_MS = 300;
 const VIDEO_LOAD_DEBOUNCE_MS = 300;
+const THEME_NAMES = [null, 'starry-night', 'forest-meadow'];
 
 // ======== STATE ========
 let player = null;
@@ -536,8 +537,6 @@ function onPlayerReady() {
     setStatus('Player ready.');
     requestStartPlayback();
 }
-
-const THEME_NAMES = [null, 'starry-night'];
 
 function syncTheme() {
     const song = core.getCurrentSong();
