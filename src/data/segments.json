@@ -13,6 +13,32 @@
     ]
   },
   {
+    "name": "Play On! - NTE Launch Theme Song",
+    "videoId": "_VF3piyAv7U",
+    "songs": [
+      {
+        "name": "Play On! - NTE Launch Theme Song",
+        "range": [
+          0,
+          154
+        ]
+      }
+    ]
+  },
+  {
+    "name": "The Pretender - Foo Fighters",
+    "videoId": "8TpVFW9qkkc",
+    "songs": [
+      {
+        "name": "The Pretender - Foo Fighters",
+        "range": [
+          0,
+          270
+        ]
+      }
+    ]
+  },
+  {
     "name": "Singing songs from my favorite decade",
     "videoId": "W5Tc9VVOAnA",
     "songs": [
@@ -119,19 +145,6 @@
         "range": [
           5433,
           5644
-        ]
-      }
-    ]
-  },
-  {
-    "name": "The Pretender - Foo Fighters",
-    "videoId": "8TpVFW9qkkc",
-    "songs": [
-      {
-        "name": "The Pretender - Foo Fighters",
-        "range": [
-          0,
-          270
         ]
       }
     ]
