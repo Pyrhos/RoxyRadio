@@ -4314,5 +4314,124 @@
         ]
       }
     ]
+  },
+  {
+    "name": "You walk into a tavern and hear a voice",
+    "videoId": "dmSCDTeQsio",
+    "memberOnly": true,
+    "songs": [
+      {
+        "name": "The Chain - Fleetwood Mac",
+        "theme": 2,
+        "range": [
+          748,
+          1011
+        ]
+      },
+      {
+        "name": "Kiss from a Rose - Seal",
+        "theme": 2,
+        "range": [
+          1550,
+          1800
+        ]
+      },
+      {
+        "name": "Blue (Da Ba Dee) - Eiffel 65",
+        "theme": 2,
+        "range": [
+          1911,
+          2247
+        ]
+      },
+      {
+        "name": "Gangsta's Paradise - Coolio",
+        "theme": 2,
+        "range": [
+          2383,
+          2598
+        ]
+      },
+      {
+        "name": "Blue Bird - Ikimono Gakari",
+        "theme": 2,
+        "range": [
+          2730,
+          2819
+        ]
+      },
+      {
+        "name": "Creep - Radiohead",
+        "theme": 2,
+        "range": [
+          2876,
+          3134
+        ]
+      },
+      {
+        "name": "Somebody That I Used to Know - Gotye",
+        "theme": 2,
+        "range": [
+          3271,
+          3585
+        ]
+      },
+      {
+        "name": "Tears for Fears - Mad World",
+        "theme": 2,
+        "range": [
+          3729,
+          3995
+        ]
+      },
+      {
+        "name": "Just Dance - Lady Gaga",
+        "theme": 2,
+        "range": [
+          4073,
+          4189
+        ]
+      },
+      {
+        "name": "Walk Like an Egyptian - The Bangles",
+        "theme": 2,
+        "range": [
+          4253,
+          4458
+        ]
+      },
+      {
+        "name": "Sweet Dreams (Are Made of This) - Eurythmics",
+        "theme": 2,
+        "range": [
+          4505,
+          4707
+        ]
+      },
+      {
+        "name": "Hit Me with Your Best Shot - Pat Benatar",
+        "theme": 2,
+        "range": [
+          4776,
+          4985
+        ]
+      },
+      {
+        "name": "What Is Love - Haddaway",
+        "theme": 2,
+        "range": [
+          5036,
+          5253
+        ]
+      },
+      {
+        "name": "Never Gonna Give You Up - Rick Astley",
+        "theme": 2,
+        "range": [
+          5434,
+          5664
+        ]
+      }
+    ]
   }
 ]
