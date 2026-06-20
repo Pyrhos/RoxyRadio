@@ -155,6 +155,10 @@ const searchCtrl = createSearchController({
             updateButtons();
         }
     },
+    isResultQueued: (vIdx, rIdx) => {
+        const stream = core.playlist[vIdx];
+        return !!stream && core.isQueued(stream.videoId, rIdx);
+    },
 });
 
 const statusCtrl = createStatusPanelController({
@@ -172,6 +176,7 @@ const statusCtrl = createStatusPanelController({
         updateQueueIndicator();
         updateButtons();
     },
+    isSongQueued: (videoId, rIdx) => core.isQueued(videoId, rIdx),
     onSongPick: (safeIdx) => {
         const stream = core.getCurrentStream();
         if (!stream) return;

@@ -324,6 +324,12 @@ export class PlayerCore {
       return this.queue.length > 0;
   }
 
+  // Exact track-level membership (videoId + rIdx). Duplicates are allowed, so this
+  // only reports presence — the UI uses it to tint the "add" affordance.
+  isQueued(videoId, rIdx) {
+      return this.queue.some(q => q.videoId === videoId && q.rIdx === rIdx);
+  }
+
   // Pick a queue item, resolve it to a playlist position, and play it.
   // With shuffle on, a random item is chosen; otherwise the front is taken.
   // Invalid items are silently dropped until a valid one is found.

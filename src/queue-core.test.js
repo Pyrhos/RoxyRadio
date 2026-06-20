@@ -86,6 +86,19 @@ describe('Queue (§13)', () => {
       core.enqueue('v1', 0);
       expect(core.getQueue().length).toBe(2);
     });
+
+    it('isQueued reports exact (videoId, rIdx) membership', () => {
+      core.enqueue('v1', 0);
+      expect(core.isQueued('v1', 0)).toBe(true);
+      expect(core.isQueued('v1', 1)).toBe(false); // same stream, different track
+      expect(core.isQueued('v3', 0)).toBe(false); // not queued
+    });
+
+    it('isQueued stays true regardless of duplicate count', () => {
+      core.enqueue('v1', 0);
+      core.enqueue('v1', 0);
+      expect(core.isQueued('v1', 0)).toBe(true);
+    });
   });
 
   describe('Persistence', () => {

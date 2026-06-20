@@ -10,6 +10,7 @@
   --color-accent-soft: #CE55CC;
   --color-ink: #000;
   --color-bright: #fff;
+  --color-danger: #D7263D;
   --font-comic: 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', 'Purisa', sans-serif;
   --shadow-sm: 2px 2px 0 var(--color-ink);
   --shadow-md: 4px 4px 0 var(--color-ink);
@@ -28,6 +29,7 @@
   --color-accent-soft: #8B6FC0;
   --color-ink: #020309;
   --color-bright: #EEF0F8;
+  --color-danger: #C0405A;
   --font-comic: 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', 'Purisa', sans-serif;
   --shadow-sm: 2px 2px 0 var(--color-ink);
   --shadow-md: 4px 4px 0 var(--color-ink);
@@ -46,6 +48,7 @@
   --color-accent-soft: #9878B4;
   --color-ink: #040503;
   --color-bright: #F0EBE0;
+  --color-danger: #C0442E;
   --font-comic: 'Comic Sans MS', 'Comic Neue', 'Chalkboard SE', 'Purisa', sans-serif;
   --shadow-sm: 2px 2px 0 var(--color-ink);
   --shadow-md: 4px 4px 0 var(--color-ink);
@@ -1037,9 +1040,14 @@ button.active {
   box-shadow: var(--shadow-sm);
 }
 
-/* Touch devices: hide minus buttons (use long-press instead) */
+/* Coarse pointer: remove box hidden until a long-press arms it as a red ✕ */
 @media (pointer: coarse) {
   .queue-item-remove { display: none; }
+  .queue-item.armed .queue-item-remove {
+    display: flex;
+    background: var(--color-danger);
+    color: var(--color-bright);
+  }
 }
 
 /* Enqueue (+) buttons in search results and status panel */
@@ -1075,9 +1083,28 @@ button.active {
   pointer-events: none;
 }
 
-/* Touch devices: hide + buttons (use long-press instead) */
+/* Coarse pointer: + box hidden until a long-press arms it; tinted when already queued */
 @media (pointer: coarse) {
   .enqueue-btn { display: none; }
+  .result-item.armed .enqueue-btn,
+  .status-song.armed .enqueue-btn { display: flex; }
+  .result-item.armed.in-queue .enqueue-btn,
+  .status-song.armed.in-queue .enqueue-btn {
+    background: var(--color-accent-soft);
+    color: var(--color-bg);
+  }
+}
+
+/* Coarse pointer: keep row text from hijacking the long-press as a text selection /
+   iOS callout, so the press cleanly arms the add/remove box instead. */
+@media (pointer: coarse) {
+  .queue-item,
+  .result-item,
+  .status-song {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 
 /* Desktop: hide mobile queue button */

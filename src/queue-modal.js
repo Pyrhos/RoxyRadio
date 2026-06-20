@@ -1,5 +1,5 @@
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
-import { LONG_PRESS_MS } from './enqueue-flash.js';
+import { attachLongPress, arm, disarm } from './long-press-arm.js';
 
 /**
  * @param {object} deps
@@ -50,6 +50,7 @@ export function createQueueModalController({
     }
 
     function render() {
+        disarm();
         const queue = getQueue();
         selIdx = 0;
         queueList.innerHTML = '';
@@ -85,42 +86,22 @@ export function createQueueModalController({
             removeBtn.setAttribute('aria-label', `Remove ${info.songName} from queue`);
             removeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                disarm();
                 onRemoveItem(idx);
             });
             div.appendChild(removeBtn);
 
+            // Coarse pointer: long-press reveals the remove box as a red ✕; tapping it
+            // removes. Registered before the select handler below so its trailing-click
+            // suppressor can cancel the select.
+            attachLongPress(div, () => {
+                removeBtn.textContent = '✕';
+                arm(div, { inQueue: false });
+            });
+
             div.addEventListener('click', () => onSelectItem(idx));
 
-            // Long-press to remove (mobile)
-            _attachLongPress(div, () => onRemoveItem(idx));
-
             queueList.appendChild(div);
-        });
-    }
-
-    function _attachLongPress(el, callback) {
-        let pressTimer = null;
-        let pressTriggered = false;
-
-        el.addEventListener('pointerdown', () => {
-            pressTriggered = false;
-            pressTimer = setTimeout(() => {
-                pressTriggered = true;
-                callback();
-            }, LONG_PRESS_MS);
-        });
-        el.addEventListener('pointerup', () => clearTimeout(pressTimer));
-        el.addEventListener('pointerleave', () => clearTimeout(pressTimer));
-        el.addEventListener('pointermove', (e) => {
-            if (pressTimer && (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5)) {
-                clearTimeout(pressTimer);
-            }
-        });
-        el.addEventListener('click', (e) => {
-            if (pressTriggered) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
         });
     }
 

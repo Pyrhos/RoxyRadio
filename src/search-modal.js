@@ -1,7 +1,8 @@
 import Fuse from 'fuse.js';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, sortSearchResultsByCurrentStream, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
-import { flashEnqueue as _flashEnqueue, LONG_PRESS_MS } from './enqueue-flash.js';
+import { flashEnqueue as _flashEnqueue } from './enqueue-flash.js';
+import { attachLongPress, arm, disarm } from './long-press-arm.js';
 
 /**
  * @param {object} deps
@@ -14,10 +15,12 @@ import { flashEnqueue as _flashEnqueue, LONG_PRESS_MS } from './enqueue-flash.js
  * @param {() => object|null} deps.getCurrentSong
  * @param {(vIdx: number, rIdx: number) => void} deps.onSelectResult
  * @param {((vIdx: number, rIdx: number) => void)|undefined} deps.onEnqueueResult
+ * @param {((vIdx: number, rIdx: number) => boolean)|undefined} deps.isResultQueued
  */
 export function createSearchController({
     modal, searchInput, resultsContainer, btnSearch, btnDuplicates,
     getCurrentStreamIdx, getCurrentSong, onSelectResult, onEnqueueResult,
+    isResultQueued = () => false,
 }) {
     let fuse = null;
     let searchResults = [];
@@ -51,6 +54,7 @@ export function createSearchController({
     }
 
     function renderResults(items) {
+        disarm();
         const currentStreamId = getCurrentStreamIdx();
         const sortedItems = sortSearchResultsByCurrentStream(items, currentStreamId);
 
@@ -78,7 +82,7 @@ export function createSearchController({
                 const doEnqueue = () => {
                     if (enqueueBtn.classList.contains('enqueue-ok')) return;
                     onEnqueueResult(item.streamId, item.songId);
-                    _flashEnqueue(enqueueBtn);
+                    _flashEnqueue(enqueueBtn, disarm);
                 };
 
                 enqueueBtn.addEventListener('click', (e) => {
@@ -87,23 +91,10 @@ export function createSearchController({
                 });
                 div.appendChild(enqueueBtn);
 
-                // Long-press to enqueue (mobile)
-                let pressTimer = null;
-                let pressTriggered = false;
-                div.addEventListener('pointerdown', () => {
-                    pressTriggered = false;
-                    pressTimer = setTimeout(() => {
-                        pressTriggered = true;
-                        doEnqueue();
-                    }, LONG_PRESS_MS);
-                });
-                div.addEventListener('pointerup', () => clearTimeout(pressTimer));
-                div.addEventListener('pointerleave', () => clearTimeout(pressTimer));
-                div.addEventListener('pointermove', (e) => {
-                    if (pressTimer && (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5)) {
-                        clearTimeout(pressTimer);
-                    }
-                });
+                // Coarse pointer: long-press reveals the + box (tinted if already queued);
+                // tapping it enqueues. Registered before the select handler below so its
+                // trailing-click suppressor can cancel the select.
+                attachLongPress(div, () => arm(div, { inQueue: isResultQueued(item.streamId, item.songId) }));
             }
 
             div.addEventListener('click', (e) => {
