@@ -4433,5 +4433,123 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Let's rock some 2000s classics!",
+    "videoId": "RE6K_lfoUmE",
+    "songs": [
+      {
+        "name": "Seven Nation Army - The White Stripes",
+        "range": [
+          1177,
+          1403
+        ]
+      },
+      {
+        "name": "Here Without You - 3 Doors Down",
+        "range": [
+          1643,
+          1877
+        ]
+      },
+      {
+        "name": "Sk8er Boi - Avril Lavigne",
+        "range": [
+          1949,
+          2146
+        ]
+      },
+      {
+        "name": "Lips of an Angel - Hinder",
+        "range": [
+          2262,
+          2533
+        ]
+      },
+      {
+        "name": "Dani California - Red Hot Chili Peppers",
+        "range": [
+          2694,
+          2973
+        ]
+      },
+      {
+        "name": "Bring Me to Life - Evanescence",
+        "range": [
+          3080,
+          3318
+        ]
+      },
+      {
+        "name": "Island in the Sun - Weezer",
+        "range": [
+          3379,
+          3576
+        ]
+      },
+      {
+        "name": "How You Remind Me - Nickelback",
+        "range": [
+          3746,
+          3974
+        ]
+      },
+      {
+        "name": "Thnks fr th Mmrs - Fall Out Boy",
+        "range": [
+          4073,
+          4268
+        ]
+      },
+      {
+        "name": "When You Were Young - The Killers",
+        "range": [
+          4404,
+          4619
+        ]
+      },
+      {
+        "name": "Rockstar - Nickelback",
+        "range": [
+          4750,
+          5011
+        ]
+      },
+      {
+        "name": "Still Into You - Paramore",
+        "range": [
+          5084,
+          5296
+        ]
+      },
+      {
+        "name": "Hysteria - Muse",
+        "range": [
+          5561,
+          5785
+        ]
+      },
+      {
+        "name": "I Hate Everything About You - Three Days Grace",
+        "range": [
+          5839,
+          6066
+        ]
+      },
+      {
+        "name": "Snow (Hey Oh) - Red Hot Chili Peppers",
+        "range": [
+          6139,
+          6469
+        ]
+      },
+      {
+        "name": "In the End - Linkin Park",
+        "range": [
+          6602,
+          6817
+        ]
+      }
+    ]
   }
 ]
