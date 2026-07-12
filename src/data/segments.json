@@ -4691,5 +4691,95 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Let me sing for you!!!",
+    "videoId": "-ufe_uHE5zU",
+    "songs": [
+      {
+        "name": "Sixteen Tons - Tennessee Ernie Ford",
+        "range": [
+          1067,
+          1221
+        ]
+      },
+      {
+        "name": "Soldier of Fortune - Deep Purple",
+        "range": [
+          1477,
+          1666
+        ]
+      },
+      {
+        "name": "Crazy Little Thing Called Love - Queen",
+        "range": [
+          1802,
+          1962
+        ]
+      },
+      {
+        "name": "Brave Shine - Aimer (Fate/stay night: Unlimited Blade Works)",
+        "range": [
+          2035,
+          2265
+        ]
+      },
+      {
+        "name": "Cat's Eye - Anri",
+        "range": [
+          2380,
+          2574
+        ]
+      },
+      {
+        "name": "Espresso - Sabrina Carpenter",
+        "range": [
+          2646,
+          2819
+        ]
+      },
+      {
+        "name": "Careless Whisper - George Michael",
+        "range": [
+          3115,
+          3425
+        ]
+      },
+      {
+        "name": "Smooth Operator - Sade",
+        "range": [
+          3526,
+          3801
+        ]
+      },
+      {
+        "name": "Sultans of Swing - Dire Straits",
+        "range": [
+          3893,
+          4251
+        ]
+      },
+      {
+        "name": "Beneath the Mask - Lyn (Persona 5)",
+        "range": [
+          4288,
+          4567
+        ]
+      },
+      {
+        "name": "Big Love - Fleetwood Mac",
+        "range": [
+          4620,
+          4785
+        ]
+      },
+      {
+        "name": "Blackbird - The Beatles",
+        "range": [
+          4964,
+          5107
+        ]
+      }
+    ]
   }
 ]
