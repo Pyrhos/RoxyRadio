@@ -4781,5 +4781,158 @@
         ]
       }
     ]
+  },
+  {
+    "name": "80s Music Karaoke Night! Are you ready?",
+    "videoId": "xLQLYQyiu84",
+    "songs": [
+      {
+        "name": "Maniac - Michael Sembello",
+        "range": [
+          989,
+          1226
+        ]
+      },
+      {
+        "name": "You Spin Me Round (Like a Record) - Dead or Alive",
+        "range": [
+          1284,
+          1479
+        ]
+      },
+      {
+        "name": "Conga - Miami Sound Machine",
+        "range": [
+          1520,
+          1773
+        ]
+      },
+      {
+        "name": "Straight Up - Paula Abdul",
+        "range": [
+          1826,
+          2050
+        ]
+      },
+      {
+        "name": "Faith - George Michael",
+        "range": [
+          2180,
+          2360
+        ]
+      },
+      {
+        "name": "We Built This City - Starship",
+        "range": [
+          2415,
+          2711
+        ]
+      },
+      {
+        "name": "The Power of Love - Huey Lewis & The News",
+        "range": [
+          2772,
+          3002
+        ]
+      },
+      {
+        "name": "Another Day in Paradise - Phil Collins",
+        "range": [
+          3140,
+          3443
+        ]
+      },
+      {
+        "name": "Carrie - Europe",
+        "range": [
+          3503,
+          3773
+        ]
+      },
+      {
+        "name": "The Sweetest Taboo - Sade",
+        "range": [
+          3852,
+          4116
+        ]
+      },
+      {
+        "name": "Jezebel - Sade",
+        "range": [
+          4171,
+          4491
+        ]
+      },
+      {
+        "name": "Stuck on You - Lionel Richie",
+        "range": [
+          4568,
+          4751
+        ]
+      },
+      {
+        "name": "True - Spandau Ballet",
+        "range": [
+          4805,
+          5128
+        ]
+      },
+      {
+        "name": "Cheri Cheri Lady - Modern Talking",
+        "range": [
+          5170,
+          5401
+        ]
+      },
+      {
+        "name": "Against All Odds (Take A Look At Me Now) - Phil Collins",
+        "range": [
+          5471,
+          5672
+        ]
+      },
+      {
+        "name": "Everybody Wants to Rule the World - Tears for Fears",
+        "range": [
+          5772,
+          6009
+        ]
+      },
+      {
+        "name": "Maneater - Daryl Hall & John Oates",
+        "range": [
+          6142,
+          6406
+        ]
+      },
+      {
+        "name": "Rag Doll - Aerosmith",
+        "range": [
+          6442,
+          6697
+        ]
+      },
+      {
+        "name": "Who's Crying Now - Journey",
+        "range": [
+          6730,
+          7026
+        ]
+      },
+      {
+        "name": "Time After Time - Cyndi Lauper",
+        "range": [
+          7107,
+          7349
+        ]
+      },
+      {
+        "name": "I Was Made for Lovin' You - KISS",
+        "range": [
+          7504,
+          7775
+        ]
+      }
+    ]
   }
 ]
