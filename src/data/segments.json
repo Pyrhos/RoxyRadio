@@ -4934,5 +4934,200 @@
         ]
       }
     ]
+  },
+  {
+    "name": "Let's Groove! 70s Karaoke Night",
+    "videoId": "r6wAc5c-23w",
+    "songs": [
+      {
+        "name": "I Will Survive - Gloria Gaynor",
+        "range": [
+          685,
+          915
+        ]
+      },
+      {
+        "name": "Baby Come Back - Player",
+        "range": [
+          1020,
+          1275
+        ]
+      },
+      {
+        "name": "Fantasy - Earth, Wind & Fire",
+        "range": [
+          1357,
+          1587
+        ]
+      },
+      {
+        "name": "Message in a Bottle - The Police",
+        "range": [
+          1683,
+          1972
+        ]
+      },
+      {
+        "name": "Heart of Glass - Blondie",
+        "range": [
+          2034,
+          2280
+        ]
+      },
+      {
+        "name": "The Winner Takes It All - ABBA",
+        "range": [
+          2350,
+          2643
+        ]
+      },
+      {
+        "name": "She's Always a Woman - Billy Joel",
+        "range": [
+          2856,
+          3055
+        ]
+      },
+      {
+        "name": "Georgy Porgy - Toto",
+        "range": [
+          3148,
+          3395
+        ]
+      },
+      {
+        "name": "Vienna - Billy Joel",
+        "range": [
+          3505,
+          3714
+        ]
+      },
+      {
+        "name": "Mr. Blue Sky - Electric Light Orchestra",
+        "range": [
+          3779,
+          4007
+        ]
+      },
+      {
+        "name": "Gimme! Gimme! Gimme! (A Man After Midnight) - ABBA",
+        "range": [
+          4120,
+          4375
+        ]
+      },
+      {
+        "name": "Mamma Mia - ABBA",
+        "range": [
+          4401,
+          4618
+        ]
+      },
+      {
+        "name": "Blame it on the Boogie - The Jackson 5",
+        "range": [
+          4644,
+          4858
+        ]
+      },
+      {
+        "name": "Long Train Runnin' - The Doobie Brothers",
+        "range": [
+          4909,
+          5107
+        ]
+      },
+      {
+        "name": "Bennie and the Jets - Elton John",
+        "range": [
+          5155,
+          5442
+        ]
+      },
+      {
+        "name": "How Deep Is Your Love - Bee Gees",
+        "range": [
+          5467,
+          5711
+        ]
+      },
+      {
+        "name": "Do It Again - Steely Dan",
+        "range": [
+          5728,
+          6064
+        ]
+      },
+      {
+        "name": "Dreams - Fleetwood Mac",
+        "range": [
+          6110,
+          6361
+        ]
+      },
+      {
+        "name": "Sunny - Boney M",
+        "range": [
+          6388,
+          6627
+        ]
+      },
+      {
+        "name": "Don't Go Breaking My Heart - Elton John & Kiki Dee",
+        "range": [
+          6705,
+          6958
+        ]
+      },
+      {
+        "name": "Last Train to London - Electric Light Orchestra",
+        "range": [
+          7027,
+          7301
+        ]
+      },
+      {
+        "name": "Layla - Derek and the Dominos",
+        "range": [
+          7328,
+          7521
+        ]
+      },
+      {
+        "name": "Don't Stop Me Now - Queen",
+        "range": [
+          7580,
+          7800
+        ]
+      },
+      {
+        "name": "I Feel the Earth Move - Carole King",
+        "range": [
+          7824,
+          8005
+        ]
+      },
+      {
+        "name": "Boogie Wonderland - Earth, Wind & Fire",
+        "range": [
+          8108,
+          8395
+        ]
+      },
+      {
+        "name": "Hotel California - Eagles",
+        "range": [
+          8436,
+          8835
+        ]
+      },
+      {
+        "name": "Desperado - Eagles",
+        "range": [
+          8984,
+          9198
+        ]
+      }
+    ]
   }
 ]
