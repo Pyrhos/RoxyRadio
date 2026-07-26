@@ -551,8 +551,11 @@ export class PlayerCore {
     this._clearQueueCursor();
     let saveTime = 0;
 
-    // Shift+prevStream when shuffle ON: bypass history, go to actual prev index
-    if (skipHistory && this.shuffleMode) {
+    // Shift+prevStream: bypass history and jump straight to the sequential
+    // previous index (with wrap) at its start, in either shuffle mode. "Peek"
+    // semantics - history is left intact so an ordinary prev still returns to
+    // the recorded position.
+    if (skipHistory) {
         if (this.vIdx > 0) {
             this.vIdx--;
         } else {
