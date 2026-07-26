@@ -746,11 +746,16 @@ export class PlayerCore {
               }
               // Queue emptied (all invalid) or wrapped to itself — restart.
           }
-          // Non-Loop-Queue with queue active, or nothing to go back to:
-          // restart current song
-          const song = this.getCurrentSong();
-          if (song) {
-              return { type: 'seek', time: song.range[0] };
+          // Loop Queue with nothing to go back to (single-item wrap or all
+          // items invalid), or Loop Track (locked on the current track):
+          // restart the current song. Loop None instead falls through to the
+          // normal §2 nav below, so Prev walks backward as if the forward-only
+          // queue weren't there — the queue still governs Next.
+          if (this.loopMode !== LOOP_NONE) {
+              const song = this.getCurrentSong();
+              if (song) {
+                  return { type: 'seek', time: song.range[0] };
+              }
           }
       }
 

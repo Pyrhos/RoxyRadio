@@ -474,17 +474,33 @@ describe('Queue (§13)', () => {
       expect(core.getQueue()).toEqual([]);
     });
 
-    it('prevSong restarts current song when queue is active', () => {
+    it('prevSong in Loop None ignores the queue and goes to the previous song', () => {
       core.loopMode = LOOP_NONE;
       core.enqueue('v3', 0);
       core.vIdx = 0;
       core.rIdx = 1; // S1T2
 
-      const action = core.prevSong(25);
+      const action = core.prevSong(20); // at the start of S1T2 (0s in)
 
-      expect(action.type).toBe('seek');
-      expect(action.time).toBe(20); // S1T2 starts at 20
-      expect(core.vIdx).toBe(0); // didn't change stream
+      // Loop None queue is forward-only: Prev navigates as if there were no
+      // queue, so it steps back to the previous song instead of restarting.
+      expect(action.type).toBe('load');
+      expect(core.vIdx).toBe(0); // same stream
+      expect(core.rIdx).toBe(0); // previous song S1T1, not a restart
+      expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]); // queue intact
+    });
+
+    it('prevSong in Loop None goes to the previous stream\'s last song at the first song', () => {
+      core.loopMode = LOOP_NONE;
+      core.enqueue('v3', 0);
+      core.vIdx = 1; // v2 (Rule 0); its previous stream is v1
+      core.rIdx = 0;
+
+      const action = core.prevSong(0);
+
+      expect(action.type).toBe('load');
+      expect(core.vIdx).toBe(0); // previous stream v1 ...
+      expect(core.rIdx).toBe(1); // ... at its last song (S1T2)
       expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]); // queue intact
     });
 
