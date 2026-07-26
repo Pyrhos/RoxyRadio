@@ -11,10 +11,13 @@ import { attachLongPress, arm, disarm } from './long-press-arm.js';
  * @param {(index: number) => void} deps.onRemoveItem
  * @param {(index: number) => void} deps.onSelectItem
  * @param {() => void} deps.onClearAll
+ * @param {() => number} [deps.getNowPlayingIndex] index of the queue item
+ *        currently playing (Loop Queue cycling), -1 when none
  */
 export function createQueueModalController({
     overlay, queueList, clearAllBtn,
     getQueue, getPlaylist, onRemoveItem, onSelectItem, onClearAll,
+    getNowPlayingIndex = () => -1,
 }) {
     let selIdx = 0;
 
@@ -24,6 +27,7 @@ export function createQueueModalController({
         overlay.inert = wasOpen;
         if (!wasOpen) {
             render();
+            _revealNowPlaying();
         }
     }
 
@@ -66,14 +70,17 @@ export function createQueueModalController({
 
         clearAllBtn.disabled = false;
 
+        const nowPlaying = getNowPlayingIndex();
+
         queue.forEach((item, idx) => {
             const div = document.createElement('div');
             div.className = 'queue-item';
             if (idx === 0) div.classList.add('selected');
+            if (idx === nowPlaying) div.classList.add('now-playing');
 
             const info = _resolveDisplayInfo(item);
             div.innerHTML = `
-                <span class="queue-item-index">${idx + 1}.</span>
+                <span class="queue-item-index">${idx === nowPlaying ? '▶' : `${idx + 1}.`}</span>
                 <span class="queue-item-name">${info.songName}</span>
                 <span class="queue-item-stream">${info.streamName}</span>
             `;
@@ -105,12 +112,22 @@ export function createQueueModalController({
         });
     }
 
-    function _updateSelection() {
+    function _updateSelection(scrollBlock = 'nearest') {
         const rows = queueList.querySelectorAll('.queue-item');
         rows.forEach((r, i) => {
             r.classList.toggle('selected', i === selIdx);
-            if (i === selIdx) r.scrollIntoView({ block: 'nearest' });
+            if (i === selIdx) r.scrollIntoView({ block: scrollBlock });
         });
+    }
+
+    // On open, bring the currently playing queue slot on screen by scrolling to
+    // its depth (the queue order is never changed). The slot also becomes the
+    // keyboard selection so arrow navigation continues from where playback is.
+    function _revealNowPlaying() {
+        const nowPlaying = getNowPlayingIndex();
+        if (nowPlaying < 0) return;
+        selIdx = nowPlaying;
+        _updateSelection('center');
     }
 
     function handleKeyEvent(e) {

@@ -219,11 +219,21 @@ describe('PlayerCore', () => {
         expect(core.history).toEqual(historyBefore);
     });
 
-    it('Shift+prevStream has no effect when shuffle is OFF', () => {
-        // shuffle is off by default
-        core.vIdx = 2;
-        core.prevStream({ skipHistory: true });
-        expect(core.vIdx).toBe(1); // Normal prev behavior
+    it('Shift+prevStream bypasses history when shuffle is OFF too', () => {
+        // shuffle off by default. Build a non-empty history via a stream jump
+        // from the last song, so history-restore and sequential-prev diverge.
+        core.vIdx = 0;
+        core.rIdx = 1;        // last song of v1
+        core.nextStream();    // pushes {vIdx:0, rIdx:1}, lands on v2
+        const historyBefore = [...core.history];
+        expect(historyBefore.length).toBe(1);
+
+        core.prevStream({ skipHistory: true }); // Shift+click
+        // Sequential previous index (v2 -> v1) at its start, NOT the popped last song.
+        expect(core.vIdx).toBe(0); // v1
+        expect(core.rIdx).toBe(0); // start of the stream, not the recorded rIdx=1
+        // Peek semantics: history is left intact.
+        expect(core.history).toEqual(historyBefore);
     });
 
     it('Shift+prevStream wraps around when at first stream', () => {

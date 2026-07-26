@@ -294,6 +294,7 @@ const queueCtrl = createQueueModalController({
     clearAllBtn: queueClearBtn,
     getQueue: () => core.getQueue(),
     getPlaylist: () => core.playlist,
+    getNowPlayingIndex: () => core.getNowPlayingQueueIndex(),
     onRemoveItem: (idx) => {
         core.removeFromQueue(idx);
         queueCtrl.render();

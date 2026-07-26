@@ -31,11 +31,17 @@ export class PlayerCore {
     // Session-only: cleared when tab closes, capped at HISTORY_LIMIT.
     this.history = [];
     // Persistent queue: FIFO of {videoId, rIdx} items (behavior §13).
+    // Arrangement is stable: only enqueue (append), removal, and Loop None
+    // consumption may mutate the array. Playback never reorders it — the
+    // cycle position lives entirely in the cursor below.
     this.queue = [];
-    // Tracks whether current playback was initiated from the queue.
-    // Guards circular backward navigation in prevSong under Loop Queue —
-    // only allows queue-aware prev when we're actively cycling queue items.
-    this._lastPlayWasQueue = false;
+    // Index of the queue item currently playing, or null when playback is
+    // not attached to a queue slot. With _cursorDetached, the item that was
+    // playing has been removed from the queue and the cursor points at the
+    // slot its successor slid into (may equal queue.length: wraps to front),
+    // so the cycle continues from the gap instead of resetting.
+    this._queueCursor = null;
+    this._cursorDetached = false;
     // Rule 0 streams cache their durations once YouTube reports them.
     this.durations = {};
   }
@@ -116,7 +122,26 @@ export class PlayerCore {
     } else {
         this.queue = [];
     }
-    this._lastPlayWasQueue = false;
+
+    // Restore the cycle position so a reload mid-Loop-Queue continues where
+    // it left off. An attached cursor must still match the restored stream —
+    // otherwise it's stale and playback re-enters the queue from front/back.
+    this._clearQueueCursor();
+    const savedCursor = parseInt(saved.queueCursor, 10);
+    const savedDetached = saved.queueCursorDetached === 'true' || saved.queueCursorDetached === true;
+    if (!isNaN(savedCursor) && savedCursor >= 0 && this.queue.length > 0) {
+        if (savedDetached) {
+            if (savedCursor <= this.queue.length) {
+                this._queueCursor = savedCursor;
+                this._cursorDetached = true;
+            }
+        } else if (savedCursor < this.queue.length) {
+            const cur = this.playlist[this.vIdx];
+            if (cur && this.queue[savedCursor].videoId === cur.videoId) {
+                this._queueCursor = savedCursor;
+            }
+        }
+    }
   }
 
   // Force save state
@@ -134,7 +159,9 @@ export class PlayerCore {
           vIdx: this.vIdx,
           videoId: stream ? stream.videoId : '',
           lastTime: currentTime.toFixed(2),
-          queue: JSON.stringify(this.queue)
+          queue: JSON.stringify(this.queue),
+          queueCursor: this._queueCursor === null ? '' : String(this._queueCursor),
+          queueCursorDetached: this._cursorDetached
       });
       // Session-only history (cleared on tab close)
       this.cb.saveSessionData({
@@ -272,47 +299,81 @@ export class PlayerCore {
       if (this.yapMode) {
           this.yapMode = false;
       }
-      this._reconcileQueueAnchor();
-      // While actively cycling the queue in Loop Queue, the currently playing
-      // item is anchored at the back of the array (prevSong's circular nav
-      // relies on this). Insert new items just ahead of that anchor so they
-      // still play in FIFO order before the cycle wraps, without dislodging
-      // the anchor — otherwise backward nav would mistake the freshly-added
-      // item for the current one.
-      if (this.loopMode === LOOP_STREAM && !this.shuffleMode
-          && this._lastPlayWasQueue && this.queue.length > 0) {
-          this.queue.splice(this.queue.length - 1, 0, { videoId, rIdx });
-      } else {
-          this.queue.push({ videoId, rIdx });
-      }
+      // Additions always append (§13). Appends never shift existing indices,
+      // so the cycle cursor needs no adjustment — the new item simply plays
+      // last in the current cycle.
+      this.queue.push({ videoId, rIdx });
       this._saveState();
   }
 
-  // Circular prev nav and "enqueue while cycling" both assume the currently
-  // playing item is the back of the queue (the anchor). A shuffle toggle, a
-  // loop-mode change, removing the anchor, or jumping elsewhere via search can
-  // each leave the cycling flag set while the back points somewhere else.
-  // Called right before any flag-dependent decision, this drops the flag when
-  // the anchor no longer matches playback, so we cleanly re-enter the queue
-  // instead of navigating off a stale anchor.
-  _reconcileQueueAnchor() {
-      if (this.loopMode !== LOOP_STREAM || !this._lastPlayWasQueue) return;
-      const back = this.queue[this.queue.length - 1];
+  _clearQueueCursor() {
+      this._queueCursor = null;
+      this._cursorDetached = false;
+  }
+
+  // Playback can move off the cursor's item without going through the queue
+  // (a jump via search, a loop/shuffle mode change, Loop None consumption
+  // while a stale cursor lingers). Rather than patching every such path,
+  // this drops the cursor at the point of use when it no longer matches
+  // what's actually playing, so prev/next re-enter the queue cleanly.
+  _reconcileQueueCursor() {
+      if (this._queueCursor === null || this._cursorDetached) return;
+      const item = this.queue[this._queueCursor];
       const current = this.getCurrentStream();
-      if (!back || !current || back.videoId !== current.videoId) {
-          this._lastPlayWasQueue = false;
+      if (!item || !current || item.videoId !== current.videoId) {
+          this._clearQueueCursor();
       }
+  }
+
+  // Remove queue[index] while keeping the cursor on the same logical position
+  // in the cycle. Removing the currently playing item detaches the cursor
+  // onto the gap it occupied: the next advance plays the item that slid into
+  // its slot, prev plays the one before it.
+  _removeQueueIndex(index) {
+      this.queue.splice(index, 1);
+      if (this._queueCursor === null) return;
+      if (this.queue.length === 0) {
+          this._clearQueueCursor();
+          return;
+      }
+      if (index < this._queueCursor) {
+          this._queueCursor--;
+      } else if (index === this._queueCursor && !this._cursorDetached) {
+          this._cursorDetached = true;
+      }
+      // index === cursor while detached: the new successor slides into the
+      // same slot; index > cursor: positions up to the cursor are unaffected.
+  }
+
+  // Next slot in the cycle: successor of the cursor, the gap's successor when
+  // detached, or the front when entering the queue fresh.
+  _nextQueueIndex() {
+      const n = this.queue.length;
+      if (this._queueCursor === null) return 0;
+      if (this._cursorDetached) return this._queueCursor % n;
+      return (this._queueCursor + 1) % n;
+  }
+
+  // Previous slot in the cycle, or the back when entering the queue fresh.
+  // A detached cursor sits between predecessor and successor, so the same
+  // arithmetic yields the predecessor. Cursor never exceeds queue.length,
+  // keeping the modulo in range.
+  _prevQueueIndex() {
+      const n = this.queue.length;
+      if (this._queueCursor === null) return n - 1;
+      return (this._queueCursor - 1 + n) % n;
   }
 
   removeFromQueue(index) {
       if (index >= 0 && index < this.queue.length) {
-          this.queue.splice(index, 1);
+          this._removeQueueIndex(index);
           this._saveState();
       }
   }
 
   clearQueue() {
       this.queue = [];
+      this._clearQueueCursor();
       this._saveState();
   }
 
@@ -331,13 +392,20 @@ export class PlayerCore {
   }
 
   // Pick a queue item, resolve it to a playlist position, and play it.
-  // With shuffle on, a random item is chosen; otherwise the front is taken.
-  // Invalid items are silently dropped until a valid one is found.
-  // In Loop Queue mode, the taken item is recycled to the back.
-  // Returns true if a valid item was loaded, false if queue exhausted.
+  // With shuffle on, a random item is chosen; otherwise Loop Queue continues
+  // the cycle from the cursor and other modes take the front. Playback never
+  // reorders the queue: Loop Queue only moves the cursor, other modes consume
+  // (remove) the played item. Invalid items are silently dropped until a
+  // valid one is found. Returns true if a valid item was loaded, false if
+  // queue exhausted.
   _playFromQueue(pushHist) {
+      // Forward-path mirror of prevSong's reconcile: drop a cursor left stale by
+      // playback moving off the queue (a search jump, a loop-mode change, Loop
+      // None consumption) so the non-shuffle Loop Queue pick below re-enters from
+      // the front instead of advancing off a dangling cursor.
+      this._reconcileQueueCursor();
       while (this.queue.length > 0) {
-          let pickIdx = 0;
+          let pickIdx;
           if (this.shuffleMode) {
               const current = this.getCurrentStream();
               // Build list of indices that differ from the currently playing song
@@ -348,54 +416,57 @@ export class PlayerCore {
                       candidates.push(i);
                   }
               }
-              if (candidates.length > 0) {
-                  // In Loop Queue, bias toward the front (items waiting longest)
-                  const r = this.loopMode === LOOP_STREAM
-                      ? Math.random() * Math.random()
-                      : Math.random();
-                  pickIdx = candidates[Math.floor(r * candidates.length)];
-              } else {
+              pickIdx = candidates.length > 0
+                  ? candidates[Math.floor(Math.random() * candidates.length)]
                   // All items are the same song — pick any
-                  pickIdx = Math.floor(Math.random() * this.queue.length);
-              }
+                  : Math.floor(Math.random() * this.queue.length);
+          } else if (this.loopMode === LOOP_STREAM) {
+              pickIdx = this._nextQueueIndex();
+          } else {
+              pickIdx = 0;
           }
-          const item = this.queue.splice(pickIdx, 1)[0];
+          const item = this.queue[pickIdx];
           const idx = this.playlist.findIndex(p => p.videoId === item.videoId);
-          if (idx !== -1) {
-              if (pushHist) this.pushHistory();
-              if (this.loopMode === LOOP_STREAM) {
-                  this.queue.push(item);
-              }
-              this.vIdx = idx;
-              const stream = this.playlist[idx];
-              this.rIdx = (stream.songs && item.rIdx < stream.songs.length)
-                  ? item.rIdx : 0;
-              const song = this.getCurrentSong();
-              this._saveState(song ? song.range[0] : 0);
-              this._lastPlayWasQueue = true;
-              return true;
+          if (idx === -1) {
+              // Invalid videoId — silently dropped
+              this._removeQueueIndex(pickIdx);
+              continue;
           }
-          // Invalid videoId — silently dropped (already shifted out)
+          if (pushHist) this.pushHistory();
+          if (this.loopMode === LOOP_STREAM) {
+              // Loop Queue: the item stays in place; the cursor marks it as current.
+              this._queueCursor = pickIdx;
+              this._cursorDetached = false;
+          } else {
+              this._removeQueueIndex(pickIdx);
+          }
+          this.vIdx = idx;
+          const stream = this.playlist[idx];
+          this.rIdx = (stream.songs && item.rIdx < stream.songs.length)
+              ? item.rIdx : 0;
+          const song = this.getCurrentSong();
+          this._saveState(song ? song.range[0] : 0);
+          return true;
       }
       this._saveState();
       return false;
   }
 
   // Select a specific queue item by index (e.g. from the queue modal).
-  // In Loop Queue the item stays; in other modes it's removed.
-  // Sets _lastPlayWasQueue so prevSong can navigate the queue afterwards.
+  // In Loop Queue the item stays in place and the cursor jumps to it, so the
+  // arrangement is untouched and the cycle continues from that position; in
+  // other modes it's consumed.
   selectQueueItem(index) {
       if (index < 0 || index >= this.queue.length) return false;
       const item = this.queue[index];
       const streamIdx = this.playlist.findIndex(p => p.videoId === item.videoId);
       if (streamIdx === -1) return false;
       this.pushHistory();
-      // Pull the item from its slot. In Loop Queue, re-anchor it to the back
-      // (still in the queue, just repositioned) so circular prev/next nav has a
-      // correct anchor; in other modes it's consumed.
-      this.queue.splice(index, 1);
       if (this.loopMode === LOOP_STREAM) {
-          this.queue.push(item);
+          this._queueCursor = index;
+          this._cursorDetached = false;
+      } else {
+          this._removeQueueIndex(index);
       }
       this.vIdx = streamIdx;
       const stream = this.playlist[streamIdx];
@@ -403,8 +474,16 @@ export class PlayerCore {
           ? item.rIdx : 0;
       const song = this.getCurrentSong();
       this._saveState(song ? song.range[0] : 0);
-      this._lastPlayWasQueue = true;
       return true;
+  }
+
+  // Index of the queue item currently playing (Loop Queue cycling), or -1
+  // when playback isn't attached to a queue slot. Used by the queue modal
+  // to mark the active row.
+  getNowPlayingQueueIndex() {
+      this._reconcileQueueCursor();
+      return (this._queueCursor !== null && !this._cursorDetached)
+          ? this._queueCursor : -1;
   }
 
   // ================= NAVIGATION =================
@@ -460,7 +539,7 @@ export class PlayerCore {
           }
       }
 
-      this._lastPlayWasQueue = false;
+      this._clearQueueCursor();
       this.vIdx = this._getNextStreamIndex();
       this.rIdx = 0;
       this._saveState(this.getStreamDefaultStart());
@@ -469,7 +548,7 @@ export class PlayerCore {
 
   prevStream(options = {}) {
     const { skipHistory = false } = options;
-    this._lastPlayWasQueue = false;
+    this._clearQueueCursor();
     let saveTime = 0;
 
     // Shift+prevStream when shuffle ON: bypass history, go to actual prev index
@@ -523,7 +602,7 @@ export class PlayerCore {
 
       // Queue active: skip directly to next queue item, bypassing within-stream
       // advancement. Avoids stale-time issues from _syncIndexToTime and ensures
-      // "the next item to play is always the front of the queue" (§13).
+      // "the next item to play always comes from the queue" (§13).
       if (this.isQueueActive()) {
           // Loop Track: repeat current song, don't advance or consume the queue
           if (this.loopMode === LOOP_TRACK) {
@@ -537,7 +616,7 @@ export class PlayerCore {
           // Queue exhausted (all items invalid), fall through to normal navigation
       }
 
-      this._lastPlayWasQueue = false;
+      this._clearQueueCursor();
       const posContext = this._syncIndexToTime(currentTime, stream);
       const jumpToNextStreamStart = () => {
           this.nextStream();
@@ -599,27 +678,32 @@ export class PlayerCore {
       const stream = this.getCurrentStream();
 
       if (this.isQueueActive()) {
-          // Drop a stale cycling flag (anchor no longer at the back) so the
-          // branches below pick circular-nav vs enter-from-back correctly.
-          this._reconcileQueueAnchor();
-          // Shuffle + Loop Queue: use history to go back (queue order is randomized).
-          // No _lastPlayWasQueue guard — shuffle has no ordered entry point,
-          // so queue nav is always appropriate in this mode.
+          // Drop a stale cursor (playback moved off the queue item without
+          // going through the queue) so the branches below pick circular-nav
+          // vs enter-from-back correctly.
+          this._reconcileQueueCursor();
+          // Shuffle + Loop Queue: use history to go back (play order is random,
+          // so cursor arithmetic can't reconstruct it).
           if (this.loopMode === LOOP_STREAM && this.shuffleMode) {
               // Walk history for an entry whose stream is still in the queue
               while (this.history.length > 0) {
                   const prev = this.history.pop();
-                  const stream = this.playlist[prev.vIdx];
-                  if (stream && this.queue.some(q => q.videoId === stream.videoId)) {
+                  const hStream = this.playlist[prev.vIdx];
+                  if (hStream && this.queue.some(q => q.videoId === hStream.videoId)) {
                       this.vIdx = prev.vIdx;
-                      if (stream.songs && stream.songs.length > 0) {
-                          this.rIdx = Math.min(Math.max(prev.rIdx || 0, 0), stream.songs.length - 1);
+                      if (hStream.songs && hStream.songs.length > 0) {
+                          this.rIdx = Math.min(Math.max(prev.rIdx || 0, 0), hStream.songs.length - 1);
                       } else {
                           this.rIdx = 0;
                       }
+                      // Re-attach the cursor to a matching slot so the cycle
+                      // has a correct position if shuffle is turned off later.
+                      let slot = this.queue.findIndex(q => q.videoId === hStream.videoId && q.rIdx === this.rIdx);
+                      if (slot === -1) slot = this.queue.findIndex(q => q.videoId === hStream.videoId);
+                      this._queueCursor = slot === -1 ? null : slot;
+                      this._cursorDetached = false;
                       const song = this.getCurrentSong();
                       this._saveState(song ? song.range[0] : 0);
-                      this._lastPlayWasQueue = true;
                       return { type: 'load' };
                   }
               }
@@ -628,69 +712,46 @@ export class PlayerCore {
                   return { type: 'load' };
               }
           }
-          // Loop Queue, but the current playback did NOT come from the queue
-          // (e.g. a restored session, or a stream reached via search). Enter the
-          // queue from the back — the mirror image of Next entering from the
-          // front — so backward navigation works without first having to go
-          // forward. The chosen item is already at the back, so it becomes the
-          // anchor for subsequent circular nav.
-          if (this.loopMode === LOOP_STREAM && !this._lastPlayWasQueue) {
+          // Non-shuffle Loop Queue: navigate backwards through the circular
+          // queue, purely by moving the cursor — the arrangement is untouched.
+          // With no cursor (restored session, or a stream reached via search),
+          // this enters the queue from the back — the mirror image of Next
+          // entering from the front.
+          if (this.loopMode === LOOP_STREAM) {
               while (this.queue.length > 0) {
-                  const last = this.queue[this.queue.length - 1];
-                  const idx = this.playlist.findIndex(p => p.videoId === last.videoId);
+                  const target = this._prevQueueIndex();
+                  if (!this._cursorDetached && target === this._queueCursor) {
+                      // Single-item cycle wraps to itself — restart below.
+                      break;
+                  }
+                  const item = this.queue[target];
+                  const idx = this.playlist.findIndex(p => p.videoId === item.videoId);
                   if (idx === -1) {
-                      this.queue.pop(); // drop invalid item, keep scanning back
+                      this._removeQueueIndex(target); // drop invalid, keep scanning
                       continue;
                   }
                   this.pushHistory();
+                  this._queueCursor = target;
+                  this._cursorDetached = false;
                   this.vIdx = idx;
-                  const lStream = this.playlist[idx];
-                  this.rIdx = (lStream.songs && last.rIdx < lStream.songs.length)
-                      ? last.rIdx : 0;
+                  const pStream = this.playlist[idx];
+                  this.rIdx = (pStream.songs && item.rIdx < pStream.songs.length)
+                      ? item.rIdx : 0;
                   const song = this.getCurrentSong();
                   this._saveState(song ? song.range[0] : 0);
-                  this._lastPlayWasQueue = true;
                   return { type: 'load' };
               }
-              // Queue emptied (all invalid) — fall through to restart.
+              // Queue emptied (all invalid) or wrapped to itself — restart.
           }
-          // Non-shuffle Loop Queue: navigate backwards through the circular queue.
-          // The current item sits at the back (recycled by _playFromQueue).
-          if (this.loopMode === LOOP_STREAM && this._lastPlayWasQueue) {
-              if (this.queue.length === 1) {
-                  const song = this.getCurrentSong();
-                  if (song) return { type: 'seek', time: song.range[0] };
-              }
-              if (this.queue.length >= 2) {
-                  const current = this.queue.pop();
-                  while (this.queue.length > 0) {
-                      const previous = this.queue.pop();
-                      const idx = this.playlist.findIndex(p => p.videoId === previous.videoId);
-                      if (idx !== -1) {
-                          this.pushHistory();
-                          this.queue.unshift(current);
-                          this.queue.push(previous);
-                          this.vIdx = idx;
-                          const pStream = this.playlist[idx];
-                          this.rIdx = (pStream.songs && previous.rIdx < pStream.songs.length)
-                              ? previous.rIdx : 0;
-                          const song = this.getCurrentSong();
-                          this._saveState(song ? song.range[0] : 0);
-                          this._lastPlayWasQueue = true;
-                          return { type: 'load' };
-                      }
-                  }
-                  this.queue.push(current);
-              }
-          }
-          // Non-Loop-Queue or not yet playing from queue: restart current song
+          // Non-Loop-Queue with queue active, or nothing to go back to:
+          // restart current song
           const song = this.getCurrentSong();
           if (song) {
               return { type: 'seek', time: song.range[0] };
           }
       }
 
-      this._lastPlayWasQueue = false;
+      this._clearQueueCursor();
       const posContext = this._syncIndexToTime(currentTime, stream);
 
       const jumpToPreviousStreamEnd = () => {
@@ -827,7 +888,7 @@ export class PlayerCore {
           // Queue exhausted, fall through to normal auto-advance
       }
 
-      this._lastPlayWasQueue = false;
+      this._clearQueueCursor();
       const stream = this.getCurrentStream();
       if (!stream.songs) {
            if (this.loopMode === LOOP_STREAM) {

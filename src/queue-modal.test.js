@@ -134,6 +134,84 @@ describe('Queue Modal Controller', () => {
             expect(items[0].classList.contains('selected')).toBe(true);
             expect(items[1].classList.contains('selected')).toBe(false);
         });
+
+        it('marks the now-playing item when getNowPlayingIndex reports one', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+            ];
+            ctrl = createQueueModalController({
+                overlay: dom.overlay,
+                queueList: dom.queueList,
+                clearAllBtn: dom.clearAllBtn,
+                getQueue: () => mockQueue,
+                getPlaylist: () => MOCK_PLAYLIST,
+                onRemoveItem,
+                onSelectItem,
+                onClearAll,
+                getNowPlayingIndex: () => 1,
+            });
+            ctrl.toggle();
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items[0].classList.contains('now-playing')).toBe(false);
+            expect(items[1].classList.contains('now-playing')).toBe(true);
+            expect(items[0].querySelector('.queue-item-index').textContent).toBe('1.');
+            expect(items[1].querySelector('.queue-item-index').textContent).toBe('▶');
+        });
+
+        it('marks no item when getNowPlayingIndex is absent (default -1)', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+            ];
+            ctrl.toggle();
+
+            expect(dom.queueList.querySelector('.now-playing')).toBeNull();
+        });
+
+        it('scrolls the now-playing item into view and selects it on open', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+                { videoId: 'v2', rIdx: 0 },
+            ];
+            const scrollSpy = vi.spyOn(Element.prototype, 'scrollIntoView').mockImplementation(() => {});
+            ctrl = createQueueModalController({
+                overlay: dom.overlay,
+                queueList: dom.queueList,
+                clearAllBtn: dom.clearAllBtn,
+                getQueue: () => mockQueue,
+                getPlaylist: () => MOCK_PLAYLIST,
+                onRemoveItem,
+                onSelectItem,
+                onClearAll,
+                getNowPlayingIndex: () => 2,
+            });
+            ctrl.toggle();
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            // Selection follows playback rather than staying on the first item.
+            expect(items[0].classList.contains('selected')).toBe(false);
+            expect(items[2].classList.contains('selected')).toBe(true);
+            // The now-playing row was scrolled to its depth.
+            expect(scrollSpy).toHaveBeenCalled();
+            expect(scrollSpy.mock.instances[scrollSpy.mock.instances.length - 1]).toBe(items[2]);
+
+            scrollSpy.mockRestore();
+        });
+
+        it('leaves selection at the top when nothing is playing', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+            ];
+            ctrl.toggle(); // default getNowPlayingIndex → -1
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items[0].classList.contains('selected')).toBe(true);
+            expect(items[1].classList.contains('selected')).toBe(false);
+        });
     });
 
     describe('remove button', () => {

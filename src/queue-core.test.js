@@ -187,7 +187,7 @@ describe('Queue (§13)', () => {
       expect(callbacks.playVideo).toHaveBeenCalled();
     });
 
-    it('Loop Queue (LOOP_STREAM): takes front and cycles it to back', () => {
+    it('Loop Queue (LOOP_STREAM): plays front and moves the cursor, queue untouched', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v3', 0);
       core.enqueue('v1', 1);
@@ -196,11 +196,12 @@ describe('Queue (§13)', () => {
 
       core.advanceAuto();
 
-      // v3 taken, played, and cycled to back
+      // v3 played; the arrangement is untouched — only the cursor marks it
       expect(core.getQueue()).toEqual([
-        { videoId: 'v1', rIdx: 1 },
-        { videoId: 'v3', rIdx: 0 }
+        { videoId: 'v3', rIdx: 0 },
+        { videoId: 'v1', rIdx: 1 }
       ]);
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
       expect(core.vIdx).toBe(2); // v3
       expect(core.rIdx).toBe(0);
       expect(callbacks.playVideo).toHaveBeenCalled();
@@ -334,7 +335,7 @@ describe('Queue (§13)', () => {
       expect(core.vIdx).toBe(1);
     });
 
-    it('cycles item in Loop Queue mode', () => {
+    it('keeps queue arrangement in Loop Queue mode', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v3', 0);
       core.enqueue('v1', 0);
@@ -342,11 +343,12 @@ describe('Queue (§13)', () => {
 
       core.nextStream();
 
-      // v3 taken and cycled to back, v3 loaded
+      // v3 loaded; queue stays exactly as enqueued, cursor on v3
       expect(core.getQueue()).toEqual([
-        { videoId: 'v1', rIdx: 0 },
-        { videoId: 'v3', rIdx: 0 }
+        { videoId: 'v3', rIdx: 0 },
+        { videoId: 'v1', rIdx: 0 }
       ]);
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
       expect(core.vIdx).toBe(2); // v3
     });
   });
@@ -376,7 +378,7 @@ describe('Queue (§13)', () => {
       expect(core.history[0].vIdx).toBe(0);
     });
 
-    it('recycles item in Loop Queue mode', () => {
+    it('keeps item in queue in Loop Queue mode', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v3', 0);
       core.vIdx = 0;
@@ -385,7 +387,7 @@ describe('Queue (§13)', () => {
       core.nextSong(5);
 
       expect(core.vIdx).toBe(2); // v3
-      expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]); // recycled
+      expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]); // stays in place
     });
 
     it('restarts current song in Loop Track mode without consuming queue', () => {
@@ -505,16 +507,15 @@ describe('Queue (§13)', () => {
       core.enqueue('v3', 0);
       core.vIdx = 1; // playing v2 — NOT a queue item (e.g. restored session)
       core.rIdx = 0;
-      core._lastPlayWasQueue = false;
 
       const action = core.prevSong(5);
 
       // Mirror of Next (which enters from the front): Prev plays the last
-      // queue item and anchors it for subsequent circular navigation.
+      // queue item; the cursor lands on it for subsequent circular navigation.
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(2); // v3 (back of queue)
-      expect(core._lastPlayWasQueue).toBe(true);
-      // Item already at the back stays put; queue order preserved.
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
+      // Arrangement untouched.
       expect(core.getQueue()).toEqual([
         { videoId: 'v1', rIdx: 0 },
         { videoId: 'v3', rIdx: 0 },
@@ -528,24 +529,23 @@ describe('Queue (§13)', () => {
       core.vIdx = 0; // playing v1 (not from queue)
       core.rIdx = 0;
 
-      // Enter queue: plays v3
+      // Enter queue: plays v3 (cursor 0)
       core.nextSong(5);
       expect(core.vIdx).toBe(2); // v3
-      // Queue: [v1/0, v3/0]
 
-      // Advance: plays v1
+      // Advance: plays v1 (cursor 1)
       core.nextSong(5);
       expect(core.vIdx).toBe(0); // v1
-      // Queue: [v3/0, v1/0]
 
-      // Previous: should go back to v3
+      // Previous: should go back to v3 (cursor 0)
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(2); // v3
-      // Queue: [v1/0, v3/0] — current (v1) unshifted to front, previous (v3) at back
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
+      // The arrangement never changed throughout.
       expect(core.getQueue()).toEqual([
-        { videoId: 'v1', rIdx: 0 },
         { videoId: 'v3', rIdx: 0 },
+        { videoId: 'v1', rIdx: 0 },
       ]);
     });
 
@@ -738,7 +738,7 @@ describe('Queue (§13)', () => {
       spy.mockRestore();
     });
 
-    it('Shuffle + Loop Queue prevSong navigates even without _lastPlayWasQueue', () => {
+    it('Shuffle + Loop Queue prevSong navigates even when not attached to the queue', () => {
       core.shuffleMode = true;
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
@@ -747,8 +747,7 @@ describe('Queue (§13)', () => {
       core.enqueue('v2', 0);
       core.vIdx = 0;
       core.rIdx = 0;
-      // Deliberately leave _lastPlayWasQueue = false
-      core._lastPlayWasQueue = false;
+      // No cursor: playback did not come from the queue
 
       const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
 
@@ -784,10 +783,11 @@ describe('Queue (§13)', () => {
     });
   });
 
-  // Regression suite for the "current item = back of queue" invariant that
-  // prevSong's circular navigation relies on. Three paths used to leave that
-  // invariant broken, all surfacing as "Prev does nothing / goes to the wrong
-  // track" in Loop Queue.
+  // Regression suite for cycle-position correctness under Loop Queue. In the
+  // old rotate-the-array design these paths corrupted either the queue order
+  // or the "which item is current" state, surfacing as "Prev does nothing /
+  // goes to the wrong track". With the stable-order cursor design the
+  // arrangement never moves; these pin down the cursor bookkeeping instead.
   describe('Back-navigation invariant regressions', () => {
     it('Bug 1: a restored queue allows Prev immediately, without going forward or toggling shuffle first', () => {
       // User report: a queue saved across sessions could only go forward in
@@ -806,7 +806,7 @@ describe('Queue (§13)', () => {
 
       expect(restored.loopMode).toBe(LOOP_STREAM);
       expect(restored.shuffleMode).toBe(false);
-      expect(restored._lastPlayWasQueue).toBe(false);
+      expect(restored.getNowPlayingQueueIndex()).toBe(-1);
       expect(restored.vIdx).toBe(1); // v2
 
       // First Prev press works — enters from the back (v3).
@@ -824,57 +824,56 @@ describe('Queue (§13)', () => {
       expect(restored.vIdx).toBe(2); // wraps back to v3
     });
 
-    it('Bug 2: enqueue while cycling preserves the back anchor so Prev is not corrupted', () => {
+    it('Bug 2: enqueue while cycling appends without disturbing the cycle position', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
       core.enqueue('v3', 0);
 
-      core.nextSong(5); // play v1, queue [v3, v1]
-      core.nextSong(5); // play v3, queue [v1, v3] — v3 is the anchor at the back
+      core.nextSong(5); // play v1 (cursor 0)
+      core.nextSong(5); // play v3 (cursor 1)
       expect(core.vIdx).toBe(2);
-      expect(core.getQueue().at(-1)).toEqual({ videoId: 'v3', rIdx: 0 });
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
 
-      // Add an item mid-cycle. It must NOT dislodge the playing item (v3)
-      // from the back, or backward nav would treat the new item as "current".
+      // Add an item mid-cycle: a plain append. The cursor is unaffected.
       core.enqueue('v1', 1);
       expect(core.getQueue()).toEqual([
         { videoId: 'v1', rIdx: 0 },
-        { videoId: 'v1', rIdx: 1 }, // inserted just ahead of the anchor (FIFO)
-        { videoId: 'v3', rIdx: 0 }, // anchor intact
+        { videoId: 'v3', rIdx: 0 },
+        { videoId: 'v1', rIdx: 1 }, // appended to the back
       ]);
+      expect(core.getNowPlayingQueueIndex()).toBe(1); // still on v3
 
-      // Prev steps back to the item now before the anchor (the new v1/1),
-      // instead of getting stuck on v3.
+      // Prev steps back to what actually played before v3 (v1/0), and the
+      // new item still plays last in the cycle when going forward.
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(0);
-      expect(core.rIdx).toBe(1);
+      expect(core.rIdx).toBe(0);
     });
 
-    it('Bug 3: selectQueueItem in Loop Queue re-anchors so Prev targets the right item', () => {
+    it('Bug 3: selectQueueItem in Loop Queue moves only the cursor, so Prev targets the right item', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
       core.enqueue('v2', 0);
       core.enqueue('v3', 0);
 
-      // Click the FIRST item (v1). Loop Queue keeps it in the queue but
-      // re-anchors it to the back.
+      // Click the FIRST item (v1). It stays in its slot; the cursor jumps to it.
       core.selectQueueItem(0);
       expect(core.vIdx).toBe(0); // playing v1
-      expect(core._lastPlayWasQueue).toBe(true);
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
       expect(core.getQueue()).toEqual([
+        { videoId: 'v1', rIdx: 0 },
         { videoId: 'v2', rIdx: 0 },
-        { videoId: 'v3', rIdx: 0 },
-        { videoId: 'v1', rIdx: 0 }, // re-anchored to the back
+        { videoId: 'v3', rIdx: 0 }, // arrangement untouched
       ]);
 
-      // Prev steps to the item before the anchor (v3), not a stale mid-queue item.
+      // Prev wraps to the item before it in the cycle (v3).
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(2); // v3
     });
 
-    it('Bug 4: removing the currently-playing item detaches and re-enters cleanly on Prev', () => {
+    it('Bug 4: removing the currently-playing item keeps the cycle position on the gap', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
       core.enqueue('v2', 0);
@@ -882,35 +881,35 @@ describe('Queue (§13)', () => {
 
       core.nextSong(5); // v1
       core.nextSong(5); // v2
-      core.nextSong(5); // v3 — anchored at the back, flag set
+      core.nextSong(5); // v3 — cursor on index 2
       expect(core.vIdx).toBe(2);
-      expect(core.getQueue().at(-1)).toEqual({ videoId: 'v3', rIdx: 0 });
+      expect(core.getNowPlayingQueueIndex()).toBe(2);
 
-      // Remove the currently-playing item (the back anchor).
+      // Remove the currently-playing item.
       core.removeFromQueue(2);
       expect(core.getQueue()).toEqual([
         { videoId: 'v1', rIdx: 0 },
         { videoId: 'v2', rIdx: 0 },
       ]);
+      expect(core.getNowPlayingQueueIndex()).toBe(-1); // detached
 
-      // Prev re-enters from the back of what remains (v2), not a stale anchor —
-      // the anchor is reconciled lazily at the point of use.
+      // Prev continues from the gap: the item before the removed one (v2).
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(1); // v2
     });
 
-    it('Bug 4: removing the anchor down to one item does not strand Prev on a restart', () => {
+    it('Bug 4: removing the playing item down to one item does not strand Prev on a restart', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
       core.enqueue('v3', 0);
 
       core.nextSong(5); // v1
-      core.nextSong(5); // v3 — anchored, queue [v1, v3]
+      core.nextSong(5); // v3 — cursor on index 1
       expect(core.vIdx).toBe(2);
 
-      // Remove the anchor (v3), leaving a single item (v1). The old bug hit the
-      // single-item circular branch and just restarted the (removed) v3.
+      // Remove the playing item (v3), leaving a single item (v1). The old bug
+      // hit the single-item circular branch and just restarted the removed v3.
       core.removeFromQueue(1);
       expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 0 }]);
 
@@ -927,7 +926,7 @@ describe('Queue (§13)', () => {
 
       core.nextSong(5); // v1
       core.nextSong(5); // v2
-      core.nextSong(5); // v3 — anchored at the back
+      core.nextSong(5); // v3 — cursor on index 2
       expect(core.vIdx).toBe(2);
 
       // Remove a non-playing item (v1, at the front).
@@ -936,9 +935,9 @@ describe('Queue (§13)', () => {
         { videoId: 'v2', rIdx: 0 },
         { videoId: 'v3', rIdx: 0 },
       ]);
-      expect(core._lastPlayWasQueue).toBe(true); // still cycling, anchor intact
+      expect(core.getNowPlayingQueueIndex()).toBe(1); // cursor followed v3
 
-      // Prev uses circular nav → v2 (the item before the v3 anchor).
+      // Prev uses circular nav → v2 (the item before v3 in the cycle).
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(1); // v2
@@ -949,50 +948,48 @@ describe('Queue (§13)', () => {
       core.enqueue('v1', 0);
       core.enqueue('v2', 0);
       core.nextSong(5); // v1
-      core.nextSong(5); // v2 — cycling, flag set
-      expect(core._lastPlayWasQueue).toBe(true);
+      core.nextSong(5); // v2 — cycling, cursor set
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
 
       core.clearQueue();
       core.enqueue('v3', 0); // fresh queue; current playback (v2) is not in it
 
-      // Prev enters the new queue from the back (v3), not a restart of v2 —
-      // the stale anchor is reconciled before the decision.
+      // Prev enters the new queue from the back (v3), not a restart of v2.
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
       expect(core.vIdx).toBe(2); // v3
     });
 
-    it('Bug 5: switching shuffle off reconciles a stale anchor from shuffle-prev', () => {
+    it('Bug 5: shuffle-prev re-attaches the cursor so turning shuffle off keeps circular nav correct', () => {
       core.loopMode = LOOP_STREAM;
       core.shuffleMode = true;
       core.enqueue('v1', 0);
       core.enqueue('v2', 0);
       core.enqueue('v3', 0);
-      // Precondition: playing v3, anchored at the back (queue [v1,v2,v3]).
+      // Precondition: playing v3, cursor on index 2.
       core.vIdx = 2;
       core.rIdx = 0;
-      core._lastPlayWasQueue = true;
+      core._queueCursor = 2;
       // v2 is in session history and still in the queue.
       core.history = [{ vIdx: 1, rIdx: 0, time: 0 }];
 
-      // Shuffle-prev restores v2 from history WITHOUT re-anchoring the queue,
-      // so the back (v3) no longer matches what's playing (v2).
+      // Shuffle-prev restores v2 from history and re-attaches the cursor to
+      // v2's slot, so the cycle position matches what's actually playing.
       core.prevSong(5);
       expect(core.vIdx).toBe(1); // v2
-      expect(core.getQueue().at(-1)).toEqual({ videoId: 'v3', rIdx: 0 }); // anchor stale
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
 
       // User turns shuffle off.
       core.toggleShuffle();
       expect(core.shuffleMode).toBe(false);
 
-      // Prev must not do circular nav off the stale v3 anchor (which would
-      // treat v3 as current and dead-press back onto v2). It re-enters cleanly.
+      // Prev continues the cycle from v2's slot → v1.
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
-      expect(core.vIdx).not.toBe(1); // actually moved off v2
+      expect(core.vIdx).toBe(0); // v1
     });
 
-    it('Bug 6: changing loop mode away and back reconciles a stale anchor', () => {
+    it('Bug 6: changing loop mode away and back reconciles a stale cursor', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
       core.enqueue('v2', 0);
@@ -1000,26 +997,53 @@ describe('Queue (§13)', () => {
 
       core.nextSong(5); // v1
       core.nextSong(5); // v2
-      core.nextSong(5); // v3 — anchored, queue [v1,v2,v3]
+      core.nextSong(5); // v3 — cursor on index 2
       expect(core.vIdx).toBe(2);
 
-      // Switch to Loop None; an auto-advance consumes the front item, leaving
-      // v3 no longer at the back while the cycling flag is still set.
+      // Switch to Loop None; an auto-advance consumes the front item and
+      // plays it, so the lingering cursor no longer matches playback.
       core.loopMode = LOOP_NONE;
       core.advanceAuto(); // plays v1, queue [v2, v3]
       expect(core.vIdx).toBe(0); // v1
 
       // Back to Loop Queue. No explicit reconcile runs on loop change — the
-      // point-of-use reconcile in prevSong must catch the stale anchor.
+      // point-of-use reconcile in prevSong must catch the stale cursor.
       core.loopMode = LOOP_STREAM;
       const action = core.prevSong(5);
       expect(action.type).toBe('load');
-      expect(core.vIdx).toBe(2); // enters from back (v3), not circular off v3 anchor
+      expect(core.vIdx).toBe(2); // enters from back (v3), not circular off a stale cursor
+    });
+
+    it('Bug 7: forward advance after an off-queue jump reconciles a stale cursor', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 0); // queue [v3, v1]; v2 is the off-queue jump target
+
+      core.nextSong(5); // plays the front (v3), cursor on index 0
+      expect(core.vIdx).toBe(2); // v3
+
+      // Simulate a search jump off the queue (app.js sets vIdx/rIdx directly),
+      // leaving the cursor stale. Crucially, no getNowPlayingQueueIndex() call
+      // runs in between — that path reconciles as a side effect and would mask
+      // the bug. The forward nav must do the reconcile itself.
+      core.vIdx = 1; // v2, not in the queue
+      core.rIdx = 0;
+
+      // nextSong re-enters from the FRONT (v3), mirroring prevSong — it must not
+      // continue off the stale cursor to v1.
+      core.nextSong(5);
+      expect(core.vIdx).toBe(2); // v3 (front), not v1
+
+      // Same for auto-advance: re-perturb, then advanceAuto re-enters from front.
+      core.vIdx = 1; // v2 again
+      core.rIdx = 0;
+      core.advanceAuto();
+      expect(core.vIdx).toBe(2); // v3 (front)
     });
   });
 
   describe('selectQueueItem', () => {
-    it('loads the selected item and sets _lastPlayWasQueue', () => {
+    it('loads the selected item and attaches the cursor to its slot', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v3', 0);
       core.enqueue('v1', 1);
@@ -1031,8 +1055,8 @@ describe('Queue (§13)', () => {
       expect(result).toBe(true);
       expect(core.vIdx).toBe(0); // v1
       expect(core.rIdx).toBe(1);
-      expect(core._lastPlayWasQueue).toBe(true);
-      // Loop Queue: item stays in queue
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
+      // Loop Queue: item stays in its slot
       expect(core.getQueue()).toEqual([
         { videoId: 'v3', rIdx: 0 },
         { videoId: 'v1', rIdx: 1 },
@@ -1050,7 +1074,6 @@ describe('Queue (§13)', () => {
 
       expect(core.vIdx).toBe(2); // v3
       expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 1 }]);
-      expect(core._lastPlayWasQueue).toBe(true);
     });
 
     it('returns false for invalid index', () => {
@@ -1098,7 +1121,7 @@ describe('Queue (§13)', () => {
   });
 
   describe('Single-item queue with Loop Queue', () => {
-    it('cycles the sole item back, effectively repeating it', () => {
+    it('repeats the sole item, queue untouched', () => {
       core.loopMode = LOOP_STREAM;
       core.enqueue('v3', 0);
       core.vIdx = 2; // at v3
@@ -1151,7 +1174,7 @@ describe('Queue (§13)', () => {
       expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]);
     });
 
-    it('shuffle + Loop Queue recycles the randomly picked item to the back', () => {
+    it('shuffle + Loop Queue plays the random pick in place, arrangement untouched', () => {
       core.shuffleMode = true;
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
@@ -1165,12 +1188,13 @@ describe('Queue (§13)', () => {
 
       core.nextSong(5);
       expect(core.vIdx).toBe(2); // v3 picked
-      // v3 spliced from middle, recycled to back
+      // The queue is never rearranged by shuffle — only the cursor moves.
       expect(core.getQueue()).toEqual([
         { videoId: 'v1', rIdx: 0 },
-        { videoId: 'v1', rIdx: 1 },
         { videoId: 'v3', rIdx: 0 },
+        { videoId: 'v1', rIdx: 1 },
       ]);
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
 
       spy.mockRestore();
     });
@@ -1282,6 +1306,179 @@ describe('Queue (§13)', () => {
       expect(core.getQueue()).toEqual([]);
 
       spy.mockRestore();
+    });
+  });
+
+  // The core guarantee: the queue arrangement changes ONLY through enqueue
+  // (append), removal, and Loop None consumption. Playing — sequentially,
+  // shuffled, skipped, or jumped to — never rearranges it.
+  describe('Order stability', () => {
+    it('shuffle + Loop Queue never rearranges the queue, no matter how long it plays', () => {
+      core.shuffleMode = true;
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 1);
+      core.vIdx = 0;
+      core.rIdx = 0;
+      const original = core.getQueue();
+
+      // Real randomness: whatever gets picked, the arrangement must not move.
+      for (let i = 0; i < 25; i++) {
+        core.nextSong(5);
+        expect(core.getQueue()).toEqual(original);
+      }
+    });
+
+    it('mixed skipping and back-navigation in Loop Queue never rearranges the queue', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 1);
+      core.vIdx = 0;
+      core.rIdx = 0;
+      const original = core.getQueue();
+
+      core.nextSong(5);
+      core.nextSong(5);
+      core.prevSong(0);
+      core.selectQueueItem(3);
+      core.nextSong(5);
+      core.prevSong(0);
+      core.prevSong(0);
+      core.advanceAuto();
+
+      expect(core.getQueue()).toEqual(original);
+    });
+
+    it('shuffle + Loop None only removes the played item, preserving relative order', () => {
+      core.shuffleMode = true;
+      core.loopMode = LOOP_NONE;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 1);
+      core.vIdx = 0;
+      core.rIdx = 0;
+      const original = core.getQueue();
+
+      core.nextSong(5);
+      core.nextSong(5);
+
+      // Two items consumed; the two that remain kept their relative order.
+      const remaining = core.getQueue();
+      expect(remaining.length).toBe(2);
+      const positions = remaining.map(
+        r => original.findIndex(o => o.videoId === r.videoId && o.rIdx === r.rIdx));
+      expect(positions[0]).toBeGreaterThanOrEqual(0);
+      expect(positions[0]).toBeLessThan(positions[1]);
+    });
+
+    it('playing a queue item out of order continues the cycle from its slot', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 1);
+      core.vIdx = 0;
+      core.rIdx = 0;
+
+      // Jump to the 2nd item via the modal, then advance: the cycle proceeds
+      // in the original enqueue order from that slot (v2 → v3 → v1/1 → v1/0).
+      core.selectQueueItem(1);
+      expect(core.vIdx).toBe(1); // v2
+
+      core.nextSong(5);
+      expect(core.vIdx).toBe(2); // v3
+
+      core.nextSong(5);
+      expect([core.vIdx, core.rIdx]).toEqual([0, 1]); // v1/1
+
+      core.nextSong(5);
+      expect([core.vIdx, core.rIdx]).toEqual([0, 0]); // wraps to v1/0
+    });
+
+    it('removing the playing item mid-cycle: Next continues with its successor, not the front', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      core.enqueue('v3', 0);
+
+      core.nextSong(5); // v1
+      core.nextSong(5); // v2 — cursor on index 1
+      expect(core.vIdx).toBe(1);
+
+      core.removeFromQueue(1); // remove the playing item (v2)
+      core.nextSong(5);
+      expect(core.vIdx).toBe(2); // v3 — v2's successor, not v1
+    });
+
+    it('enqueue mid-cycle appends and the new item plays at the end of the cycle', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+
+      core.nextSong(5); // v1 — cursor on index 0
+      expect(core.vIdx).toBe(0);
+
+      core.enqueue('v3', 0); // appended: [v1, v2, v3]
+
+      core.nextSong(5);
+      expect(core.vIdx).toBe(1); // v2
+      core.nextSong(5);
+      expect(core.vIdx).toBe(2); // v3 (the new item, last in the cycle)
+      core.nextSong(5);
+      expect(core.vIdx).toBe(0); // wraps to v1
+    });
+
+    it('cycle position survives a reload (cursor persisted with the queue)', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 1);
+      core.vIdx = 1;
+      core.rIdx = 0;
+
+      core.nextSong(5); // v1/0 — cursor 0
+      core.nextSong(5); // v3 — cursor 1
+      expect(core.vIdx).toBe(2);
+
+      // Simulate a reload from the last persisted settings.
+      const saved = callbacks.saveSettings.mock.calls.at(-1)[0];
+      callbacks.getSettings = vi.fn(() => saved);
+      const restored = new PlayerCore(callbacks);
+      restored.init(MOCK_SEGMENTS);
+
+      expect(restored.vIdx).toBe(2); // back on v3
+      expect(restored.getNowPlayingQueueIndex()).toBe(1);
+
+      // Next continues the cycle where it left off: v1/1, then wraps to v1/0.
+      restored.nextSong(5);
+      expect([restored.vIdx, restored.rIdx]).toEqual([0, 1]);
+      restored.nextSong(5);
+      expect([restored.vIdx, restored.rIdx]).toEqual([0, 0]);
+    });
+
+    it('a stale persisted cursor that no longer matches the stream is discarded', () => {
+      callbacks.getSettings = vi.fn(() => ({
+        loopMode: String(LOOP_STREAM),
+        queue: JSON.stringify([
+          { videoId: 'v1', rIdx: 0 },
+          { videoId: 'v3', rIdx: 0 },
+        ]),
+        queueCursor: '0', // claims v1 is playing…
+        queueCursorDetached: 'false',
+        videoId: 'v2',    // …but the restored stream is v2
+      }));
+      const restored = new PlayerCore(callbacks);
+      restored.init(MOCK_SEGMENTS);
+
+      expect(restored.getNowPlayingQueueIndex()).toBe(-1);
+      // Enters the queue from the front as if never attached.
+      restored.nextSong(5);
+      expect(restored.vIdx).toBe(0); // v1
     });
   });
 });
