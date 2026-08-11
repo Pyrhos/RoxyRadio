@@ -1351,11 +1351,15 @@ describe('Queue Modal', () => {
 
   describe('Keyboard shortcuts', () => {
     let keydownHandler;
-    let queueOpen, searchOpen;
+    let queueOpen, searchOpen, queueSearchInput;
 
     beforeEach(() => {
       queueOpen = false;
       searchOpen = false;
+
+      queueSearchInput = document.createElement('input');
+      queueSearchInput.id = 'queue-search-input';
+      queueOverlay.appendChild(queueSearchInput);
 
       keydownHandler = (e) => {
         if (e.key === 'Escape') {
@@ -1371,6 +1375,11 @@ describe('Queue Modal', () => {
             return;
           }
         }
+
+        // Mirrors app.js: while the queue filter box has focus, printable keys
+        // edit the query instead of firing the global Shift+letter shortcuts.
+        // Escape (above) still closes; the shortcuts stay live when unfocused.
+        if (queueOpen && document.activeElement === queueSearchInput) return;
 
         if (e.key === 'Q' && e.shiftKey) {
           e.preventDefault();
@@ -1415,6 +1424,25 @@ describe('Queue Modal', () => {
       pressKey('Escape');
       expect(queueOpen).toBe(false);
       expect(searchOpen).toBe(true);
+    });
+
+    it('Shift+Q types into the filter box when it has focus (no toggle)', () => {
+      queueOpen = true;
+      queueOverlay.classList.add('open');
+      queueSearchInput.focus();
+
+      const e = pressKey('Q', { shiftKey: true });
+      expect(queueOpen).toBe(true);           // modal stays open
+      expect(e.defaultPrevented).toBe(false); // key not consumed — edits the query
+    });
+
+    it('Shift+Q still toggles the queue when the filter box is unfocused', () => {
+      queueOpen = true;
+      queueOverlay.classList.add('open');
+      // No element focused → activeElement is not the filter box.
+
+      pressKey('Q', { shiftKey: true });
+      expect(queueOpen).toBe(false);          // close-toggle preserved
     });
   });
 

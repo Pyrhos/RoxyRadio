@@ -12,11 +12,21 @@ function makeDOM() {
     const clearAllBtn = document.createElement('button');
     clearAllBtn.id = 'queue-clear-btn';
 
+    const searchInput = document.createElement('input');
+    searchInput.id = 'queue-search-input';
+
+    overlay.appendChild(searchInput);
     overlay.appendChild(queueList);
     overlay.appendChild(clearAllBtn);
     document.body.appendChild(overlay);
 
-    return { overlay, queueList, clearAllBtn };
+    return { overlay, queueList, clearAllBtn, searchInput };
+}
+
+// Drive the filter box the way a user would: set text, dispatch input.
+function typeFilter(searchInput, value) {
+    searchInput.value = value;
+    searchInput.dispatchEvent(new Event('input'));
 }
 
 const MOCK_PLAYLIST = [
@@ -42,6 +52,7 @@ describe('Queue Modal Controller', () => {
             overlay: dom.overlay,
             queueList: dom.queueList,
             clearAllBtn: dom.clearAllBtn,
+            searchInput: dom.searchInput,
             getQueue: () => mockQueue,
             getPlaylist: () => MOCK_PLAYLIST,
             onRemoveItem,
@@ -309,23 +320,136 @@ describe('Queue Modal Controller', () => {
             expect(items[1].classList.contains('selected')).toBe(true);
         });
 
-        it('delete removes highlighted item', () => {
+        it('auto-focuses the filter box on open', () => {
+            mockQueue = [{ videoId: 'v1', rIdx: 0 }];
+            ctrl.toggle();
+            expect(document.activeElement).toBe(dom.searchInput);
+        });
+
+        it('delete edits the query (no removal) while the filter box is focused on open', () => {
             mockQueue = [
                 { videoId: 'v1', rIdx: 0 },
                 { videoId: 'v3', rIdx: 0 },
             ];
-            ctrl.toggle();
+            ctrl.toggle(); // auto-focuses the filter box
 
             const event = new KeyboardEvent('keydown', { key: 'Delete' });
             event.preventDefault = vi.fn();
-            ctrl.handleKeyEvent(event);
+            const handled = ctrl.handleKeyEvent(event);
 
-            expect(onRemoveItem).toHaveBeenCalledWith(0);
+            expect(handled).toBe(false);
+            expect(onRemoveItem).not.toHaveBeenCalled();
+        });
+
+        it('first Arrow hands focus off the filter box, then delete removes the highlighted item', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+            ];
+            ctrl.toggle(); // auto-focused on open
+
+            const down = new KeyboardEvent('keydown', { key: 'ArrowDown' });
+            down.preventDefault = vi.fn();
+            ctrl.handleKeyEvent(down); // hands off to the list; selIdx 0 -> 1
+            expect(document.activeElement).not.toBe(dom.searchInput);
+
+            const del = new KeyboardEvent('keydown', { key: 'Delete' });
+            del.preventDefault = vi.fn();
+            ctrl.handleKeyEvent(del);
+            expect(onRemoveItem).toHaveBeenCalledWith(1);
         });
 
         it('returns false when modal is closed', () => {
             const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
             expect(ctrl.handleKeyEvent(event)).toBe(false);
+        });
+    });
+
+    describe('search filter', () => {
+        beforeEach(() => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 }, // S1T1 / Stream 1
+                { videoId: 'v1', rIdx: 1 }, // S1T2 / Stream 1
+                { videoId: 'v3', rIdx: 0 }, // S3T1 / Stream 3
+            ];
+            ctrl.toggle();
+        });
+
+        it('filters visible items by song name (case-insensitive)', () => {
+            typeFilter(dom.searchInput, 's1t2');
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items.length).toBe(1);
+            expect(items[0].querySelector('.queue-item-name').textContent).toBe('S1T2');
+        });
+
+        it('filters by stream name', () => {
+            typeFilter(dom.searchInput, 'Stream 3');
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items.length).toBe(1);
+            expect(items[0].querySelector('.queue-item-stream').textContent).toBe('Stream 3');
+        });
+
+        it('keeps the real queue index — displayed number and removal target', () => {
+            typeFilter(dom.searchInput, 'S3T1');
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items.length).toBe(1);
+            // The lone match is queue slot 2 → shows "3." and its remove targets index 2.
+            expect(items[0].querySelector('.queue-item-index').textContent).toBe('3.');
+            items[0].querySelector('.queue-item-remove').click();
+            expect(onRemoveItem).toHaveBeenCalledWith(2);
+        });
+
+        it('first visible match becomes the selection', () => {
+            typeFilter(dom.searchInput, 'Stream 1');
+
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items.length).toBe(2);
+            expect(items[0].classList.contains('selected')).toBe(true);
+        });
+
+        it('Enter selects the highlighted match by its real queue index', () => {
+            typeFilter(dom.searchInput, 'S3T1');
+
+            const enter = new KeyboardEvent('keydown', { key: 'Enter' });
+            enter.preventDefault = vi.fn();
+            ctrl.handleKeyEvent(enter);
+
+            expect(onSelectItem).toHaveBeenCalledWith(2);
+        });
+
+        it('shows a no-matches message (queue non-empty) leaving Clear All enabled', () => {
+            typeFilter(dom.searchInput, 'zzzznope');
+
+            expect(dom.queueList.querySelectorAll('.queue-item').length).toBe(0);
+            expect(dom.queueList.querySelector('.queue-no-matches')).not.toBeNull();
+            expect(dom.clearAllBtn.disabled).toBe(false);
+        });
+
+        it('does not remove an item on Backspace while the filter box is focused', () => {
+            typeFilter(dom.searchInput, 'S1');
+            dom.searchInput.focus();
+
+            const back = new KeyboardEvent('keydown', { key: 'Backspace' });
+            back.preventDefault = vi.fn();
+            const handled = ctrl.handleKeyEvent(back);
+
+            expect(handled).toBe(false);
+            expect(back.preventDefault).not.toHaveBeenCalled();
+            expect(onRemoveItem).not.toHaveBeenCalled();
+        });
+
+        it('re-opening the modal clears the filter', () => {
+            typeFilter(dom.searchInput, 'S1T2');
+            expect(dom.queueList.querySelectorAll('.queue-item').length).toBe(1);
+
+            ctrl.toggle(); // close
+            ctrl.toggle(); // re-open
+
+            expect(dom.searchInput.value).toBe('');
+            expect(dom.queueList.querySelectorAll('.queue-item').length).toBe(3);
         });
     });
 });

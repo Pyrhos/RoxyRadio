@@ -13,21 +13,30 @@ import { attachLongPress, arm, disarm } from './long-press-arm.js';
  * @param {() => void} deps.onClearAll
  * @param {() => number} [deps.getNowPlayingIndex] index of the queue item
  *        currently playing (Loop Queue cycling), -1 when none
+ * @param {HTMLInputElement} [deps.searchInput] optional in-modal filter box
  */
 export function createQueueModalController({
     overlay, queueList, clearAllBtn,
     getQueue, getPlaylist, onRemoveItem, onSelectItem, onClearAll,
-    getNowPlayingIndex = () => -1,
+    getNowPlayingIndex = () => -1, searchInput = null,
 }) {
     let selIdx = 0;
+    let filterQuery = '';
 
     function toggle() {
         const wasOpen = overlay.classList.contains('open');
         overlay.classList.toggle('open');
         overlay.inert = wasOpen;
         if (!wasOpen) {
+            filterQuery = '';
+            if (searchInput) searchInput.value = '';
             render();
             _revealNowPlaying();
+            // Auto-focus like the search modal so typing filters immediately. The
+            // first Arrow Up/Down hands focus back to the list (see handleKeyEvent),
+            // restoring keyboard navigation and Delete-to-remove from that point.
+            // preventScroll so focusing the header box doesn't undo _revealNowPlaying.
+            if (searchInput) searchInput.focus({ preventScroll: true });
         }
     }
 
@@ -53,6 +62,13 @@ export function createQueueModalController({
         };
     }
 
+    // Case-insensitive substring match against the resolved song and stream names.
+    function _matchesFilter(info, query) {
+        if (!query) return true;
+        return info.songName.toLocaleLowerCase('en-US').includes(query)
+            || info.streamName.toLocaleLowerCase('en-US').includes(query);
+    }
+
     function render() {
         disarm();
         const queue = getQueue();
@@ -71,14 +87,32 @@ export function createQueueModalController({
         clearAllBtn.disabled = false;
 
         const nowPlaying = getNowPlayingIndex();
+        const query = filterQuery.trim().toLocaleLowerCase('en-US');
 
+        // Collect matching entries while preserving each item's original queue
+        // index — removal/selection always address the real slot, not the
+        // filtered position, so the stable-order invariant is never violated.
+        const matches = [];
         queue.forEach((item, idx) => {
+            const info = _resolveDisplayInfo(item);
+            if (_matchesFilter(info, query)) matches.push({ idx, info });
+        });
+
+        if (matches.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'queue-empty queue-no-matches';
+            empty.textContent = '┐(￣ヘ￣)┌';
+            queueList.appendChild(empty);
+            return;
+        }
+
+        matches.forEach(({ idx, info }, visIdx) => {
             const div = document.createElement('div');
             div.className = 'queue-item';
-            if (idx === 0) div.classList.add('selected');
+            div.dataset.qidx = String(idx);
+            if (visIdx === 0) div.classList.add('selected');
             if (idx === nowPlaying) div.classList.add('now-playing');
 
-            const info = _resolveDisplayInfo(item);
             div.innerHTML = `
                 <span class="queue-item-index">${idx === nowPlaying ? '▶' : `${idx + 1}.`}</span>
                 <span class="queue-item-name">${info.songName}</span>
@@ -133,27 +167,31 @@ export function createQueueModalController({
     function handleKeyEvent(e) {
         if (!isOpen()) return false;
 
-        // Delete/Backspace removes highlighted item
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            const total = queueList.querySelectorAll('.queue-item').length;
-            if (total > 0 && selIdx >= 0 && selIdx < total) {
+        const rows = queueList.querySelectorAll('.queue-item');
+
+        // Delete/Backspace removes the highlighted item — but never while the
+        // filter box has focus, where those keys must edit the query text.
+        if ((e.key === 'Delete' || e.key === 'Backspace') && document.activeElement !== searchInput) {
+            if (rows.length > 0 && selIdx >= 0 && selIdx < rows.length) {
                 e.preventDefault();
-                onRemoveItem(selIdx);
+                onRemoveItem(Number(rows[selIdx].dataset.qidx));
                 return true;
             }
         }
 
-        const totalItems = queueList.querySelectorAll('.queue-item').length;
-        const nav = resolveListNavigation(e.key, selIdx, totalItems);
+        const nav = resolveListNavigation(e.key, selIdx, rows.length);
         if (!nav.handled) return false;
 
         e.preventDefault();
 
         if (nav.action === NAV_ACTION_MOVE) {
+            // First Up/Down hands control from the auto-focused filter box to the
+            // queue list, so nav and Delete-to-remove address items from here on.
+            if (searchInput && document.activeElement === searchInput) searchInput.blur();
             selIdx = nav.nextIndex;
             _updateSelection();
         } else if (nav.action === NAV_ACTION_SELECT) {
-            onSelectItem(selIdx);
+            if (rows[selIdx]) onSelectItem(Number(rows[selIdx].dataset.qidx));
         }
 
         return true;
@@ -161,6 +199,13 @@ export function createQueueModalController({
 
     // Wire up events
     clearAllBtn.addEventListener('click', () => onClearAll());
+
+    if (searchInput) {
+        searchInput.addEventListener('input', () => {
+            filterQuery = searchInput.value;
+            render();
+        });
+    }
 
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {

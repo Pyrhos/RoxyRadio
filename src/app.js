@@ -75,6 +75,7 @@ const moreCloseBtn = document.getElementById('more-close-btn');
 const queueOverlay = document.getElementById('queue-overlay');
 const queueListEl = document.getElementById('queue-list');
 const queueClearBtn = document.getElementById('queue-clear-btn');
+const queueSearchInput = document.getElementById('queue-search-input');
 const queueCell = document.getElementById('queue-cell');
 const mobileQueueBtn = document.getElementById('mobile-queue-btn');
 const moreCell = document.getElementById('more-cell');
@@ -292,6 +293,7 @@ const queueCtrl = createQueueModalController({
     overlay: queueOverlay,
     queueList: queueListEl,
     clearAllBtn: queueClearBtn,
+    searchInput: queueSearchInput,
     getQueue: () => core.getQueue(),
     getPlaylist: () => core.playlist,
     getNowPlayingIndex: () => core.getNowPlayingQueueIndex(),
@@ -962,6 +964,12 @@ document.addEventListener('keydown', (e) => {
     // Queue modal keyboard navigation
     if (queueOpen) {
         if (queueCtrl.handleKeyEvent(e)) return;
+        // While the filter box has focus, printable keys must edit the query, not
+        // fire the global Shift+letter shortcuts (Shift+S/Q/E/A/I). Nav/Delete/
+        // Escape are already handled above; swallow the rest so it types into the
+        // box. Shortcuts stay live when the box is unfocused, so Shift+Q still
+        // toggles the modal closed and cross-modal switching keeps working.
+        if (document.activeElement === queueSearchInput) return;
     }
 
     if (!modalOpen && !queueOpen && statusCtrl.isOpen()) {
