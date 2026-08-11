@@ -3,7 +3,29 @@ export const LOOP_TRACK = 1;
 export const LOOP_STREAM = 2;
 export const RESTART_THRESHOLD_SECONDS = 5;
 const HISTORY_LIMIT = 20;
+// Max shuffle anti-repeat history: the recentTracks ring holds up to this many
+// distinct recently-played tracks, and a shuffle pick steers away from them
+// (behavior §1). Playlist shuffle consults the whole ring by videoId (stream-
+// level); queue shuffle consults a queue-sized tail by videoId+rIdx (track-level,
+// below). Session-only.
+const RECENT_LIMIT = 10;
+// Queue shuffle scales its slice of the recent ring to the queue size so a small
+// cycling queue doesn't audibly repeat: window = min(RECENT_LIMIT,
+// ceil(queueLength * QUEUE_RECENT_RATIO)). A full RECENT_LIMIT window would
+// blanket a small queue and collapse to the plain avoid-current fallback; half
+// keeps a fresh candidate available while still barring recent repeats.
+const QUEUE_RECENT_RATIO = 0.5;
 const SEAMLESS_GAP_SECONDS = 1.0; // Threshold to treat neighboring segments as seamless in Yap Off
+
+// Resolve a stored/incoming rIdx to a valid song index for `stream`. Any invalid
+// value — out of range, negative, non-integer, or a Rule-0 stream (no songs) —
+// maps to 0, the "play the stream from the top" fallback. Queue ingress runs
+// items through this so `queue[i].rIdx` is always valid for the current playlist,
+// which keeps the recorded and candidate track identities in agreement (§1, §13).
+export function resolveRIdx(stream, rIdx) {
+    if (!stream || !stream.songs) return 0;
+    return Number.isInteger(rIdx) && rIdx >= 0 && rIdx < stream.songs.length ? rIdx : 0;
+}
 
 export class PlayerCore {
   constructor(callbacks = {}) {
@@ -30,6 +52,14 @@ export class PlayerCore {
     // Stream history powers deterministic back navigation (behavior §4C).
     // Session-only: cleared when tab closes, capped at HISTORY_LIMIT.
     this.history = [];
+    // Recently-played distinct tracks ({videoId, rIdx}, oldest→newest) that
+    // shuffle avoids re-picking (behavior §1). Distinct from `history`: never
+    // consumed by Prev, and it survives shuffle-off so re-enabling shuffle keeps
+    // avoiding what just played. Session-only, capped at RECENT_LIMIT tracks.
+    // Playlist shuffle compares entries by videoId (stream-level); queue shuffle
+    // by videoId+rIdx (track-level), so distinct songs of one stream stay distinct
+    // (§1, §13).
+    this.recentTracks = [];
     // Persistent queue: FIFO of {videoId, rIdx} items (behavior §13).
     // Arrangement is stable: only enqueue (append), removal, and Loop None
     // consumption may mutate the array. Playback never reorders it — the
@@ -109,6 +139,21 @@ export class PlayerCore {
         this.history = this.history.slice(-HISTORY_LIMIT);
     }
 
+    // Restore recently-played ring (session-only, §1 anti-repeat).
+    // Any failure to load/parse/validate wipes the ring to a clean state.
+    // Legacy string-array entries (videoId-only) from older builds fail the
+    // shape check and are dropped — the ring simply repopulates as playback resumes.
+    try {
+        const rawRecent = sessionData.recent ? JSON.parse(sessionData.recent) : [];
+        this.recentTracks = Array.isArray(rawRecent)
+            ? rawRecent
+                .filter((e) => e && typeof e.videoId === 'string' && typeof e.rIdx === 'number')
+                .slice(-RECENT_LIMIT)
+            : [];
+    } catch {
+        this.recentTracks = [];
+    }
+
     // Restore queue from localStorage (persistent across sessions, §13)
     if (saved.queue) {
         try {
@@ -122,6 +167,12 @@ export class PlayerCore {
     } else {
         this.queue = [];
     }
+
+    // Snap the restored queue to the freshly built playlist. init is the single
+    // playlist-(re)build path — load, import (Replace/Extend), reset, and member
+    // toggle all route here — so this one call re-normalizes on every playlist
+    // change, not just first load.
+    this._normalizeQueueRIdx();
 
     // Restore the cycle position so a reload mid-Loop-Queue continues where
     // it left off. An attached cursor must still match the restored stream —
@@ -163,9 +214,10 @@ export class PlayerCore {
           queueCursor: this._queueCursor === null ? '' : String(this._queueCursor),
           queueCursorDetached: this._cursorDetached
       });
-      // Session-only history (cleared on tab close)
+      // Session-only history + recent ring (cleared on tab close)
       this.cb.saveSessionData({
-          history: JSON.stringify(this.history)
+          history: JSON.stringify(this.history),
+          recent: JSON.stringify(this.recentTracks)
       });
   }
 
@@ -301,9 +353,24 @@ export class PlayerCore {
       }
       // Additions always append (§13). Appends never shift existing indices,
       // so the cycle cursor needs no adjustment — the new item simply plays
-      // last in the current cycle.
-      this.queue.push({ videoId, rIdx });
+      // last in the current cycle. Resolve rIdx at ingress so the stored value is
+      // always valid for the current playlist (unknown streams keep it verbatim).
+      const stream = this.playlist.find((p) => p.videoId === videoId);
+      this.queue.push({ videoId, rIdx: stream ? resolveRIdx(stream, rIdx) : rIdx });
       this._saveState();
+  }
+
+  // Snap every queued item to a valid song index for the current playlist — a
+  // persisted queue can outlive a segments.json change that shortened a stream.
+  // Items whose stream isn't in the playlist (e.g. a member-only stream while
+  // member mode is off) are left untouched: videoId validity stays lazily enforced
+  // at play time, so the item survives until the stream reappears. Never drops or
+  // reorders, so the §13 stable-order invariant holds.
+  _normalizeQueueRIdx() {
+      for (const item of this.queue) {
+          const stream = this.playlist.find((p) => p.videoId === item.videoId);
+          if (stream) item.rIdx = resolveRIdx(stream, item.rIdx);
+      }
   }
 
   _clearQueueCursor() {
@@ -408,18 +475,23 @@ export class PlayerCore {
           let pickIdx;
           if (this.shuffleMode) {
               const current = this.getCurrentStream();
-              // Build list of indices that differ from the currently playing song
-              const candidates = [];
-              for (let i = 0; i < this.queue.length; i++) {
-                  if (!current || this.queue[i].videoId !== current.videoId
-                      || this.queue[i].rIdx !== this.rIdx) {
-                      candidates.push(i);
-                  }
-              }
-              pickIdx = candidates.length > 0
-                  ? candidates[Math.floor(Math.random() * candidates.length)]
-                  // All items are the same song — pick any
-                  : Math.floor(Math.random() * this.queue.length);
+              // Same avoid-recent selection as playlist shuffle, but over a
+              // queue-sized tail of the recent ring so a small cycling queue
+              // doesn't audibly repeat (§13). Both the current-exclusion and the
+              // recent-window match are track-level (videoId+rIdx), so a different
+              // song of a recently-played (or current) stream still qualifies —
+              // this is what keeps Loop Queue from treating queued siblings as
+              // "already played".
+              const trackKey = (t) => `${t.videoId}:${t.rIdx}`;
+              const windowSize = Math.min(
+                  RECENT_LIMIT, Math.ceil(this.queue.length * QUEUE_RECENT_RATIO));
+              pickIdx = this._pickAvoidingRecent(
+                  this.queue.length,
+                  (i) => trackKey(this.queue[i]),
+                  (i) => !!current && this.queue[i].videoId === current.videoId
+                      && this.queue[i].rIdx === this.rIdx,
+                  windowSize,
+                  trackKey);
           } else if (this.loopMode === LOOP_STREAM) {
               pickIdx = this._nextQueueIndex();
           } else {
@@ -442,8 +514,7 @@ export class PlayerCore {
           }
           this.vIdx = idx;
           const stream = this.playlist[idx];
-          this.rIdx = (stream.songs && item.rIdx < stream.songs.length)
-              ? item.rIdx : 0;
+          this.rIdx = resolveRIdx(stream, item.rIdx);
           const song = this.getCurrentSong();
           this._saveState(song ? song.range[0] : 0);
           return true;
@@ -470,8 +541,7 @@ export class PlayerCore {
       }
       this.vIdx = streamIdx;
       const stream = this.playlist[streamIdx];
-      this.rIdx = (stream.songs && item.rIdx < stream.songs.length)
-          ? item.rIdx : 0;
+      this.rIdx = resolveRIdx(stream, item.rIdx);
       const song = this.getCurrentSong();
       this._saveState(song ? song.range[0] : 0);
       return true;
@@ -499,6 +569,23 @@ export class PlayerCore {
       if (this.history.length > HISTORY_LIMIT) {
           this.history.shift();
       }
+      // The track we're leaving is now "recently played" — shuffle avoids it.
+      if (stream) this._recordRecent(stream.videoId, this.rIdx);
+  }
+
+  // Move a track to the newest slot of the recent ring (de-duplicating by
+  // videoId+rIdx so the window holds RECENT_LIMIT *distinct* tracks), dropping the
+  // oldest on overflow. Recording the track on leave, plus the current-item
+  // exclusion in the pickers, is what keeps shuffle off the recent tail (§1).
+  _recordRecent(videoId, rIdx) {
+      if (!videoId) return;
+      const key = `${videoId}:${rIdx}`;
+      const existing = this.recentTracks.findIndex((e) => `${e.videoId}:${e.rIdx}` === key);
+      if (existing !== -1) this.recentTracks.splice(existing, 1);
+      this.recentTracks.push({ videoId, rIdx });
+      if (this.recentTracks.length > RECENT_LIMIT) {
+          this.recentTracks.shift();
+      }
   }
 
   _getHistoryPosition(stream = this.getCurrentStream()) {
@@ -511,16 +598,50 @@ export class PlayerCore {
       return stream.songs[safeIdx].range[0];
   }
 
+  // Shared shuffle selection (§1): from `count` items pick a random index,
+  // preferring those that are neither the current item nor among the last
+  // `windowSize` entries of the recent-track ring. Relaxes to "any non-current"
+  // when the window covers everything, then — only if every item is the current
+  // one — to "any", so a pick never dead-ends. keyOf(i) maps a candidate index to
+  // its comparison key; ringKey(entry) maps a stored {videoId, rIdx} ring entry to
+  // the same key space — the two callers choose the granularity (videoId for
+  // playlist, videoId+rIdx for queue). isCurrent(i) marks indices to never prefer.
+  _pickAvoidingRecent(count, keyOf, isCurrent, windowSize, ringKey) {
+      // Floor at 1: slice(-0) === slice(0) returns the *whole* ring, which would
+      // bar every candidate and invert the intended "recent tail" semantics.
+      const recent = new Set(this.recentTracks.slice(-Math.max(1, windowSize)).map(ringKey));
+      const fresh = [];
+      const notCurrent = [];
+      for (let i = 0; i < count; i++) {
+          if (isCurrent(i)) continue;
+          notCurrent.push(i);
+          if (!recent.has(keyOf(i))) fresh.push(i);
+      }
+      const pool = fresh.length > 0 ? fresh : notCurrent;
+      return pool.length > 0
+          ? pool[Math.floor(Math.random() * pool.length)]
+          : Math.floor(Math.random() * count);
+  }
+
   // Helper to get next index
   _getNextStreamIndex() {
       if (this.shuffleMode) {
           // Pick random excluding current if possible
           if (this.playlist.length <= 1) return 0;
-          let next;
-          do {
-              next = Math.floor(Math.random() * this.playlist.length);
-          } while (next === this.vIdx);
-          return next;
+          // Prefer streams that aren't current and haven't played recently;
+          // relax to "anything but current" so shuffle never dead-ends on a
+          // small or heavily-filtered playlist. Full ring window (§1).
+          // Stream-level: both keyOf and ringKey drop rIdx and match on videoId.
+          // This is load-bearing — the ring records the *last* song's rIdx when a
+          // stream is left, but playlist shuffle re-enters at song 0, so a
+          // track-level match (videoId+rIdx) would never hit and stream avoidance
+          // would silently break. Do NOT reuse the queue's track key here.
+          return this._pickAvoidingRecent(
+              this.playlist.length,
+              (i) => this.playlist[i].videoId,
+              (i) => i === this.vIdx,
+              RECENT_LIMIT,
+              (e) => e.videoId);
       } else {
           if (this.vIdx < this.playlist.length - 1) {
               return this.vIdx + 1;
@@ -738,8 +859,7 @@ export class PlayerCore {
                   this._cursorDetached = false;
                   this.vIdx = idx;
                   const pStream = this.playlist[idx];
-                  this.rIdx = (pStream.songs && item.rIdx < pStream.songs.length)
-                      ? item.rIdx : 0;
+                  this.rIdx = resolveRIdx(pStream, item.rIdx);
                   const song = this.getCurrentSong();
                   this._saveState(song ? song.range[0] : 0);
                   return { type: 'load' };

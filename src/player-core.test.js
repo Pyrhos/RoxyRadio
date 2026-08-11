@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PlayerCore, LOOP_NONE, LOOP_TRACK, LOOP_STREAM, RESTART_THRESHOLD_SECONDS } from './player-core.js';
+import { PlayerCore, LOOP_NONE, LOOP_TRACK, LOOP_STREAM, RESTART_THRESHOLD_SECONDS, resolveRIdx } from './player-core.js';
 
 const MOCK_SEGMENTS = [
   { videoId: 'v1', title: 'Video 1', songs: [{ name: 'S1T1', range: [0, 10] }, { name: 'S1T2', range: [20, 30] }] },
@@ -154,7 +154,8 @@ describe('PlayerCore', () => {
     it('back button randomizes if history empty and shuffle on', () => {
         core.toggleShuffle();
         core.history = []; // Clear history
-        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5); // Should map to 1
+        // Candidates exclude current (v1/idx 0) -> [1, 2]; 0 maps to the first (v2).
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
 
         core.prevStream();
         expect(core.vIdx).toBe(1); // v2
@@ -551,22 +552,127 @@ describe('PlayerCore', () => {
       });
 
       it('excludes current video from random selection', () => {
-          // We have 3 videos. vIdx = 0.
-          // Mock random to pick 0 (current). It should retry.
+          // 3 videos, vIdx = 0, nothing played recently -> candidates [1, 2].
+          // Selection indexes into that list, so the current stream can't be picked.
           core.toggleShuffle();
 
-          // Math.random is called.
-          // Call 1: returns 0.0 (maps to index 0) -> Retry
-          // Call 2: returns 0.5 (maps to index 1) -> Accept
-
           const randomSpy = vi.spyOn(Math, 'random');
-          randomSpy.mockReturnValueOnce(0.0).mockReturnValueOnce(0.5);
+          randomSpy.mockReturnValueOnce(0.5); // -> candidates[1] -> index 2
 
           core.nextStream();
-          expect(core.vIdx).toBe(1);
-          expect(randomSpy).toHaveBeenCalledTimes(2);
+          expect(core.vIdx).toBe(2);
 
           randomSpy.mockRestore();
+      });
+  });
+
+  describe('Shuffle - Recent-Stream Avoidance (§1)', () => {
+      // Playlist shuffle matches the recent ring at STREAM level (videoId), even
+      // though the ring stores {videoId, rIdx} tracks. 6 distinct Rule 0 streams
+      // give room to avoid a recent window.
+      const SIX = Array.from({ length: 6 }, (_, i) => ({ videoId: `v${i}`, title: `V${i}`, songs: [] }));
+
+      it('skips streams in the recent window when other choices exist', () => {
+          core.init(SIX);
+          core.toggleShuffle();
+          core.vIdx = 0;
+          // v5 is the only unplayed, non-current stream.
+          core.recentTracks = ['v1', 'v2', 'v3', 'v4'].map((videoId) => ({ videoId, rIdx: 0 }));
+          expect(core._getNextStreamIndex()).toBe(5);
+      });
+
+      it('falls back to any non-current stream when the recent window covers everything else', () => {
+          core.init(MOCK_SEGMENTS); // v1, v2, v3
+          core.toggleShuffle();
+          core.vIdx = 0;
+          // both non-current streams recently played
+          core.recentTracks = [{ videoId: 'v2', rIdx: 0 }, { videoId: 'v3', rIdx: 0 }];
+          const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+          const idx = core._getNextStreamIndex();
+          expect(idx).not.toBe(0); // never dead-ends on / repeats the current stream
+          expect([1, 2]).toContain(idx);
+          randomSpy.mockRestore();
+      });
+
+      it('records the track being left into the recent ring on nextStream', () => {
+          core.init(MOCK_SEGMENTS);
+          core.toggleShuffle();
+          core.vIdx = 0; // v1, song 0
+          core.nextStream();
+          expect(core.recentTracks).toContainEqual({ videoId: 'v1', rIdx: 0 });
+      });
+
+      it('avoids a recently-left multi-song stream by videoId even when left mid-stream (not song 0)', () => {
+          // Regression: the ring records the LAST song's rIdx when a stream is left,
+          // but playlist shuffle re-enters at song 0. Stream-level (videoId) matching
+          // must still bar the whole stream — a track-level playlist match would miss.
+          const streams = [
+              { videoId: 'v0', title: 'V0', songs: [
+                  { name: 'a', range: [0, 10] }, { name: 'b', range: [20, 30] }, { name: 'c', range: [40, 50] },
+              ] },
+              { videoId: 'v1', title: 'V1', songs: [] },
+              { videoId: 'v2', title: 'V2', songs: [] },
+          ];
+          core.init(streams);
+          core.toggleShuffle();
+          core.vIdx = 0; core.rIdx = 2; // on v0's last song
+          core.nextStream();            // records { videoId: 'v0', rIdx: 2 }
+          expect(core.recentTracks).toContainEqual({ videoId: 'v0', rIdx: 2 });
+
+          core.vIdx = 1; // put current on v1 so v0 is a selectable candidate again
+          const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
+          // Candidates excluding current v1: v0 (recent by videoId), v2 (fresh) -> v2.
+          expect(core._getNextStreamIndex()).toBe(2);
+          spy.mockRestore();
+      });
+
+      it('keeps the recent ring to distinct entries, capped at 10', () => {
+          const FIFTEEN = Array.from({ length: 15 }, (_, i) => ({ videoId: `v${i}`, title: `V${i}`, songs: [] }));
+          core.init(FIFTEEN);
+          core.toggleShuffle();
+          for (let i = 0; i < 15; i++) core.nextStream();
+          expect(core.recentTracks.length).toBeLessThanOrEqual(10);
+          const keys = core.recentTracks.map((e) => `${e.videoId}:${e.rIdx}`);
+          expect(new Set(keys).size).toBe(core.recentTracks.length);
+      });
+
+      it('persists the recent ring to session storage', () => {
+          core.recentTracks = [{ videoId: 'v2', rIdx: 0 }];
+          core.saveState();
+          expect(callbacks.saveSessionData).toHaveBeenCalledWith(
+              expect.objectContaining({ recent: expect.any(String) })
+          );
+          const lastArg = callbacks.saveSessionData.mock.calls.at(-1)[0];
+          expect(JSON.parse(lastArg.recent)).toEqual([{ videoId: 'v2', rIdx: 0 }]);
+      });
+
+      it('restores the recent ring from session storage on init', () => {
+          const stored = [{ videoId: 'v2', rIdx: 0 }, { videoId: 'v3', rIdx: 1 }];
+          callbacks.getSessionData = () => ({ recent: JSON.stringify(stored) });
+          const restored = new PlayerCore(callbacks);
+          restored.init(MOCK_SEGMENTS);
+          expect(restored.recentTracks).toEqual(stored);
+      });
+
+      it('wipes the recent ring when session data fails to parse', () => {
+          callbacks.getSessionData = () => ({ recent: '{not valid json' });
+          const restored = new PlayerCore(callbacks);
+          restored.init(MOCK_SEGMENTS);
+          expect(restored.recentTracks).toEqual([]);
+      });
+
+      it('ignores legacy videoId-string ring entries from older builds', () => {
+          callbacks.getSessionData = () => ({ recent: JSON.stringify(['v2', 'v3']) });
+          const restored = new PlayerCore(callbacks);
+          restored.init(MOCK_SEGMENTS);
+          expect(restored.recentTracks).toEqual([]);
+      });
+
+      it('preserves the recent ring when shuffle is turned off', () => {
+          core.recentTracks = [{ videoId: 'v2', rIdx: 0 }];
+          core.toggleShuffle(); // on
+          core.toggleShuffle(); // off — history wipes, recent must not
+          expect(core.recentTracks).toEqual([{ videoId: 'v2', rIdx: 0 }]);
       });
   });
 
@@ -1003,4 +1109,38 @@ describe('PlayerCore', () => {
           core.playlist[0].songs[0].range[0] = originalStart;
       });
   });
+});
+
+describe('resolveRIdx', () => {
+    const withSongs = { songs: [{}, {}, {}] }; // valid song indices: 0, 1, 2
+    const rule0 = { songs: null };
+
+    it('returns an in-range index unchanged', () => {
+        expect(resolveRIdx(withSongs, 0)).toBe(0);
+        expect(resolveRIdx(withSongs, 2)).toBe(2);
+    });
+
+    it('maps an out-of-range index to 0', () => {
+        expect(resolveRIdx(withSongs, 3)).toBe(0);
+        expect(resolveRIdx(withSongs, 99)).toBe(0);
+    });
+
+    it('maps a negative index to 0', () => {
+        expect(resolveRIdx(withSongs, -1)).toBe(0);
+    });
+
+    it('maps a non-integer index to 0', () => {
+        expect(resolveRIdx(withSongs, 1.5)).toBe(0);
+        expect(resolveRIdx(withSongs, NaN)).toBe(0);
+        expect(resolveRIdx(withSongs, undefined)).toBe(0);
+    });
+
+    it('returns 0 for a Rule-0 stream (no songs)', () => {
+        expect(resolveRIdx(rule0, 2)).toBe(0);
+    });
+
+    it('returns 0 for a missing stream', () => {
+        expect(resolveRIdx(null, 1)).toBe(0);
+        expect(resolveRIdx(undefined, 1)).toBe(0);
+    });
 });

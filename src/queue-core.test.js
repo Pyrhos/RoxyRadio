@@ -156,6 +156,49 @@ describe('Queue (§13)', () => {
     });
   });
 
+  // Ingress normalization: queued rIdx is snapped to a valid song index for the
+  // current playlist (at enqueue and on every init), so the recorded and candidate
+  // track identities used by shuffle anti-repeat always agree (§1, §13).
+  describe('rIdx normalization (ingress)', () => {
+    it('clamps an out-of-range rIdx on restore to a valid song index', () => {
+      callbacks.getSettings = vi.fn(() => ({
+        queue: JSON.stringify([{ videoId: 'v1', rIdx: 5 }]) // v1 has 2 songs
+      }));
+      const c = new PlayerCore(callbacks);
+      c.init(MOCK_SEGMENTS);
+      expect(c.getQueue()).toEqual([{ videoId: 'v1', rIdx: 0 }]);
+    });
+
+    it('leaves an item untouched when its stream is not in the playlist', () => {
+      // e.g. a member-only stream queued while member mode is off — kept verbatim
+      // so it survives until the stream reappears (videoId is dropped lazily at play).
+      callbacks.getSettings = vi.fn(() => ({
+        queue: JSON.stringify([{ videoId: 'vMember', rIdx: 9 }])
+      }));
+      const c = new PlayerCore(callbacks);
+      c.init(MOCK_SEGMENTS);
+      expect(c.getQueue()).toEqual([{ videoId: 'vMember', rIdx: 9 }]);
+    });
+
+    it('re-normalizes on re-init when the playlist shortens a stream (import/reset)', () => {
+      core.enqueue('v1', 1); // valid now — v1 has 2 songs
+      const SHORT = [{ videoId: 'v1', title: 'Video 1', songs: [{ name: 'S1T1', range: [0, 10] }] }];
+      callbacks.getSettings.mockReturnValue({ queue: JSON.stringify([{ videoId: 'v1', rIdx: 1 }]) });
+      core.init(SHORT); // v1 now has 1 song -> rIdx 1 is out of range
+      expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 0 }]);
+    });
+
+    it('resolves an out-of-range rIdx at enqueue', () => {
+      core.enqueue('v3', 4); // v3 has 1 song
+      expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]);
+    });
+
+    it('keeps rIdx verbatim at enqueue when the stream is not in the playlist', () => {
+      core.enqueue('vGhost', 7);
+      expect(core.getQueue()).toEqual([{ videoId: 'vGhost', rIdx: 7 }]);
+    });
+  });
+
   describe('Yap interaction', () => {
     it('turns off yap mode when enqueueing if yap was on', () => {
       core.yapMode = true;
@@ -1321,6 +1364,95 @@ describe('Queue (§13)', () => {
       expect(core.vIdx).toBe(2); // v3 after invalid dropped
       expect(core.getQueue()).toEqual([]);
 
+      spy.mockRestore();
+    });
+  });
+
+  // Queue shuffle reuses the shared recent-track ring, but consults only a
+  // queue-sized tail (min(10, ceil(N/2))) so a small cycling queue doesn't
+  // audibly repeat. It matches at TRACK level (videoId+rIdx). advanceAuto records
+  // the leaving track *after* the pick, so the recentTracks set here is exactly
+  // what the pick sees. (These Rule-0 fixtures use rIdx 0, so track keys reduce to
+  // vN:0; the same-stream distinction is exercised by the last test in this block.)
+  describe('Shuffle + Queue anti-repeat window (§13)', () => {
+    const SIX = Array.from({ length: 6 }, (_, i) => ({ videoId: `v${i}`, title: `V${i}`, songs: [] }));
+    const recent = (...ids) => ids.map((videoId) => ({ videoId, rIdx: 0 }));
+
+    const setupQueue = (ids) => {
+      core.init(SIX);
+      core.shuffleMode = true;
+      core.loopMode = LOOP_STREAM;
+      ids.forEach((id) => core.enqueue(id, 0));
+    };
+
+    it('avoids streams inside the queue-scaled recent window', () => {
+      setupQueue(['v0', 'v1', 'v2', 'v3']); // window = ceil(4/2) = 2
+      core.vIdx = 0; // current v0 (excluded as current)
+      core.rIdx = 0;
+      core.recentTracks = recent('v1', 'v2'); // last-2 window covers v1, v2
+
+      core.advanceAuto();
+      expect(core.vIdx).toBe(3); // only v3 is neither current nor recent
+    });
+
+    it('consults only a queue-sized tail of the recent ring, not the whole ring', () => {
+      setupQueue(['v0', 'v1', 'v2', 'v3']); // window = 2, so only the last 2 count
+      core.vIdx = 0;
+      core.rIdx = 0;
+      // A full-ring window would bar v1 too and fall back to a random pick;
+      // the 2-item tail leaves v1 as the single fresh candidate.
+      core.recentTracks = recent('v1', 'v2', 'v3');
+
+      core.advanceAuto();
+      expect(core.vIdx).toBe(1); // v1 fell out of the 2-item window
+    });
+
+    it('falls back without dead-ending when the window covers the whole queue', () => {
+      setupQueue(['v0', 'v1']); // window = ceil(2/2) = 1
+      core.vIdx = 0;
+      core.rIdx = 0;
+      core.recentTracks = recent('v1'); // v1 recent, v0 current — nothing "fresh"
+
+      core.advanceAuto();
+      expect(core.vIdx).toBe(1); // relaxes to any-non-current: still plays v1
+    });
+
+    it('current-exclusion is track-level: another song of the current stream still qualifies', () => {
+      core.init(MOCK_SEGMENTS); // v1 has two songs
+      core.shuffleMode = true;
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 1); // different song of the current stream
+      core.enqueue('v3', 0);
+      core.vIdx = 0; // current v1/0
+      core.rIdx = 0;
+      core.recentTracks = [];
+
+      const spy = vi.spyOn(Math, 'random').mockReturnValue(0); // pick first fresh
+      core.advanceAuto();
+      expect([core.vIdx, core.rIdx]).toEqual([0, 1]); // v1/1, not barred by v1/0
+      spy.mockRestore();
+    });
+
+    it('recent window is track-level: avoids only the exact recent song, not sibling songs of the same stream', () => {
+      // A queue of three songs from ONE stream, only v1:0 recently played. Under
+      // the old stream-level ring, videoId v1 being recent would bar ALL siblings,
+      // collapse the fresh pool, and fall back to a random pick that could replay
+      // v1:0. Track-level keeps v1:1 fresh and picks it deterministically.
+      const THREE = [{ videoId: 'v1', title: 'V1', songs: [
+        { name: 'a', range: [0, 10] }, { name: 'b', range: [20, 30] }, { name: 'c', range: [40, 50] },
+      ] }];
+      core.init(THREE);
+      core.shuffleMode = true;
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v1', 1);
+      core.enqueue('v1', 2);
+      core.vIdx = 0; core.rIdx = 2; // currently playing v1/2 (track-level current-excluded)
+      core.recentTracks = [{ videoId: 'v1', rIdx: 0 }]; // window = ceil(3/2) = 2
+
+      const spy = vi.spyOn(Math, 'random').mockReturnValue(0); // pick first fresh
+      core.advanceAuto();
+      expect([core.vIdx, core.rIdx]).toEqual([0, 1]); // fresh sibling v1/1, not the recent v1/0
       spy.mockRestore();
     });
   });
