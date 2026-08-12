@@ -7,7 +7,11 @@
     "dev": "vite",
     "test": "vitest",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "data:fetch": "node scripts/fetch-dates.js",
+    "data:harvest": "node scripts/harvest.js",
+    "data:reorder": "node scripts/reorder.js",
+    "data:sync": "node scripts/harvest.js && node scripts/fetch-dates.js && node scripts/reorder.js"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.13",
