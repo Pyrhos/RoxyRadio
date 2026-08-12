@@ -90,8 +90,7 @@ html, body, #app {
   max-width: none;
   padding: 0;
   margin: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* Player fills available space */
