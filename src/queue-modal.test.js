@@ -225,6 +225,111 @@ describe('Queue Modal Controller', () => {
         });
     });
 
+    describe('refreshNowPlaying', () => {
+        it('moves the ▶ marker to the newly-playing slot without a full re-render', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+                { videoId: 'v2', rIdx: 0 },
+            ];
+            let nowPlaying = 0;
+            ctrl = createQueueModalController({
+                overlay: dom.overlay,
+                queueList: dom.queueList,
+                clearAllBtn: dom.clearAllBtn,
+                searchInput: dom.searchInput,
+                getQueue: () => mockQueue,
+                getPlaylist: () => MOCK_PLAYLIST,
+                onRemoveItem,
+                onSelectItem,
+                onClearAll,
+                getNowPlayingIndex: () => nowPlaying,
+            });
+            ctrl.toggle();
+
+            let items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items[0].classList.contains('now-playing')).toBe(true);
+            expect(items[0].querySelector('.queue-item-index').textContent).toBe('▶');
+
+            // Playback advances to the next queue slot.
+            nowPlaying = 1;
+            ctrl.refreshNowPlaying();
+
+            // Same DOM nodes, marker repainted onto slot 1.
+            expect(dom.queueList.querySelectorAll('.queue-item')[0]).toBe(items[0]);
+            items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items[0].classList.contains('now-playing')).toBe(false);
+            expect(items[0].querySelector('.queue-item-index').textContent).toBe('1.');
+            expect(items[1].classList.contains('now-playing')).toBe(true);
+            expect(items[1].querySelector('.queue-item-index').textContent).toBe('▶');
+        });
+
+        it('preserves the keyboard selection when the marker moves', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+                { videoId: 'v2', rIdx: 0 },
+            ];
+            let nowPlaying = 0;
+            ctrl = createQueueModalController({
+                overlay: dom.overlay,
+                queueList: dom.queueList,
+                clearAllBtn: dom.clearAllBtn,
+                searchInput: dom.searchInput,
+                getQueue: () => mockQueue,
+                getPlaylist: () => MOCK_PLAYLIST,
+                onRemoveItem,
+                onSelectItem,
+                onClearAll,
+                getNowPlayingIndex: () => nowPlaying,
+            });
+            ctrl.toggle();
+
+            // User navigates down to slot 2 while slot 0 plays.
+            const down = new KeyboardEvent('keydown', { key: 'ArrowDown' });
+            down.preventDefault = vi.fn();
+            ctrl.handleKeyEvent(down);
+            ctrl.handleKeyEvent(down);
+
+            nowPlaying = 1;
+            ctrl.refreshNowPlaying();
+
+            // Selection stays where the user left it; only the ▶ marker moved.
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items[2].classList.contains('selected')).toBe(true);
+            expect(items[1].classList.contains('now-playing')).toBe(true);
+        });
+
+        it('clears the marker when playback leaves the queue (index -1)', () => {
+            mockQueue = [
+                { videoId: 'v1', rIdx: 0 },
+                { videoId: 'v3', rIdx: 0 },
+            ];
+            let nowPlaying = 1;
+            ctrl = createQueueModalController({
+                overlay: dom.overlay,
+                queueList: dom.queueList,
+                clearAllBtn: dom.clearAllBtn,
+                searchInput: dom.searchInput,
+                getQueue: () => mockQueue,
+                getPlaylist: () => MOCK_PLAYLIST,
+                onRemoveItem,
+                onSelectItem,
+                onClearAll,
+                getNowPlayingIndex: () => nowPlaying,
+            });
+            ctrl.toggle();
+            expect(dom.queueList.querySelector('.now-playing')).not.toBeNull();
+
+            nowPlaying = -1;
+            ctrl.refreshNowPlaying();
+
+            expect(dom.queueList.querySelector('.now-playing')).toBeNull();
+            const items = dom.queueList.querySelectorAll('.queue-item');
+            expect(items[1].querySelector('.queue-item-index').textContent).toBe('2.');
+        });
+    });
+
     describe('remove button', () => {
         it('calls onRemoveItem with correct index', () => {
             mockQueue = [

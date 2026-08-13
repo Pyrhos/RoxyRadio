@@ -835,6 +835,8 @@ function loadCurrentContent(autoplay, startTimeOverride = null) {
     statusCtrl.refresh();
     updateQueueIndicator();
     updateButtons();
+    // Keep the ▶ marker on the currently-playing queue slot while the modal is open.
+    if (queueCtrl.isOpen()) queueCtrl.refreshNowPlaying();
 }
 
 // ======== UI WIRES ========

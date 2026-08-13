@@ -146,6 +146,21 @@ export function createQueueModalController({
         });
     }
 
+    // Repaint only the now-playing marker (▶ / index number and the now-playing
+    // class) on the already-rendered rows. Song changes route here instead of a
+    // full render() so the ▶ follows playback while leaving the user's selection,
+    // scroll position, active filter, and long-press arming untouched.
+    function refreshNowPlaying() {
+        const nowPlaying = getNowPlayingIndex();
+        queueList.querySelectorAll('.queue-item').forEach((row) => {
+            const idx = Number(row.dataset.qidx);
+            const isNow = idx === nowPlaying;
+            row.classList.toggle('now-playing', isNow);
+            const indexEl = row.querySelector('.queue-item-index');
+            if (indexEl) indexEl.textContent = isNow ? '▶' : `${idx + 1}.`;
+        });
+    }
+
     function _updateSelection(scrollBlock = 'nearest') {
         const rows = queueList.querySelectorAll('.queue-item');
         rows.forEach((r, i) => {
@@ -217,6 +232,7 @@ export function createQueueModalController({
         toggle,
         isOpen,
         render,
+        refreshNowPlaying,
         handleKeyEvent,
     };
 }
