@@ -39,6 +39,159 @@
     ]
   },
   {
+    "name": "Let's Rock n Roll 50s style~",
+    "videoId": "QLKfYh3WnuA",
+    "songs": [
+      {
+        "name": "Blue Suede Shoes - Elvis Presley",
+        "range": [
+          1195,
+          1315
+        ]
+      },
+      {
+        "name": "Stupid Cupid - Connie Francis",
+        "range": [
+          1488,
+          1621
+        ]
+      },
+      {
+        "name": "Fever - Peggy Lee",
+        "range": [
+          1707,
+          1907
+        ]
+      },
+      {
+        "name": "Why Don't You Do Right - Peggy Lee",
+        "range": [
+          2009,
+          2155
+        ]
+      },
+      {
+        "name": "Autumn Leaves - Nat King Cole",
+        "range": [
+          2325,
+          2478
+        ]
+      },
+      {
+        "name": "Mr. Sandman - The Chordettes",
+        "range": [
+          2643,
+          2785
+        ]
+      },
+      {
+        "name": "Hound Dog - Elvis Presley",
+        "range": [
+          2868,
+          3019
+        ]
+      },
+      {
+        "name": "Johnny B. Goode - Chuck Berry",
+        "range": [
+          3080,
+          3219
+        ]
+      },
+      {
+        "name": "Put Your Head on My Shoulder - Paul Anka",
+        "range": [
+          3375,
+          3529
+        ]
+      },
+      {
+        "name": "Born Too Late - The Poni-Tails",
+        "range": [
+          3579,
+          3716
+        ]
+      },
+      {
+        "name": "Orange Colored Sky - Nat King Cole",
+        "range": [
+          3835,
+          3986
+        ]
+      },
+      {
+        "name": "Tutti Frutti - Little Richard",
+        "range": [
+          4085,
+          4232
+        ]
+      },
+      {
+        "name": "Sh-Boom (Life Could Be a Dream) - The Chords",
+        "range": [
+          4281,
+          4430
+        ]
+      },
+      {
+        "name": "Big Iron - Marty Robbins",
+        "range": [
+          4541,
+          4779
+        ]
+      },
+      {
+        "name": "That's Amore - Dean Martin",
+        "range": [
+          4930,
+          5116
+        ]
+      },
+      {
+        "name": "(We're Gonna) Rock Around the Clock - Bill Haley & His Comets",
+        "range": [
+          5201,
+          5332
+        ]
+      },
+      {
+        "name": "Lollipop - The Chordettes",
+        "range": [
+          5379,
+          5507
+        ]
+      },
+      {
+        "name": "I Forgot to Remember to Forget - Elvis Presley",
+        "range": [
+          5587,
+          5731
+        ]
+      },
+      {
+        "name": "Uranium Fever - Elton Britt",
+        "range": [
+          5871,
+          6011
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Edge of Night - Pippin's Theme (The Lord of the Rings)",
+    "videoId": "v2OKWq3mp2Q",
+    "songs": [
+      {
+        "name": "Edge of Night - Pippin's Theme (The Lord of the Rings)",
+        "theme": 2,
+        "range": [
+          0,
+          73
+        ]
+      }
+    ]
+  },
+  {
     "name": "60s Flower Power Baby~",
     "videoId": "8crU8T3mv5Y",
     "songs": [
@@ -185,15 +338,14 @@
     ]
   },
   {
-    "name": "Edge of Night - Pippin's Theme (The Lord of the Rings)",
-    "videoId": "v2OKWq3mp2Q",
+    "name": "Backlight / 逆光 - Ado",
+    "videoId": "ps0dCY1l_Xs",
     "songs": [
       {
-        "name": "Edge of Night - Pippin's Theme (The Lord of the Rings)",
-        "theme": 2,
+        "name": "Backlight / 逆光 - Ado",
         "range": [
           0,
-          73
+          241
         ]
       }
     ]
@@ -352,14 +504,14 @@
     ]
   },
   {
-    "name": "Backlight / 逆光 - Ado",
-    "videoId": "ps0dCY1l_Xs",
+    "name": "GHOST - Hoshimachi Suisei (Piano ver.)",
+    "videoId": "rghnNC1lRXc",
     "songs": [
       {
-        "name": "Backlight / 逆光 - Ado",
+        "name": "GHOST - Hoshimachi Suisei (Piano ver.)",
         "range": [
           0,
-          241
+          239
         ]
       }
     ]
@@ -560,14 +712,14 @@
     ]
   },
   {
-    "name": "GHOST - Hoshimachi Suisei (Piano ver.)",
-    "videoId": "rghnNC1lRXc",
+    "name": "Play On! - NTE Launch Theme Song",
+    "videoId": "_VF3piyAv7U",
     "songs": [
       {
-        "name": "GHOST - Hoshimachi Suisei (Piano ver.)",
+        "name": "Play On! - NTE Launch Theme Song",
         "range": [
           0,
-          239
+          154
         ]
       }
     ]
@@ -721,19 +873,6 @@
         "range": [
           7504,
           7775
-        ]
-      }
-    ]
-  },
-  {
-    "name": "Play On! - NTE Launch Theme Song",
-    "videoId": "_VF3piyAv7U",
-    "songs": [
-      {
-        "name": "Play On! - NTE Launch Theme Song",
-        "range": [
-          0,
-          154
         ]
       }
     ]
