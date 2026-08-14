@@ -35,3 +35,6 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Local preview of the derived segment payload (regenerate with `pnpm run data:preview`)
+src/data/segments.built.json

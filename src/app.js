@@ -1,5 +1,5 @@
 import { PlayerCore } from './player-core.js';
-import segmentsData from './data/segments.json';
+import segmentsData from 'virtual:roxy-segments';
 import messagesData from './data/messages.json';
 import { createMessageBarController } from './message-bar-ui.js';
 import { initWantedPoster } from './wanted-poster.js';
