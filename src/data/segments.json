@@ -5629,5 +5629,131 @@
       }
     ],
     "released": "2026-08-13T19:56:06Z"
+  },
+  {
+    "name": "Singing viewers requests~",
+    "videoId": "EWnn3hO5FTs",
+    "songs": [
+      {
+        "name": "Rebel Yell - Billy Idol",
+        "range": [
+          683,
+          968
+        ]
+      },
+      {
+        "name": "Viva La Vida - Coldplay",
+        "range": [
+          1130,
+          1374
+        ]
+      },
+      {
+        "name": "Little Talks - Of Monsters and Men",
+        "range": [
+          1477,
+          1724
+        ]
+      },
+      {
+        "name": "Melt - ryo (Supercell)",
+        "range": [
+          2106,
+          2363
+        ]
+      },
+      {
+        "name": "World is Mine - ryo (Supercell) (partial acapella)",
+        "range": [
+          2486,
+          2528
+        ]
+      },
+      {
+        "name": "Hell's Comin' with Me - Poor Man's Poison",
+        "range": [
+          2623,
+          2835
+        ]
+      },
+      {
+        "name": "Ao no Sumika - Tatsuya Kitani",
+        "range": [
+          2906,
+          3100
+        ]
+      },
+      {
+        "name": "Crying for Rain - Minami (TV size)",
+        "range": [
+          3206,
+          3300
+        ]
+      },
+      {
+        "name": "Karma Chameleon - Culture Club",
+        "range": [
+          3350,
+          3599
+        ]
+      },
+      {
+        "name": "Pearls in Her Hair - Omega (English ver.)",
+        "range": [
+          3731,
+          4052
+        ]
+      },
+      {
+        "name": "Pokémon Theme - Jason Paige",
+        "range": [
+          4150,
+          4345
+        ]
+      },
+      {
+        "name": "Mezase Pokémon Master - Rica Matsumoto (acapella)",
+        "range": [
+          4687,
+          4715
+        ]
+      },
+      {
+        "name": "Weight of the World - J'Nique Nicole (NieR: Automata)",
+        "range": [
+          4818,
+          5159
+        ]
+      },
+      {
+        "name": "Cry Me a River - Julie London",
+        "range": [
+          5251,
+          5401
+        ]
+      },
+      {
+        "name": "Lover Girl - Laufey",
+        "range": [
+          5431,
+          5594
+        ]
+      },
+      {
+        "name": "Holding Out for a Hero - Jennifer Saunders (Shrek 2)",
+        "range": [
+          5660,
+          5894
+        ]
+      },
+      {
+        "name": "Music Box of Fate - Ironmouse",
+        "range": [
+          6003,
+          6291
+        ]
+      }
+    ],
+    "released": "2026-08-15T20:27:28Z"
   }
 ]
