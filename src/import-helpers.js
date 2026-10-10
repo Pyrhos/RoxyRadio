@@ -1,6 +1,24 @@
 const VALID_ID = /^[a-zA-Z0-9_-]{11}$/;
 
 /**
+ * @typedef {Object} SegmentSong
+ * @property {string} name
+ * @property {[number, number]} range
+ * @property {*} [theme] Additional song metadata is accepted but not validated.
+ */
+
+/**
+ * The segment shape guaranteed by validateSegmentData. Optional metadata remains
+ * deliberately broad because imports may contain extra properties.
+ * @typedef {Object} Segment
+ * @property {string} videoId
+ * @property {SegmentSong[] | null} [songs]
+ * @property {*} [name]
+ * @property {*} [title]
+ * @property {*} [memberOnly]
+ */
+
+/**
  * Extracts a YouTube video ID from a single URL string.
  * Handles all known youtube.com, youtu.be, and youtube-nocookie.com URL formats.
  * @param {string} url
@@ -48,7 +66,7 @@ function extractVideoId(url) {
  * Parses raw text containing YouTube URLs into Rule 0 segment entries.
  * URLs may be separated by spaces, commas, semicolons, or newlines.
  * @param {string} text - Raw text from clipboard
- * @returns {{ entries: Array<{videoId: string}>, failed: string[] } | null}
+ * @returns {{ entries: Segment[], failed: string[] } | null}
  *   Object with parsed entries and failed tokens, or null if input is not a string
  */
 export function parseYouTubeUrls(text) {
@@ -74,8 +92,8 @@ export function parseYouTubeUrls(text) {
 
 /**
  * Validates that data conforms to the segment file format.
- * @param {*} data - The data to validate
- * @returns {boolean} True if the data is a valid non-empty segment array
+ * @param {unknown} data - The data to validate
+ * @returns {data is Segment[]} True if the data is a valid non-empty segment array
  */
 export function validateSegmentData(data) {
     if (!Array.isArray(data) || data.length === 0) return false;

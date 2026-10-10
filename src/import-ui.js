@@ -1,5 +1,7 @@
 import { validateSegmentData, parseYouTubeUrls } from './import-helpers.js';
 
+/** @typedef {import('./import-helpers.js').Segment} Segment */
+
 /**
  * @param {object} deps
  * @param {HTMLElement} deps.importModal
@@ -13,8 +15,8 @@ import { validateSegmentData, parseYouTubeUrls } from './import-helpers.js';
  * @param {HTMLElement} deps.importReplaceBtn
  * @param {HTMLElement} deps.importAppendBtn
  * @param {HTMLElement} deps.importResetBtn
- * @param {(validatedData: Array) => void} deps.onImportReplace
- * @param {(validatedData: Array) => void} deps.onImportAppend
+ * @param {(validatedData: Segment[]) => void} deps.onImportReplace
+ * @param {(validatedData: Segment[]) => void} deps.onImportAppend
  * @param {() => void} deps.onImportReset
  * @param {() => void} deps.onMemberToggle
  * @param {(buttonEl: HTMLElement) => void} deps.onCopyShareUrl
@@ -33,6 +35,10 @@ export function createImportAndMoreController({
         importStatus.className = type || '';
     }
 
+    /**
+     * @param {{urlFallback?: boolean}} [options]
+     * @returns {Promise<Segment[] | null>}
+     */
     function readAndValidateClipboard({ urlFallback = false } = {}) {
         return navigator.clipboard.readText().then(text => {
             let data;

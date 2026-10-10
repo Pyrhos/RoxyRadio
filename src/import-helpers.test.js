@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { validateSegmentData, parseYouTubeUrls } from './import-helpers.js';
 import { PlayerCore } from './player-core.js';
 import { clearStorage } from './test-setup.js';
+import { CUSTOM_SEGMENTS_STORAGE_KEY } from './storage-keys.js';
 
 // ============================================================================
 // FIXTURES
@@ -260,9 +261,9 @@ describe('Import Persistence', () => {
     describe('persistCustomSegments and restore', () => {
         it('stores valid segment data in localStorage', () => {
             const data = [STREAM_A, STREAM_B];
-            localStorage.setItem('roxy_customSegments', JSON.stringify(data));
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify(data));
 
-            const restored = JSON.parse(localStorage.getItem('roxy_customSegments'));
+            const restored = JSON.parse(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY));
             expect(restored).toHaveLength(2);
             expect(restored[0].videoId).toBe('aaa');
             expect(restored[1].videoId).toBe('bbb');
@@ -270,19 +271,19 @@ describe('Import Persistence', () => {
 
         it('restored data passes validation', () => {
             const data = [STREAM_A, STREAM_C];
-            localStorage.setItem('roxy_customSegments', JSON.stringify(data));
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify(data));
 
-            const restored = JSON.parse(localStorage.getItem('roxy_customSegments'));
+            const restored = JSON.parse(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY));
             expect(validateSegmentData(restored)).toBe(true);
         });
 
         it('corrupted JSON in localStorage is detectable', () => {
-            localStorage.setItem('roxy_customSegments', 'not valid json{{{');
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, 'not valid json{{{');
 
             let parsed = null;
             let parseError = false;
             try {
-                parsed = JSON.parse(localStorage.getItem('roxy_customSegments'));
+                parsed = JSON.parse(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY));
             } catch {
                 parseError = true;
             }
@@ -291,25 +292,25 @@ describe('Import Persistence', () => {
         });
 
         it('structurally invalid data in localStorage fails validation', () => {
-            localStorage.setItem('roxy_customSegments', JSON.stringify([{ bad: 'data' }]));
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify([{ bad: 'data' }]));
 
-            const restored = JSON.parse(localStorage.getItem('roxy_customSegments'));
+            const restored = JSON.parse(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY));
             expect(validateSegmentData(restored)).toBe(false);
         });
 
         it('empty array in localStorage fails validation', () => {
-            localStorage.setItem('roxy_customSegments', JSON.stringify([]));
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify([]));
 
-            const restored = JSON.parse(localStorage.getItem('roxy_customSegments'));
+            const restored = JSON.parse(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY));
             expect(validateSegmentData(restored)).toBe(false);
         });
 
         it('reset clears custom segments from localStorage', () => {
-            localStorage.setItem('roxy_customSegments', JSON.stringify([STREAM_A]));
-            expect(localStorage.getItem('roxy_customSegments')).not.toBe(null);
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify([STREAM_A]));
+            expect(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY)).not.toBe(null);
 
-            localStorage.removeItem('roxy_customSegments');
-            expect(localStorage.getItem('roxy_customSegments')).toBe(null);
+            localStorage.removeItem(CUSTOM_SEGMENTS_STORAGE_KEY);
+            expect(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY)).toBe(null);
         });
     });
 
@@ -454,9 +455,9 @@ describe('Import Persistence', () => {
         });
 
         it('reset clears localStorage key', () => {
-            localStorage.setItem('roxy_customSegments', JSON.stringify([STREAM_C]));
-            localStorage.removeItem('roxy_customSegments');
-            expect(localStorage.getItem('roxy_customSegments')).toBe(null);
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify([STREAM_C]));
+            localStorage.removeItem(CUSTOM_SEGMENTS_STORAGE_KEY);
+            expect(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY)).toBe(null);
         });
     });
 
@@ -524,8 +525,8 @@ describe('Import Persistence', () => {
                 makeStream(`vid${i}`, [makeSong(`Song ${i}`, i * 100, i * 100 + 90)])
             );
 
-            localStorage.setItem('roxy_customSegments', JSON.stringify(bigPlaylist));
-            const restored = JSON.parse(localStorage.getItem('roxy_customSegments'));
+            localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify(bigPlaylist));
+            const restored = JSON.parse(localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY));
 
             expect(validateSegmentData(restored)).toBe(true);
             expect(restored).toHaveLength(200);

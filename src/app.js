@@ -9,13 +9,24 @@ import { createImportAndMoreController } from './import-ui.js';
 import { createQueueModalController } from './queue-modal.js';
 import { createPlaybackController } from './playback.js';
 import { validateSegmentData } from './import-helpers.js';
+import { resolveUrlOverride, computeActiveSegments, classifyMissing, looksLikeVideoId } from './url-override.js';
 import { flashEnqueue } from './enqueue-flash.js';
+import {
+    CUSTOM_SEGMENTS_STORAGE_KEY,
+    LOCAL_STORAGE_PREFIX,
+    SEGMENTS_MODE_REPLACED,
+    SEGMENTS_MODE_STORAGE_KEY,
+    SESSION_STORAGE_PREFIX,
+} from './storage-keys.js';
+
+/** @typedef {import('./import-helpers.js').Segment} Segment */
 
 // ======== CONFIG ========
 const TICK_MS = 200;
 const TITLE_REFRESH_MS = 2000;
 const YAP_TOGGLE_DEBOUNCE_MS = 300;
 const VIDEO_LOAD_DEBOUNCE_MS = 300;
+const SEGMENTS_FETCH_TIMEOUT_MS = 5000;
 const THEME_NAMES = [null, 'starry-night', 'forest-meadow'];
 
 // ======== STATE ========
@@ -28,7 +39,15 @@ let yapToggleTime = 0;
 // URL parameter override (YouTube-style ?v= and ?t= params)
 let urlOverride = null;
 
-// Active segment source — defaults to built-in, overridden by import
+// Best-known canonical set: the built-in payload, unless a cold-path share link
+// (§ initializePlaylist) fetches newer data because this bundle was stale — then it
+// replaces the built-in so "the defaults" (extend/reset, custom-import detection)
+// track current canonical, not the stale snapshot baked into this build.
+/** @type {Segment[]} */
+let canonicalBase = segmentsData;
+
+// Active segment source — canonical base, overlaid by any custom import.
+/** @type {Segment[]} */
 let activeSegments = segmentsData;
 
 const loopLabels = ['None', 'Track', 'Stream'];
@@ -92,27 +111,31 @@ const core = new PlayerCore({
     },
     saveSettings: (settings) => {
         for (const [key, val] of Object.entries(settings)) {
-            localStorage.setItem(`roxy_${key}`, val);
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${key}`, val);
         }
     },
     getSettings: () => {
         const s = {};
         for (let i = 0; i < localStorage.length; i++) {
             const k = localStorage.key(i);
-            if (k.startsWith('roxy_')) s[k.replace('roxy_', '')] = localStorage.getItem(k);
+            if (k.startsWith(LOCAL_STORAGE_PREFIX)) {
+                s[k.slice(LOCAL_STORAGE_PREFIX.length)] = localStorage.getItem(k);
+            }
         }
         return s;
     },
     saveSessionData: (data) => {
         for (const [key, val] of Object.entries(data)) {
-            sessionStorage.setItem(`roxy_session_${key}`, val);
+            sessionStorage.setItem(`${SESSION_STORAGE_PREFIX}${key}`, val);
         }
     },
     getSessionData: () => {
         const s = {};
         for (let i = 0; i < sessionStorage.length; i++) {
             const k = sessionStorage.key(i);
-            if (k.startsWith('roxy_session_')) s[k.replace('roxy_session_', '')] = sessionStorage.getItem(k);
+            if (k.startsWith(SESSION_STORAGE_PREFIX)) {
+                s[k.slice(SESSION_STORAGE_PREFIX.length)] = sessionStorage.getItem(k);
+            }
         }
         return s;
     },
@@ -216,7 +239,7 @@ const importCtrl = createImportAndMoreController({
 
         activeSegments = data;
         persistCustomSegments(data);
-        localStorage.setItem('roxy_segmentsMode', 'replaced');
+        localStorage.setItem(SEGMENTS_MODE_STORAGE_KEY, SEGMENTS_MODE_REPLACED);
 
         core.vIdx = 0;
         core.rIdx = 0;
@@ -243,9 +266,9 @@ const importCtrl = createImportAndMoreController({
 
         activeSegments = merged;
         // Defaults always load fresh. Persist non-default custom entries
-        const defaultIds = new Set(segmentsData.map(e => e.videoId));
+        const defaultIds = new Set(canonicalBase.map(e => e.videoId));
         persistCustomSegments(merged.filter(e => !defaultIds.has(e.videoId)));
-        localStorage.removeItem('roxy_segmentsMode');
+        localStorage.removeItem(SEGMENTS_MODE_STORAGE_KEY);
 
         core.vIdx = 0;
         core.rIdx = 0;
@@ -256,9 +279,9 @@ const importCtrl = createImportAndMoreController({
         console.log(`[Import] Appended ${data.length} streams (${importedIds.size} unique), total ${core.playlist.length}`);
     },
     onImportReset: () => {
-        activeSegments = segmentsData;
-        localStorage.removeItem('roxy_customSegments');
-        localStorage.removeItem('roxy_segmentsMode');
+        activeSegments = canonicalBase;
+        localStorage.removeItem(CUSTOM_SEGMENTS_STORAGE_KEY);
+        localStorage.removeItem(SEGMENTS_MODE_STORAGE_KEY);
 
         core.init(activeSegments);
         core.vIdx = 0;
@@ -394,48 +417,38 @@ function stripInvalidParams() {
     }
 }
 
-function parseUrlParams() {
+function readUrlParams() {
     try {
         stripInvalidParams();
-
         const params = new URLSearchParams(window.location.search);
-        const videoId = params.get('v');
-        const timestamp = params.get('t');
-
-        if (!videoId) return null;
-
-        const streamIdx = core.playlist.findIndex(s => s.videoId === videoId);
-        if (streamIdx === -1) {
-            console.log(`[URL] v=${videoId} not found in playlist, ignoring`);
-            return null;
-        }
-
-        const result = { streamIdx, time: null };
-
-        if (timestamp !== null) {
-            const t = parseFloat(timestamp);
-            if (Number.isFinite(t) && t >= 0) {
-                const stream = core.playlist[streamIdx];
-
-                if (stream.songs && stream.songs.length > 0) {
-                    const firstStart = stream.songs[0].range[0];
-                    const lastEnd = stream.songs[stream.songs.length - 1].range[1];
-
-                    if (t >= firstStart && t <= lastEnd) {
-                        result.time = t;
-                    } else {
-                        console.log(`[URL] t=${t} is outside segment bounds [${firstStart}, ${lastEnd}], ignoring timestamp`);
-                    }
-                } else {
-                    result.time = t;
-                }
-            }
-        }
-
-        return result;
+        return { videoId: params.get('v'), timestamp: params.get('t') };
     } catch (err) {
-        console.warn('[URL] Failed to parse URL parameters:', err.message);
+        console.warn('[URL] Failed to read URL parameters:', err.message);
+        return { videoId: null, timestamp: null };
+    }
+}
+
+// Cold-path fallback: fetch the canonical runtime payload (unhashed, no-store) so a
+// stale cached bundle can still resolve a shared link to a stream added after it was
+// built. Returns the validated array, or null on timeout or network/parse/validation failure
+// (in which case the app silently keeps its baked-in data and default state).
+/** @returns {Promise<Segment[] | null>} */
+async function fetchFreshSegments() {
+    const controller = new AbortController();
+    // Keep the deadline active through body consumption so a stalled download
+    // cannot prevent startup from falling back to the bundled playlist.
+    const timeout = setTimeout(() => controller.abort(), SEGMENTS_FETCH_TIMEOUT_MS);
+    try {
+        const url = new URL('segments.json', document.baseURI);
+        const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return validateSegmentData(data) ? data : null;
+    } catch (err) {
+        console.warn('[URL] Fresh segment fetch failed:', err.message);
         return null;
+    } finally {
+        clearTimeout(timeout);
     }
 }
 
@@ -447,51 +460,58 @@ function rebuildPlaylistDerivedState() {
     statusCtrl.refresh(true);
 }
 
+/** @param {Segment[]} data */
 function persistCustomSegments(data) {
     try {
-        localStorage.setItem('roxy_customSegments', JSON.stringify(data));
+        localStorage.setItem(CUSTOM_SEGMENTS_STORAGE_KEY, JSON.stringify(data));
     } catch (err) {
         console.warn('[Import] Failed to persist custom segments:', err.message);
     }
 }
 
-function initializePlaylist() {
+// Rebuild the playlist from canonicalBase, overlaying any persisted custom import.
+// core.init is the single (re)build path, so this doubles as the cold-path adopt.
+function applyActiveSegments() {
+    const { segments, invalidCustom } = computeActiveSegments(canonicalBase, {
+        json: localStorage.getItem(CUSTOM_SEGMENTS_STORAGE_KEY),
+        mode: localStorage.getItem(SEGMENTS_MODE_STORAGE_KEY),
+    });
+    if (invalidCustom) localStorage.removeItem(CUSTOM_SEGMENTS_STORAGE_KEY);
+    activeSegments = segments;
+    core.init(activeSegments);
+}
+
+async function initializePlaylist() {
     try {
-        // Restore custom playlist from localStorage if present
-        const savedSegments = localStorage.getItem('roxy_customSegments');
-        if (savedSegments) {
-            try {
-                const parsed = JSON.parse(savedSegments);
-                if (validateSegmentData(parsed)) {
-                    if (localStorage.getItem('roxy_segmentsMode') === 'replaced') {
-                        activeSegments = parsed;
-                        console.log(`[Import] Restored ${parsed.length} replaced streams from localStorage`);
-                    } else {
-                        // Defaults always load fresh. Append non-default custom entries
-                        const defaultIds = new Set(segmentsData.map(e => e.videoId));
-                        const customOnly = parsed.filter(e => !defaultIds.has(e.videoId));
-                        activeSegments = [...segmentsData, ...customOnly];
-                        console.log(`[Import] Loaded defaults + ${customOnly.length} custom stream(s) from localStorage`);
-                    }
-                } else {
-                    localStorage.removeItem('roxy_customSegments');
-                }
-            } catch {
-                localStorage.removeItem('roxy_customSegments');
-            }
-        }
-
-        core.init(activeSegments);
-
+        applyActiveSegments();
         if (!core.playlist.length) throw new Error('Empty playlist');
 
-        // Check URL params to override saved state (YouTube-style ?v= and ?t=)
-        urlOverride = parseUrlParams();
+        // URL params override saved state (YouTube-style ?v= and ?t=).
+        const { videoId, timestamp } = readUrlParams();
+        urlOverride = resolveUrlOverride(core.playlist, videoId, timestamp);
+
+        // Cold path: a shared link this (possibly stale) bundle can't resolve. Re-check
+        // against freshly-fetched canonical data — it may name a stream added after this
+        // build was cached, or one that's genuinely gone / member-gated.
+        let coldNotice = null;
+        if (!urlOverride && looksLikeVideoId(videoId)) {
+            const fresh = await fetchFreshSegments();
+            if (fresh) {
+                canonicalBase = fresh; // this bundle was stale — adopt newer canonical
+                applyActiveSegments();
+                urlOverride = resolveUrlOverride(core.playlist, videoId, timestamp);
+                if (!urlOverride) {
+                    coldNotice = classifyMissing(fresh, videoId) === 'member-gated'
+                        ? "That's a members-only stream — enable Member Mode to play it."
+                        : 'Shared stream not found — it may have been removed.';
+                }
+            }
+            // fresh === null → keep baked data + default state, silently (offline / error).
+        }
+
         if (urlOverride) {
             core.vIdx = urlOverride.streamIdx;
             core.rIdx = 0;
-            console.log(`[URL] Jumping to stream index ${urlOverride.streamIdx}` +
-                (urlOverride.time !== null ? ` at t=${urlOverride.time}` : ''));
         }
 
         updateButtons();
@@ -499,7 +519,7 @@ function initializePlaylist() {
         rebuildPlaylistDerivedState();
 
         playlistReady = true;
-        setStatus('Ready. Click Start.');
+        setStatus(coldNotice || 'Ready. Click Start.');
         maybeStartPlayback();
     } catch (err) {
         setStatus('Failed to load segments: ' + err.message);
@@ -765,6 +785,7 @@ function onStateChange(ev) {
     if (ev.data === YT.PlayerState.ENDED) {
         core.onVideoEnded();
     } else if (ev.data === YT.PlayerState.PLAYING) {
+        playbackCtrl.reconcileStartOnPlaying();
         // Rule 0: If no segments, get duration now if not set
         const stream = core.getCurrentStream();
         if (stream && !stream.songs && !core.getDuration(stream.videoId)) {
@@ -781,11 +802,11 @@ function onStateChange(ev) {
                             const seg = activeSegments.find(s => s.videoId === stream.videoId);
                             if (seg && !seg.name) {
                                 seg.name = data.title;
-                                if (activeSegments !== segmentsData) {
-                                    if (localStorage.getItem('roxy_segmentsMode') === 'replaced') {
+                                if (activeSegments !== canonicalBase) {
+                                    if (localStorage.getItem(SEGMENTS_MODE_STORAGE_KEY) === SEGMENTS_MODE_REPLACED) {
                                         persistCustomSegments(activeSegments);
                                     } else {
-                                        const defaultIds = new Set(segmentsData.map(e => e.videoId));
+                                        const defaultIds = new Set(canonicalBase.map(e => e.videoId));
                                         persistCustomSegments(activeSegments.filter(e => !defaultIds.has(e.videoId)));
                                     }
                                 }

@@ -49,4 +49,59 @@ describe('createPlaybackController', () => {
             expect(mockPlayer.seekTo).toHaveBeenCalledWith(25, true);
         });
     });
+
+    describe('reconcileStartOnPlaying', () => {
+        it('corrects a fresh cross-video load that starts from zero', () => {
+            ctrl.playVideoAt({ videoId: 'stream-2' }, 3461);
+            mockPlayer.getCurrentTime.mockReturnValue(0);
+
+            ctrl.reconcileStartOnPlaying();
+
+            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(1);
+            expect(mockPlayer.seekTo).toHaveBeenCalledWith(3461, true);
+        });
+
+        it('does not seek when playback starts within tolerance', () => {
+            ctrl.playVideoAt({ videoId: 'stream-2' }, 3461);
+            mockPlayer.getCurrentTime.mockReturnValue(3459);
+
+            ctrl.reconcileStartOnPlaying();
+
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+        });
+
+        it('fires only once without an intervening load', () => {
+            ctrl.playVideoAt({ videoId: 'stream-2' }, 3461);
+            mockPlayer.getCurrentTime.mockReturnValue(0);
+
+            ctrl.reconcileStartOnPlaying();
+            ctrl.reconcileStartOnPlaying();
+
+            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(1);
+            expect(mockPlayer.seekTo).toHaveBeenCalledWith(3461, true);
+        });
+
+        it('is disarmed by an explicit seek before playback starts', () => {
+            ctrl.playVideoAt({ videoId: 'stream-2' }, 3461);
+            ctrl.seekToSafe(120);
+            mockPlayer.seekTo.mockClear();
+            mockPlayer.getCurrentTime.mockReturnValue(0);
+
+            ctrl.reconcileStartOnPlaying();
+
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+        });
+
+        it('corrects a resume load to its saved time', () => {
+            const savedTime = 812;
+            ctrl.playVideoAt({ videoId: 'stream-2' }, savedTime);
+            mockPlayer.getCurrentTime.mockReturnValue(0);
+
+            ctrl.reconcileStartOnPlaying();
+
+            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(1);
+            expect(mockPlayer.seekTo).toHaveBeenCalledWith(savedTime, true);
+            expect(ctrl.getLastKnownTime()).toBe(savedTime);
+        });
+    });
 });

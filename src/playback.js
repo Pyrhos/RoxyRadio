@@ -1,3 +1,5 @@
+const START_CORRECTION_TOLERANCE_SECONDS = 3;
+
 /**
  * @param {object} deps
  * @param {() => YT.Player|null} deps.getPlayer
@@ -17,11 +19,13 @@ export function createPlaybackController({
 }) {
     let tickHandle = null;
     let lastKnownTime = 0;
+    let pendingStartCorrection = null;
     let currentLoadedVideoId = null;
     let lastVideoLoadTime = 0;
     let titleRefreshHandle = null;
 
     function seekToSafe(time, stream) {
+        pendingStartCorrection = null;
         const resolvedStream = stream || getCurrentStream();
         const safeStart = sanitizeStartTime(time, resolvedStream);
         const player = getPlayer();
@@ -65,6 +69,7 @@ export function createPlaybackController({
 
         const isSameVideo = currentLoadedVideoId === stream.videoId;
         if (isSameVideo && !forceReload) {
+            pendingStartCorrection = null;
             seekToSafe(safeStart, stream);
             return;
         }
@@ -91,6 +96,19 @@ export function createPlaybackController({
             payload.endSeconds = safeEnd;
         }
         player.loadVideoById(payload);
+        pendingStartCorrection = safeStart;
+    }
+
+    function reconcileStartOnPlaying() {
+        if (pendingStartCorrection === null) return;
+
+        const player = getPlayer();
+        const cur = player && player.getCurrentTime ? player.getCurrentTime() : NaN;
+        if (Number.isFinite(cur) && cur < pendingStartCorrection - START_CORRECTION_TOLERANCE_SECONDS) {
+            player.seekTo(pendingStartCorrection, true);
+            lastKnownTime = pendingStartCorrection;
+        }
+        pendingStartCorrection = null;
     }
 
     function startTickLoop() {
@@ -169,6 +187,7 @@ export function createPlaybackController({
         seekToSafe,
         getSafeCurrentTime,
         playVideoAt,
+        reconcileStartOnPlaying,
         startTickLoop,
         stopTickLoop,
         evaluateTickLoop,
