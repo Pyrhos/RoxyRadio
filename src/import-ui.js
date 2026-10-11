@@ -1,3 +1,4 @@
+import { createLifecycle } from './lifecycle.js';
 import { validateSegmentData, parseYouTubeUrls } from './import-helpers.js';
 
 /** @typedef {import('./import-helpers.js').Segment} Segment */
@@ -29,6 +30,7 @@ export function createImportAndMoreController({
     onImportReplace, onImportAppend, onImportReset,
     onMemberToggle, onCopyShareUrl, isMemberMode,
 }) {
+    const lifecycle = createLifecycle();
     function setImportStatus(msg, type) {
         if (!importStatus) return;
         importStatus.textContent = msg || '\u00A0';
@@ -41,6 +43,7 @@ export function createImportAndMoreController({
      */
     function readAndValidateClipboard({ urlFallback = false } = {}) {
         return navigator.clipboard.readText().then(text => {
+            if (lifecycle.signal.aborted) return null;
             let data;
             try {
                 data = JSON.parse(text);
@@ -75,6 +78,7 @@ export function createImportAndMoreController({
 
             return data;
         }).catch(err => {
+            if (lifecycle.signal.aborted) return null;
             setImportStatus('Couldn\u2019t read clipboard', 'error');
             console.warn('[Import] Failed to read clipboard:', err.message);
             return null;
@@ -107,50 +111,51 @@ export function createImportAndMoreController({
     }
 
     // Wire up event listeners
-    importModal.addEventListener('click', (e) => {
+    lifecycle.listen(importModal, 'click', (e) => {
         if (e.target === importModal) {
             toggleImportModal();
         }
     });
 
-    importReplaceBtn.addEventListener('click', () => {
+    lifecycle.listen(importReplaceBtn, 'click', () => {
         readAndValidateClipboard().then(data => {
-            if (!data) return;
+            if (!data || lifecycle.signal.aborted) return;
             onImportReplace(data);
         });
     });
 
-    importAppendBtn.addEventListener('click', () => {
+    lifecycle.listen(importAppendBtn, 'click', () => {
         readAndValidateClipboard({ urlFallback: true }).then(data => {
-            if (!data) return;
+            if (!data || lifecycle.signal.aborted) return;
             onImportAppend(data);
         });
     });
 
-    if (importResetBtn) importResetBtn.addEventListener('click', () => onImportReset());
+    if (importResetBtn) lifecycle.listen(importResetBtn, 'click', () => onImportReset());
 
-    moreOverlay.addEventListener('click', (e) => {
+    lifecycle.listen(moreOverlay, 'click', (e) => {
         if (e.target === moreOverlay) {
             toggleMoreOverlay();
         }
     });
 
-    moreBtn.addEventListener('click', () => toggleMoreOverlay());
-    moreCloseBtn.addEventListener('click', () => toggleMoreOverlay());
+    lifecycle.listen(moreBtn, 'click', () => toggleMoreOverlay());
+    lifecycle.listen(moreCloseBtn, 'click', () => toggleMoreOverlay());
 
-    moreMemberBtn.addEventListener('click', () => {
+    lifecycle.listen(moreMemberBtn, 'click', () => {
         onMemberToggle();
         updateMoreMemberBtn();
     });
 
-    moreImportBtn.addEventListener('click', () => {
+    lifecycle.listen(moreImportBtn, 'click', () => {
         toggleMoreOverlay();
         toggleImportModal();
     });
 
-    moreCopyBtn.addEventListener('click', () => onCopyShareUrl(moreCopyBtn));
+    lifecycle.listen(moreCopyBtn, 'click', () => onCopyShareUrl(moreCopyBtn));
 
     return {
+        destroy: lifecycle.dispose,
         toggleImportModal,
         toggleMoreOverlay,
         updateMoreMemberBtn,

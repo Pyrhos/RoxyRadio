@@ -1,3 +1,5 @@
+import { createLifecycle } from './lifecycle.js';
+
 const START_CORRECTION_TOLERANCE_SECONDS = 3;
 const START_CORRECTION_RETRY_MS = 1000;
 const START_CORRECTION_MAX_ATTEMPTS = 3;
@@ -21,6 +23,7 @@ export function createPlaybackController({
     isYapMode, onTick, onSeek,
     TICK_MS, VIDEO_LOAD_DEBOUNCE_MS, TITLE_REFRESH_MS,
 }) {
+    const lifecycle = createLifecycle();
     let tickHandle = null;
     let lastKnownTime = 0;
     let pendingStartCorrection = null;
@@ -29,6 +32,7 @@ export function createPlaybackController({
     let titleRefreshHandle = null;
 
     function seekToSafe(time, stream) {
+        if (lifecycle.signal.aborted) return;
         pendingStartCorrection = null;
         const resolvedStream = stream || getCurrentStream();
         const safeStart = sanitizeStartTime(time, resolvedStream);
@@ -61,7 +65,7 @@ export function createPlaybackController({
     }
 
     function playVideoAt(stream, desiredStart, endSeconds, forceReload = false) {
-        if (!stream) return;
+        if (!stream || lifecycle.signal.aborted) return;
         const safeStart = sanitizeStartTime(desiredStart, stream);
         let safeEnd = Number.isFinite(endSeconds) && endSeconds > 0 ? endSeconds : undefined;
         if (safeEnd !== undefined && safeEnd <= safeStart) {
@@ -82,7 +86,7 @@ export function createPlaybackController({
         const timeSinceLastLoad = now - lastVideoLoadTime;
         if (timeSinceLastLoad < VIDEO_LOAD_DEBOUNCE_MS) {
             const delay = VIDEO_LOAD_DEBOUNCE_MS - timeSinceLastLoad;
-            setTimeout(() => playVideoAt(stream, desiredStart, endSeconds, forceReload), delay);
+            lifecycle.timeout(() => playVideoAt(stream, desiredStart, endSeconds, forceReload), delay);
             return;
         }
         lastVideoLoadTime = now;
@@ -176,12 +180,12 @@ export function createPlaybackController({
 
     function startTickLoop() {
         if (tickHandle) return;
-        tickHandle = setInterval(tick, TICK_MS);
+        tickHandle = lifecycle.interval(tick, TICK_MS);
     }
 
     function stopTickLoop() {
         if (!tickHandle) return;
-        clearInterval(tickHandle);
+        lifecycle.cancelInterval(tickHandle);
         tickHandle = null;
     }
 
@@ -231,7 +235,7 @@ export function createPlaybackController({
 
     function ensureTitleRefreshLoop(updateFn) {
         if (titleRefreshHandle) return;
-        titleRefreshHandle = setInterval(() => {
+        titleRefreshHandle = lifecycle.interval(() => {
             const player = getPlayer();
             const t = player && player.getCurrentTime ? player.getCurrentTime() : lastKnownTime;
             updateFn(t);
@@ -256,6 +260,7 @@ export function createPlaybackController({
     }
 
     return {
+        destroy: () => { lifecycle.dispose(); pendingStartCorrection = null; },
         seekToSafe,
         getSafeCurrentTime,
         playVideoAt,

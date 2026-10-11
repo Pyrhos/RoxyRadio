@@ -1,3 +1,4 @@
+import { createLifecycle } from './lifecycle.js';
 import {resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT} from './list-navigation.js';
 import {flashEnqueue as _flashEnqueue} from './enqueue-flash.js';
 import {attachLongPress, arm, disarm} from './long-press-arm.js';
@@ -31,6 +32,8 @@ export function createStatusPanelController({
                                                 onEnqueueSong,
                                                 isSongQueued = () => false,
                                             }) {
+    const lifecycle = createLifecycle();
+    let rowsLifecycle = createLifecycle();
     let statusPanelOpen = false;
     let statusPanelStreamId = '';
     let statusPanelSongCount = 0;
@@ -183,6 +186,8 @@ export function createStatusPanelController({
         statusPanelSongCount = songs.length;
 
         // Rebuilding the list detaches any armed item; clear global armed state first.
+        rowsLifecycle.dispose();
+        rowsLifecycle = createLifecycle();
         disarm();
         statusSongList.innerHTML = '';
         songs.forEach((song, idx) => {
@@ -206,10 +211,10 @@ export function createStatusPanelController({
                 const doEnqueue = () => {
                     if (enqueueBtn.classList.contains('enqueue-ok')) return;
                     onEnqueueSong(stream.videoId, idx);
-                    _flashEnqueue(enqueueBtn, disarm);
+                    _flashEnqueue(enqueueBtn, disarm, rowsLifecycle.timeout);
                 };
 
-                enqueueBtn.addEventListener('click', (e) => {
+                rowsLifecycle.listen(enqueueBtn, 'click', (e) => {
                     e.stopPropagation();
                     doEnqueue();
                 });
@@ -218,15 +223,15 @@ export function createStatusPanelController({
                 // Coarse pointer: long-press reveals the + box (tinted if already queued);
                 // tapping it enqueues. Registered before the pick handler below so its
                 // trailing-click suppressor can cancel the pick.
-                attachLongPress(item, () => arm(item, { inQueue: isSongQueued(stream.videoId, idx) }));
+                attachLongPress(item, () => arm(item, { inQueue: isSongQueued(stream.videoId, idx) }), rowsLifecycle);
             }
 
-            item.addEventListener('click', (e) => {
+            rowsLifecycle.listen(item, 'click', (e) => {
                 if (e.target.classList.contains('enqueue-btn')) return;
                 handleSongPick(idx);
             });
 
-            item.addEventListener('focus', () => {
+            rowsLifecycle.listen(item, 'focus', () => {
                 if (!statusPanelOpen) return;
                 statusPanelSelIdx = idx;
                 applySelection(false);
@@ -250,12 +255,16 @@ export function createStatusPanelController({
         if (nextState && !hasSongs) {
             nextState = false;
         }
+        setOpenState(nextState);
+    }
+
+    function setOpenState(nextState) {
         statusPanelOpen = nextState;
 
-        statusPanel.classList.toggle('open', statusPanelOpen);
-        statusPanel.setAttribute('aria-hidden', statusPanelOpen ? 'false' : 'true');
-        statusPanel.inert = !statusPanelOpen;
-        statusEl.setAttribute('aria-expanded', statusPanelOpen ? 'true' : 'false');
+        statusPanel?.classList.toggle('open', statusPanelOpen);
+        statusPanel?.setAttribute('aria-hidden', statusPanelOpen ? 'false' : 'true');
+        if (statusPanel) statusPanel.inert = !statusPanelOpen;
+        statusEl?.setAttribute('aria-expanded', statusPanelOpen ? 'true' : 'false');
 
         if (statusPanelOpen) {
             initializeSelection(true);
@@ -301,17 +310,20 @@ export function createStatusPanelController({
 
     // Wire up event listeners
     if (statusEl) {
-        statusEl.addEventListener('click', () => toggle());
-        statusEl.addEventListener('keydown', (event) => {
+        lifecycle.listen(statusEl, 'click', () => toggle());
+        lifecycle.listen(statusEl, 'keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
+                // This key opens the list; it must not also select a row in
+                // the document's keyboard dispatcher during the same event.
+                event.stopPropagation();
                 toggle();
             }
         });
     }
 
-    document.addEventListener('pointerdown', handleGlobalPointerDown, true);
-    window.addEventListener('blur', () => {
+    lifecycle.listen(document, 'pointerdown', handleGlobalPointerDown, true);
+    lifecycle.listen(window, 'blur', () => {
         if (statusPanelOpen) {
             toggle(false);
         }
@@ -330,7 +342,16 @@ export function createStatusPanelController({
         return {videoId: stream.videoId, rIdx: idx};
     }
 
+    function destroy() {
+        if (lifecycle.signal.aborted) return;
+        rowsLifecycle.dispose();
+        lifecycle.dispose();
+        // Reset the retained DOM without refreshing rows or requiring a ready playlist.
+        setOpenState(false);
+    }
+
     return {
+        destroy,
         toggle,
         refresh,
         syncActiveState,

@@ -1,3 +1,4 @@
+import { createLifecycle } from './lifecycle.js';
 import Fuse from 'fuse.js';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, sortSearchResultsByCurrentStream, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
@@ -22,6 +23,8 @@ export function createSearchController({
     getCurrentStreamIdx, getCurrentSong, onSelectResult, onEnqueueResult,
     isResultQueued = () => false,
 }) {
+    const lifecycle = createLifecycle();
+    let rowsLifecycle = createLifecycle();
     let fuse = null;
     let searchResults = [];
     let searchSelIdx = 0;
@@ -54,6 +57,8 @@ export function createSearchController({
     }
 
     function renderResults(items) {
+        rowsLifecycle.dispose();
+        rowsLifecycle = createLifecycle();
         disarm();
         const currentStreamId = getCurrentStreamIdx();
         const sortedItems = sortSearchResultsByCurrentStream(items, currentStreamId);
@@ -82,10 +87,10 @@ export function createSearchController({
                 const doEnqueue = () => {
                     if (enqueueBtn.classList.contains('enqueue-ok')) return;
                     onEnqueueResult(item.streamId, item.songId);
-                    _flashEnqueue(enqueueBtn, disarm);
+                    _flashEnqueue(enqueueBtn, disarm, rowsLifecycle.timeout);
                 };
 
-                enqueueBtn.addEventListener('click', (e) => {
+                rowsLifecycle.listen(enqueueBtn, 'click', (e) => {
                     e.stopPropagation();
                     doEnqueue();
                 });
@@ -94,10 +99,10 @@ export function createSearchController({
                 // Coarse pointer: long-press reveals the + box (tinted if already queued);
                 // tapping it enqueues. Registered before the select handler below so its
                 // trailing-click suppressor can cancel the select.
-                attachLongPress(div, () => arm(div, { inQueue: isResultQueued(item.streamId, item.songId) }));
+                attachLongPress(div, () => arm(div, { inQueue: isResultQueued(item.streamId, item.songId) }), rowsLifecycle);
             }
 
-            div.addEventListener('click', (e) => {
+            rowsLifecycle.listen(div, 'click', (e) => {
                 if (e.target.classList.contains('enqueue-btn')) return;
                 selectResult(item);
             });
@@ -206,7 +211,7 @@ export function createSearchController({
 
     // Wire up event listeners
     if (btnSearch) {
-        btnSearch.addEventListener('click', () => {
+        lifecycle.listen(btnSearch, 'click', () => {
             const now = Date.now();
             if (now - modalToggleTime < 400) return;
             modalToggleTime = now;
@@ -215,7 +220,7 @@ export function createSearchController({
     }
 
     if (btnDuplicates) {
-        btnDuplicates.addEventListener('click', () => {
+        lifecycle.listen(btnDuplicates, 'click', () => {
             if (!duplicateSearchName) return;
             if (!isOpen()) {
                 toggle();
@@ -229,13 +234,13 @@ export function createSearchController({
         });
     }
 
-    modal.addEventListener('click', (e) => {
+    lifecycle.listen(modal, 'click', (e) => {
         if (e.target === modal) {
             toggle();
         }
     });
 
-    searchInput.addEventListener('input', (e) => {
+    lifecycle.listen(searchInput, 'input', (e) => {
         if (!fuse) return;
         const query = e.target.value;
         if (!query) {
@@ -246,12 +251,13 @@ export function createSearchController({
         renderResults(results.map(r => r.item));
     });
 
-    document.addEventListener('fullscreenchange', updateFullscreenVisibility);
-    document.addEventListener('webkitfullscreenchange', updateFullscreenVisibility);
-    document.addEventListener('mozfullscreenchange', updateFullscreenVisibility);
-    document.addEventListener('MSFullscreenChange', updateFullscreenVisibility);
+    lifecycle.listen(document, 'fullscreenchange', updateFullscreenVisibility);
+    lifecycle.listen(document, 'webkitfullscreenchange', updateFullscreenVisibility);
+    lifecycle.listen(document, 'mozfullscreenchange', updateFullscreenVisibility);
+    lifecycle.listen(document, 'MSFullscreenChange', updateFullscreenVisibility);
 
     return {
+        destroy: () => { rowsLifecycle.dispose(); lifecycle.dispose(); },
         toggle,
         rebuild,
         updateDuplicateButton,

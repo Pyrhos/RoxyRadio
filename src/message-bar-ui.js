@@ -74,6 +74,7 @@ export function createMessageBarController({ messageBar, messageText, messageClo
     }
 
     function destroy() {
+        messageClose?.removeEventListener('click', hideMessageBar);
         stopMessageCycle();
     }
 

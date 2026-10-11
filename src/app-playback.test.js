@@ -3,6 +3,7 @@ import segments from 'virtual:roxy-segments';
 import { clearStorage, setupDOM } from './test-setup.js';
 
 describe('imported video to shuffled queue segment', () => {
+    let application;
     let player;
     let events;
     let videoId;
@@ -44,6 +45,7 @@ describe('imported video to shuffled queue segment', () => {
     });
 
     afterEach(() => {
+        application?.dispose();
         vi.clearAllTimers();
         vi.useRealTimers();
         vi.unstubAllGlobals();
@@ -67,7 +69,7 @@ describe('imported video to shuffled queue segment', () => {
         const queue = [{ videoId, rIdx: 0 }, { videoId: target.videoId, rIdx }];
         localStorage.setItem('roxy_queue', JSON.stringify(queue));
 
-        await import('./app.js');
+        ({ application } = await import('./app.js'));
         await vi.advanceTimersByTimeAsync(0);
         expect(document.getElementById('controls-container').classList.contains('member-mode')).toBe(memberMode);
         events.onReady();

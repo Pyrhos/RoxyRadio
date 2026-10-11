@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createStatusPanelController } from './status-panel.js';
 
 function makeDOM() {
@@ -45,6 +45,8 @@ describe('createStatusPanelController', () => {
                 onSongPick: vi.fn(),
             });
         });
+
+        afterEach(() => ctrl.destroy());
 
         it('rebuilds song list when stream index changes', () => {
             ctrl.refresh(false);

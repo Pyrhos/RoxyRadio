@@ -1,3 +1,4 @@
+import { createLifecycle } from './lifecycle.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
 import { attachLongPress, arm, disarm } from './long-press-arm.js';
 
@@ -20,6 +21,8 @@ export function createQueueModalController({
     getQueue, getPlaylist, onRemoveItem, onSelectItem, onClearAll,
     getNowPlayingIndex = () => -1, searchInput = null,
 }) {
+    const lifecycle = createLifecycle();
+    let rowsLifecycle = createLifecycle();
     let selIdx = 0;
     let filterQuery = '';
 
@@ -70,6 +73,8 @@ export function createQueueModalController({
     }
 
     function render() {
+        rowsLifecycle.dispose();
+        rowsLifecycle = createLifecycle();
         disarm();
         const queue = getQueue();
         selIdx = 0;
@@ -125,7 +130,7 @@ export function createQueueModalController({
             removeBtn.textContent = '\u2212';
             removeBtn.title = 'Remove from queue';
             removeBtn.setAttribute('aria-label', `Remove ${info.songName} from queue`);
-            removeBtn.addEventListener('click', (e) => {
+            rowsLifecycle.listen(removeBtn, 'click', (e) => {
                 e.stopPropagation();
                 disarm();
                 onRemoveItem(idx);
@@ -138,9 +143,9 @@ export function createQueueModalController({
             attachLongPress(div, () => {
                 removeBtn.textContent = '✕';
                 arm(div, { inQueue: false });
-            });
+            }, rowsLifecycle);
 
-            div.addEventListener('click', () => onSelectItem(idx));
+            rowsLifecycle.listen(div, 'click', () => onSelectItem(idx));
 
             queueList.appendChild(div);
         });
@@ -213,22 +218,23 @@ export function createQueueModalController({
     }
 
     // Wire up events
-    clearAllBtn.addEventListener('click', () => onClearAll());
+    lifecycle.listen(clearAllBtn, 'click', () => onClearAll());
 
     if (searchInput) {
-        searchInput.addEventListener('input', () => {
+        lifecycle.listen(searchInput, 'input', () => {
             filterQuery = searchInput.value;
             render();
         });
     }
 
-    overlay.addEventListener('click', (e) => {
+    lifecycle.listen(overlay, 'click', (e) => {
         if (e.target === overlay) {
             toggle();
         }
     });
 
     return {
+        destroy: () => { rowsLifecycle.dispose(); lifecycle.dispose(); },
         toggle,
         isOpen,
         render,

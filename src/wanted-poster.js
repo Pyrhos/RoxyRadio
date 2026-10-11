@@ -1,16 +1,18 @@
+import { createLifecycle } from './lifecycle.js';
 /**
  * @param {object} deps
  * @param {HTMLElement} deps.boltTrigger
  * @param {HTMLElement} deps.wantedOverlay
  */
 export function initWantedPoster({ boltTrigger, wantedOverlay }) {
+    const lifecycle = createLifecycle();
     if (!boltTrigger || !wantedOverlay) return;
 
-    boltTrigger.addEventListener('click', () => {
+    lifecycle.listen(boltTrigger, 'click', () => {
         wantedOverlay.classList.add('open');
     });
 
-    wantedOverlay.addEventListener('click', (e) => {
+    lifecycle.listen(wantedOverlay, 'click', (e) => {
         if (e.target === wantedOverlay) {
             wantedOverlay.classList.remove('open');
         }
@@ -18,14 +20,15 @@ export function initWantedPoster({ boltTrigger, wantedOverlay }) {
 
     const closeBtn = wantedOverlay.querySelector('#wanted-close');
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
+        lifecycle.listen(closeBtn, 'click', () => {
             wantedOverlay.classList.remove('open');
         });
     }
 
-    document.addEventListener('keydown', (e) => {
+    lifecycle.listen(document, 'keydown', (e) => {
         if (e.key === 'Escape' && wantedOverlay.classList.contains('open')) {
             wantedOverlay.classList.remove('open');
         }
     });
+    return { destroy: lifecycle.dispose };
 }

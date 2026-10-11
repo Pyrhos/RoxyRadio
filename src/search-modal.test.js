@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createSearchController } from './search-modal.js';
 
 function makeDOM() {
@@ -42,6 +42,8 @@ describe('createSearchController', () => {
         });
     });
 
+    afterEach(() => ctrl.destroy());
+
     describe('toggle debounce is button-click-only', () => {
         it('toggle() itself has no debounce — can be called rapidly', () => {
             ctrl.toggle(); // open
@@ -73,9 +75,9 @@ describe('createSearchController', () => {
             ctrl.toggle(); // open
             expect(dom.modal.classList.contains('open')).toBe(true);
 
-            // Simulate selecting a result — this calls toggle() internally
-            // which must NOT be blocked by debounce
-            ctrl.toggle(); // close (as selectResult does)
+            dom.searchInput.value = 'Song A';
+            dom.searchInput.dispatchEvent(new Event('input'));
+            dom.resultsContainer.querySelector('.result-item').click();
             expect(dom.modal.classList.contains('open')).toBe(false);
         });
     });

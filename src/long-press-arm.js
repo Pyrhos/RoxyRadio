@@ -32,10 +32,12 @@ function isCoarsePointer() {
  *
  * @param {HTMLElement} item
  * @param {() => void} onLongPress
+ * @param {{timeout: typeof setTimeout, cancelTimeout: typeof clearTimeout, signal?: AbortSignal}} [timers]
  */
-export function attachLongPress(item, onLongPress) {
+export function attachLongPress(item, onLongPress, timers = { timeout: setTimeout, cancelTimeout: clearTimeout }) {
     if (!isCoarsePointer()) return;
 
+    const options = { signal: timers.signal };
     let pressTimer = null;
     let pressTriggered = false;
     let startX = 0;
@@ -43,7 +45,7 @@ export function attachLongPress(item, onLongPress) {
 
     const cancel = () => {
         if (pressTimer) {
-            clearTimeout(pressTimer);
+            timers.cancelTimeout(pressTimer);
             pressTimer = null;
         }
     };
@@ -53,29 +55,29 @@ export function attachLongPress(item, onLongPress) {
         startX = e.clientX;
         startY = e.clientY;
         cancel();
-        pressTimer = setTimeout(() => {
+        pressTimer = timers.timeout(() => {
             pressTimer = null;
             pressTriggered = true;
             onLongPress();
         }, LONG_PRESS_MS);
-    });
-    item.addEventListener('pointerup', cancel);
-    item.addEventListener('pointerleave', cancel);
-    item.addEventListener('pointercancel', cancel);
+    }, options);
+    item.addEventListener('pointerup', cancel, options);
+    item.addEventListener('pointerleave', cancel, options);
+    item.addEventListener('pointercancel', cancel, options);
     item.addEventListener('pointermove', (e) => {
         if (!pressTimer) return;
         if (Math.abs(e.clientX - startX) > MOVE_CANCEL_PX
             || Math.abs(e.clientY - startY) > MOVE_CANCEL_PX) {
             cancel();
         }
-    });
+    }, options);
     item.addEventListener('click', (e) => {
         if (pressTriggered) {
             pressTriggered = false;
             e.preventDefault();
             e.stopImmediatePropagation();
         }
-    });
+    }, options);
 }
 
 function getArmedActionButton() {

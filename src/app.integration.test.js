@@ -1,1605 +1,562 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  setupDOM,
-  pressKey,
-  pressKeyOn,
-  populateStatusSongList,
-  populateSearchResults,
-  clearStorage,
-} from './test-setup.js';
-import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
+import { createRadioApplication } from './radio-app.js';
+import { setupDOM, clearStorage, pressKey, pressKeyOn } from './test-setup.js';
 import { sortSearchResultsByCurrentStream, normalizeSongBaseName } from './search-helpers.js';
 
-// ============================================================================
-// SEARCH MODAL TESTS
-// ============================================================================
+const SEGMENTS = [
+    { videoId: 'aaaaaaaaaaa', name: 'First stream', songs: [
+        { name: 'Song A', range: [10, 20] },
+        { name: 'Song B', range: [30, 40] },
+        { name: 'Song C', range: [50, 60] },
+    ] },
+    { videoId: 'bbbbbbbbbbb', name: 'Second stream', songs: [
+        { name: 'Song A', range: [70, 80] },
+        { name: 'Song D', range: [90, 100] },
+    ] },
+    { videoId: 'mmmmmmmmmmm', name: 'Member stream', memberOnly: true, songs: [
+        { name: 'Member song', range: [110, 120] },
+    ] },
+];
 
-describe('Search Modal', () => {
-  let modal, searchBtn, searchInput, resultsContainer, comicBox;
-  let keydownHandler;
+const element = id => document.getElementById(id);
+const isOpen = id => element(id).classList.contains('open');
+const label = id => element(id).querySelector('.btn-label')?.textContent;
+const shortcut = key => pressKey(key, { shiftKey: true });
+const queue = () => JSON.parse(localStorage.getItem('roxy_queue') || '[]');
 
-  beforeEach(() => {
-    setupDOM();
-    clearStorage();
+// All interaction handlers below belong to the real application. The only test
+// double is the external iframe player; no navigation or UI logic is duplicated.
+describe('Radio application', () => {
+    let application, player, events;
 
-    modal = document.getElementById('modal-overlay');
-    searchBtn = document.getElementById('search-btn');
-    searchInput = document.getElementById('search-input');
-    resultsContainer = document.getElementById('search-results');
-    comicBox = document.getElementById('comic-box');
-
-    // Wire up modal toggle (mirrors app.js toggleModal logic)
-    const toggleModal = () => {
-      const isOpen = modal.classList.toggle('open');
-      if (isOpen) {
-        searchInput.value = '';
-        resultsContainer.innerHTML = '';
-        searchInput.focus();
-      }
-    };
-
-    searchBtn.addEventListener('click', () => toggleModal());
-
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.classList.remove('open');
-      }
-    });
-
-    keydownHandler = (e) => {
-      if (e.key === 'Escape' && modal.classList.contains('open')) {
-        e.preventDefault();
-        modal.classList.remove('open');
-        return;
-      }
-      if (e.key === 'S' && e.shiftKey && !modal.classList.contains('open')) {
-        e.preventDefault();
-        toggleModal();
-      }
-    };
-    document.addEventListener('keydown', keydownHandler);
-  });
-
-  afterEach(() => {
-    document.removeEventListener('keydown', keydownHandler);
-    vi.restoreAllMocks();
-  });
-
-  describe('Opening the modal', () => {
-    it('opens when search button is clicked', () => {
-      expect(modal.classList.contains('open')).toBe(false);
-      searchBtn.click();
-      expect(modal.classList.contains('open')).toBe(true);
-    });
-
-    it('opens on Shift+S keyboard shortcut', () => {
-      expect(modal.classList.contains('open')).toBe(false);
-      pressKey('S', { shiftKey: true });
-      expect(modal.classList.contains('open')).toBe(true);
-    });
-
-    it('focuses search input when opened', () => {
-      searchBtn.click();
-      expect(document.activeElement).toBe(searchInput);
-    });
-
-    it('clears previous search input on open', () => {
-      searchInput.value = 'previous search';
-      modal.classList.add('open');
-      
-      // Close and reopen
-      modal.classList.remove('open');
-      searchBtn.click();
-      
-      expect(searchInput.value).toBe('');
-    });
-
-    it('clears previous results on open', () => {
-      resultsContainer.innerHTML = '<div class="result-item">old result</div>';
-      modal.classList.add('open');
-      
-      // Close and reopen
-      modal.classList.remove('open');
-      searchBtn.click();
-      
-      expect(resultsContainer.children.length).toBe(0);
-    });
-  });
-
-  describe('Closing the modal', () => {
-    beforeEach(() => {
-      modal.classList.add('open');
-    });
-
-    it('closes when clicking on the overlay background', () => {
-      // Simulate click on the modal overlay itself (not the comic-box)
-      const clickEvent = new MouseEvent('click', { bubbles: true });
-      Object.defineProperty(clickEvent, 'target', { value: modal });
-      modal.dispatchEvent(clickEvent);
-      
-      expect(modal.classList.contains('open')).toBe(false);
-    });
-
-    it('does NOT close when clicking inside the comic-box', () => {
-      comicBox.click();
-      expect(modal.classList.contains('open')).toBe(true);
-    });
-
-    it('does NOT close when clicking on search input', () => {
-      searchInput.click();
-      expect(modal.classList.contains('open')).toBe(true);
-    });
-
-    it('closes on Escape key', () => {
-      pressKey('Escape');
-      expect(modal.classList.contains('open')).toBe(false);
-    });
-
-    it('closes when selecting a result', () => {
-      const results = populateSearchResults(3);
-      
-      // Wire up result selection (mirrors app.js selectResult)
-      results.forEach(r => {
-        r.addEventListener('click', () => {
-          modal.classList.remove('open');
-        });
-      });
-      
-      results[1].click();
-      expect(modal.classList.contains('open')).toBe(false);
-    });
-  });
-
-  describe('Keyboard navigation in results', () => {
-    let results;
-    let searchSelIdx;
-
-    beforeEach(() => {
-      modal.classList.add('open');
-      results = populateSearchResults(5);
-      searchSelIdx = 0;
-    });
-
-    const updateSelection = () => {
-      results.forEach((r, i) => {
-        r.classList.toggle('selected', i === searchSelIdx);
-      });
-    };
-
-    it('ArrowDown moves selection to next result', () => {
-      const nav = resolveListNavigation('ArrowDown', searchSelIdx, results.length);
-      expect(nav.handled).toBe(true);
-      expect(nav.action).toBe(NAV_ACTION_MOVE);
-      
-      searchSelIdx = nav.nextIndex;
-      updateSelection();
-      
-      expect(results[0].classList.contains('selected')).toBe(false);
-      expect(results[1].classList.contains('selected')).toBe(true);
-    });
-
-    it('ArrowUp moves selection to previous result', () => {
-      searchSelIdx = 2;
-      updateSelection();
-      
-      const nav = resolveListNavigation('ArrowUp', searchSelIdx, results.length);
-      expect(nav.handled).toBe(true);
-      
-      searchSelIdx = nav.nextIndex;
-      updateSelection();
-      
-      expect(results[1].classList.contains('selected')).toBe(true);
-      expect(results[2].classList.contains('selected')).toBe(false);
-    });
-
-    it('ArrowDown at last item stays on last item', () => {
-      searchSelIdx = results.length - 1;
-      updateSelection();
-      
-      const nav = resolveListNavigation('ArrowDown', searchSelIdx, results.length);
-      searchSelIdx = nav.nextIndex;
-      
-      expect(searchSelIdx).toBe(results.length - 1);
-    });
-
-    it('ArrowUp at first item stays on first item', () => {
-      searchSelIdx = 0;
-      
-      const nav = resolveListNavigation('ArrowUp', searchSelIdx, results.length);
-      searchSelIdx = nav.nextIndex;
-      
-      expect(searchSelIdx).toBe(0);
-    });
-
-    it('Enter triggers selection action', () => {
-      searchSelIdx = 2;
-      
-      const nav = resolveListNavigation('Enter', searchSelIdx, results.length);
-      expect(nav.handled).toBe(true);
-      expect(nav.action).toBe(NAV_ACTION_SELECT);
-      expect(nav.nextIndex).toBe(2);
-    });
-
-    it('unrelated keys are not handled', () => {
-      const nav = resolveListNavigation('Tab', searchSelIdx, results.length);
-      expect(nav.handled).toBe(false);
-    });
-  });
-
-  describe('Double-shift trigger', () => {
-    let lastShiftTime;
-    let keydownHandler;
-
-    beforeEach(() => {
-      vi.useFakeTimers();
-      lastShiftTime = 0;
-      
-      // Wire up double-shift detection (mirrors app.js logic)
-      keydownHandler = (e) => {
-        if (e.key === 'Shift' && !e.repeat) {
-          const now = Date.now();
-          if (now - lastShiftTime < 300) {
-            modal.classList.add('open');
-          }
-          lastShiftTime = now;
-        }
-      };
-      document.addEventListener('keydown', keydownHandler);
-    });
-
-    afterEach(() => {
-      document.removeEventListener('keydown', keydownHandler);
-      vi.useRealTimers();
-    });
-
-    it('opens modal on double-shift within 300ms', () => {
-      expect(modal.classList.contains('open')).toBe(false);
-      
-      pressKey('Shift');
-      vi.advanceTimersByTime(100);
-      pressKey('Shift');
-      
-      expect(modal.classList.contains('open')).toBe(true);
-    });
-
-    it('does NOT open on slow double-shift (> 300ms)', () => {
-      expect(modal.classList.contains('open')).toBe(false);
-      
-      pressKey('Shift');
-      vi.advanceTimersByTime(400);
-      pressKey('Shift');
-      
-      expect(modal.classList.contains('open')).toBe(false);
-    });
-  });
-});
-
-// ============================================================================
-// STATUS PANEL (SLIDE-OUT MENU) TESTS
-// ============================================================================
-
-describe('Status Panel', () => {
-  let statusEl, statusPanel, statusSongList, statusTextEl;
-  let statusPanelOpen = false;
-  let statusPanelSelIdx = -1;
-  let keydownHandler, pointerdownHandler;
-
-  const toggleStatusPanel = (forceState) => {
-    const hasSongs = statusSongList.children.length > 0;
-    let nextState = typeof forceState === 'boolean' ? forceState : !statusPanelOpen;
-    if (nextState && !hasSongs) nextState = false;
-    
-    statusPanelOpen = nextState;
-    statusPanel.classList.toggle('open', statusPanelOpen);
-    statusPanel.setAttribute('aria-hidden', statusPanelOpen ? 'false' : 'true');
-    statusEl.setAttribute('aria-expanded', statusPanelOpen ? 'true' : 'false');
-    
-    if (statusPanelOpen) {
-      statusPanelSelIdx = 0;
-      applySelection();
-    } else {
-      clearSelection();
+    async function start(segmentsData = SEGMENTS) {
+        application = createRadioApplication({ segmentsData: structuredClone(segmentsData) });
+        await vi.advanceTimersByTimeAsync(0);
+        events.onReady();
     }
-  };
 
-  const applySelection = () => {
-    const rows = statusSongList.querySelectorAll('.status-song');
-    rows.forEach((row, idx) => {
-      row.classList.toggle('nav-focus', idx === statusPanelSelIdx);
-    });
-  };
+    function search(query = 'Song') {
+        if (!isOpen('modal-overlay')) shortcut('S');
+        element('search-input').value = query;
+        element('search-input').dispatchEvent(new Event('input'));
+        return [...element('search-results').querySelectorAll('.result-item')];
+    }
 
-  const clearSelection = () => {
-    statusPanelSelIdx = -1;
-    statusSongList.querySelectorAll('.status-song').forEach(row => {
-      row.classList.remove('nav-focus');
-    });
-  };
-
-  beforeEach(() => {
-    setupDOM();
-    clearStorage();
-    statusPanelOpen = false;
-    statusPanelSelIdx = -1;
-
-    statusEl = document.getElementById('status');
-    statusPanel = document.getElementById('status-panel');
-    statusSongList = document.getElementById('status-song-list');
-    statusTextEl = document.getElementById('status-text');
-
-    // Wire up interactions (mirrors app.js)
-    statusEl.addEventListener('click', () => toggleStatusPanel());
-    
-    statusEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggleStatusPanel();
-      }
-    });
-
-    // Global keyboard handler
-    keydownHandler = (e) => {
-      if (e.key === 'Escape' && statusPanelOpen) {
-        e.preventDefault();
-        toggleStatusPanel(false);
-        return;
-      }
-      if (e.key === 'A' && e.shiftKey) {
-        e.preventDefault();
-        toggleStatusPanel();
-      }
-    };
-    document.addEventListener('keydown', keydownHandler);
-
-    // Close on outside click
-    pointerdownHandler = (e) => {
-      if (!statusPanelOpen) return;
-      if (statusPanel.contains(e.target) || statusEl.contains(e.target)) return;
-      toggleStatusPanel(false);
-    };
-    document.addEventListener('pointerdown', pointerdownHandler);
-  });
-
-  afterEach(() => {
-    document.removeEventListener('keydown', keydownHandler);
-    document.removeEventListener('pointerdown', pointerdownHandler);
-    vi.restoreAllMocks();
-  });
-
-  describe('Opening the panel', () => {
-    beforeEach(() => {
-      populateStatusSongList(3);
-    });
-
-    it('opens when clicking status element', () => {
-      statusEl.click();
-      expect(statusPanel.classList.contains('open')).toBe(true);
-      expect(statusPanelOpen).toBe(true);
-    });
-
-    it('opens on Enter key when status is focused', () => {
-      pressKeyOn(statusEl, 'Enter');
-      expect(statusPanel.classList.contains('open')).toBe(true);
-    });
-
-    it('opens on Space key when status is focused', () => {
-      pressKeyOn(statusEl, ' ');
-      expect(statusPanel.classList.contains('open')).toBe(true);
-    });
-
-    it('opens on Shift+A keyboard shortcut', () => {
-      pressKey('A', { shiftKey: true });
-      expect(statusPanel.classList.contains('open')).toBe(true);
-    });
-
-    it('sets aria-expanded to true when open', () => {
-      statusEl.click();
-      expect(statusEl.getAttribute('aria-expanded')).toBe('true');
-    });
-
-    it('sets aria-hidden to false on panel when open', () => {
-      statusEl.click();
-      expect(statusPanel.getAttribute('aria-hidden')).toBe('false');
-    });
-
-    it('does NOT open when song list is empty', () => {
-      statusSongList.innerHTML = '';
-      statusEl.click();
-      expect(statusPanel.classList.contains('open')).toBe(false);
-      expect(statusPanelOpen).toBe(false);
-    });
-
-    it('initializes selection on first song when opened', () => {
-      statusEl.click();
-      const songs = statusSongList.querySelectorAll('.status-song');
-      expect(songs[0].classList.contains('nav-focus')).toBe(true);
-    });
-  });
-
-  describe('Closing the panel', () => {
-    beforeEach(() => {
-      populateStatusSongList(3);
-      toggleStatusPanel(true);
-    });
-
-    it('closes on Escape key', () => {
-      pressKey('Escape');
-      expect(statusPanel.classList.contains('open')).toBe(false);
-      expect(statusPanelOpen).toBe(false);
-    });
-
-    it('closes on Shift+A toggle', () => {
-      pressKey('A', { shiftKey: true });
-      expect(statusPanel.classList.contains('open')).toBe(false);
-    });
-
-    it('closes when clicking outside panel and status', () => {
-      const outsideElement = document.body;
-      outsideElement.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-      expect(statusPanel.classList.contains('open')).toBe(false);
-    });
-
-    it('does NOT close when clicking inside the panel', () => {
-      const insideClick = new PointerEvent('pointerdown', { bubbles: true });
-      Object.defineProperty(insideClick, 'target', { value: statusSongList });
-      statusPanel.dispatchEvent(insideClick);
-      // Since we check contains, need to dispatch on document
-      // but the handler should detect it's inside
-      expect(statusPanelOpen).toBe(true);
-    });
-
-    it('sets aria-expanded to false when closed', () => {
-      pressKey('Escape');
-      expect(statusEl.getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('sets aria-hidden to true on panel when closed', () => {
-      pressKey('Escape');
-      expect(statusPanel.getAttribute('aria-hidden')).toBe('true');
-    });
-
-    it('clears nav-focus when closed', () => {
-      const songs = statusSongList.querySelectorAll('.status-song');
-      expect(songs[0].classList.contains('nav-focus')).toBe(true);
-      
-      pressKey('Escape');
-      
-      songs.forEach(song => {
-        expect(song.classList.contains('nav-focus')).toBe(false);
-      });
-    });
-  });
-
-  describe('Keyboard navigation', () => {
-    let songs;
-
-    beforeEach(() => {
-      songs = populateStatusSongList(5);
-      toggleStatusPanel(true);
-    });
-
-    it('ArrowDown moves focus to next song', () => {
-      const nav = resolveListNavigation('ArrowDown', statusPanelSelIdx, songs.length);
-      expect(nav.handled).toBe(true);
-      expect(nav.action).toBe(NAV_ACTION_MOVE);
-      
-      statusPanelSelIdx = nav.nextIndex;
-      applySelection();
-      
-      expect(songs[0].classList.contains('nav-focus')).toBe(false);
-      expect(songs[1].classList.contains('nav-focus')).toBe(true);
-    });
-
-    it('ArrowUp moves focus to previous song', () => {
-      statusPanelSelIdx = 3;
-      applySelection();
-      
-      const nav = resolveListNavigation('ArrowUp', statusPanelSelIdx, songs.length);
-      statusPanelSelIdx = nav.nextIndex;
-      applySelection();
-      
-      expect(songs[2].classList.contains('nav-focus')).toBe(true);
-      expect(songs[3].classList.contains('nav-focus')).toBe(false);
-    });
-
-    it('ArrowDown at last song stays on last song', () => {
-      statusPanelSelIdx = songs.length - 1;
-      applySelection();
-      
-      const nav = resolveListNavigation('ArrowDown', statusPanelSelIdx, songs.length);
-      expect(nav.nextIndex).toBe(songs.length - 1);
-    });
-
-    it('ArrowUp at first song stays on first song', () => {
-      statusPanelSelIdx = 0;
-      
-      const nav = resolveListNavigation('ArrowUp', statusPanelSelIdx, songs.length);
-      expect(nav.nextIndex).toBe(0);
-    });
-
-    it('Enter triggers selection action', () => {
-      statusPanelSelIdx = 2;
-      
-      const nav = resolveListNavigation('Enter', statusPanelSelIdx, songs.length);
-      expect(nav.handled).toBe(true);
-      expect(nav.action).toBe(NAV_ACTION_SELECT);
-    });
-  });
-
-  describe('Song selection', () => {
-    let songs;
-    let selectedSongIndex = -1;
-
-    beforeEach(() => {
-      songs = populateStatusSongList(3);
-      
-      // Wire up song click handlers
-      songs.forEach((song, idx) => {
-        song.addEventListener('click', () => {
-          selectedSongIndex = idx;
-          toggleStatusPanel(false);
+    beforeEach(async () => {
+        vi.useFakeTimers();
+        setupDOM();
+        clearStorage();
+        history.replaceState(null, '', '/');
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        player = {
+            currentTime: 15,
+            getCurrentTime: vi.fn(() => player.currentTime),
+            getPlayerState: vi.fn(() => -1),
+            getDuration: vi.fn(() => 200),
+            getVideoData: vi.fn(() => ({ title: 'Imported video' })),
+            loadVideoById: vi.fn(),
+            seekTo: vi.fn(),
+            destroy: vi.fn(),
+        };
+        vi.stubGlobal('YT', {
+            PlayerState: { ENDED: 0, PLAYING: 1, PAUSED: 2, BUFFERING: 3 },
+            Player: function (_target, config) { events = config.events; return player; },
         });
-      });
-      
-      toggleStatusPanel(true);
-    });
-
-    it('clicking a song selects it', () => {
-      songs[1].click();
-      expect(selectedSongIndex).toBe(1);
-    });
-
-    it('clicking a song closes the panel', () => {
-      songs[2].click();
-      expect(statusPanel.classList.contains('open')).toBe(false);
-    });
-  });
-
-  describe('Active state tracking', () => {
-    let songs;
-
-    beforeEach(() => {
-      songs = populateStatusSongList(3);
-    });
-
-    it('marks currently playing song as active', () => {
-      const activeIdx = 1;
-      songs.forEach((s, i) => {
-        s.classList.toggle('active', i === activeIdx);
-        s.setAttribute('aria-selected', i === activeIdx ? 'true' : 'false');
-      });
-      
-      expect(songs[1].classList.contains('active')).toBe(true);
-      expect(songs[0].classList.contains('active')).toBe(false);
-      expect(songs[2].classList.contains('active')).toBe(false);
-    });
-
-    it('sets aria-selected correctly for active song', () => {
-      const activeIdx = 0;
-      songs.forEach((s, i) => {
-        s.setAttribute('aria-selected', i === activeIdx ? 'true' : 'false');
-      });
-      
-      expect(songs[0].getAttribute('aria-selected')).toBe('true');
-      expect(songs[1].getAttribute('aria-selected')).toBe('false');
-    });
-  });
-});
-
-// ============================================================================
-// CONTROL BUTTON TESTS
-// ============================================================================
-
-describe('Control Buttons', () => {
-  let loopBtn, shuffleBtn, yapBtn, prevStreamBtn, nextStreamBtn, prevSongBtn, nextSongBtn;
-  let loopMode = 0;
-  let shuffleMode = false;
-  let yapMode = false;
-  const loopLabels = ['None', 'Track', 'Stream'];
-
-  const updateButtons = () => {
-    loopBtn.textContent = `Loop: ${loopLabels[loopMode]}`;
-    loopBtn.classList.toggle('active', loopMode !== 0);
-    
-    shuffleBtn.textContent = `Shuffle: ${shuffleMode ? 'On' : 'Off'}`;
-    shuffleBtn.classList.toggle('active', shuffleMode);
-    
-    yapBtn.textContent = `Yap: ${yapMode ? 'On' : 'Off'}`;
-    yapBtn.classList.toggle('active', yapMode);
-  };
-
-  beforeEach(() => {
-    setupDOM();
-    clearStorage();
-    loopMode = 0;
-    shuffleMode = false;
-    yapMode = false;
-
-    loopBtn = document.getElementById('loop-btn');
-    shuffleBtn = document.getElementById('shuffle-btn');
-    yapBtn = document.getElementById('yap-btn');
-    prevStreamBtn = document.getElementById('prev-stream');
-    nextStreamBtn = document.getElementById('next-stream');
-    prevSongBtn = document.getElementById('prev-song');
-    nextSongBtn = document.getElementById('next-song');
-
-    // Wire up button handlers
-    loopBtn.addEventListener('click', () => {
-      loopMode = (loopMode + 1) % 3;
-      updateButtons();
-    });
-
-    shuffleBtn.addEventListener('click', () => {
-      shuffleMode = !shuffleMode;
-      updateButtons();
-    });
-
-    yapBtn.addEventListener('click', () => {
-      yapMode = !yapMode;
-      updateButtons();
-    });
-
-    updateButtons();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('Loop button', () => {
-    it('displays "Loop: None" initially', () => {
-      expect(loopBtn.textContent).toBe('Loop: None');
-      expect(loopBtn.classList.contains('active')).toBe(false);
-    });
-
-    it('cycles to "Loop: Track" on first click', () => {
-      loopBtn.click();
-      expect(loopBtn.textContent).toBe('Loop: Track');
-      expect(loopBtn.classList.contains('active')).toBe(true);
-    });
-
-    it('cycles to "Loop: Stream" on second click', () => {
-      loopBtn.click();
-      loopBtn.click();
-      expect(loopBtn.textContent).toBe('Loop: Stream');
-      expect(loopBtn.classList.contains('active')).toBe(true);
-    });
-
-    it('cycles back to "Loop: None" on third click', () => {
-      loopBtn.click();
-      loopBtn.click();
-      loopBtn.click();
-      expect(loopBtn.textContent).toBe('Loop: None');
-      expect(loopBtn.classList.contains('active')).toBe(false);
-    });
-
-    it('completes full cycle: None → Track → Stream → None', () => {
-      expect(loopMode).toBe(0);
-      loopBtn.click();
-      expect(loopMode).toBe(1);
-      loopBtn.click();
-      expect(loopMode).toBe(2);
-      loopBtn.click();
-      expect(loopMode).toBe(0);
-    });
-  });
-
-  describe('Shuffle button', () => {
-    it('displays "Shuffle: Off" initially', () => {
-      expect(shuffleBtn.textContent).toBe('Shuffle: Off');
-      expect(shuffleBtn.classList.contains('active')).toBe(false);
-    });
-
-    it('toggles to "Shuffle: On" on click', () => {
-      shuffleBtn.click();
-      expect(shuffleBtn.textContent).toBe('Shuffle: On');
-      expect(shuffleBtn.classList.contains('active')).toBe(true);
-    });
-
-    it('toggles back to "Shuffle: Off" on second click', () => {
-      shuffleBtn.click();
-      shuffleBtn.click();
-      expect(shuffleBtn.textContent).toBe('Shuffle: Off');
-      expect(shuffleBtn.classList.contains('active')).toBe(false);
-    });
-
-    it('updates shuffleMode state correctly', () => {
-      expect(shuffleMode).toBe(false);
-      shuffleBtn.click();
-      expect(shuffleMode).toBe(true);
-      shuffleBtn.click();
-      expect(shuffleMode).toBe(false);
-    });
-  });
-
-  describe('Yap button', () => {
-    it('displays "Yap: Off" initially', () => {
-      expect(yapBtn.textContent).toBe('Yap: Off');
-      expect(yapBtn.classList.contains('active')).toBe(false);
-    });
-
-    it('toggles to "Yap: On" on click', () => {
-      yapBtn.click();
-      expect(yapBtn.textContent).toBe('Yap: On');
-      expect(yapBtn.classList.contains('active')).toBe(true);
-    });
-
-    it('toggles back to "Yap: Off" on second click', () => {
-      yapBtn.click();
-      yapBtn.click();
-      expect(yapBtn.textContent).toBe('Yap: Off');
-      expect(yapBtn.classList.contains('active')).toBe(false);
-    });
-
-    it('updates yapMode state correctly', () => {
-      expect(yapMode).toBe(false);
-      yapBtn.click();
-      expect(yapMode).toBe(true);
-      yapBtn.click();
-      expect(yapMode).toBe(false);
-    });
-  });
-
-  describe('Yap button - Race condition regression', () => {
-    let yapToggleTime;
-    let lastKnownTime; // Simulate a known playback position
-    let toggleCount;
-    const YAP_TOGGLE_DEBOUNCE_MS = 300;
-
-    // Simulate player.getCurrentTime() behavior during race condition:
-    // During rapid toggles or video loading, it may return 0 or stale data
-    const createMockPlayer = (timeToReturn) => ({
-      getCurrentTime: () => timeToReturn
-    });
-
-    const getSafeCurrentTime = (player) => {
-      if (!player || typeof player.getCurrentTime !== 'function') {
-        return lastKnownTime;
-      }
-
-      const playerTime = player.getCurrentTime();
-
-      if (Number.isFinite(playerTime) && playerTime > 0) {
-        lastKnownTime = playerTime;
-        return playerTime;
-      }
-
-      if (Number.isFinite(lastKnownTime) && lastKnownTime > 0) {
-        return lastKnownTime;
-      }
-
-      return playerTime;
-    };
-
-    const simulateYapToggle = (player, currentTimeMs) => {
-      if (currentTimeMs - yapToggleTime < YAP_TOGGLE_DEBOUNCE_MS) {
-        return { debounced: true, time: null };
-      }
-      yapToggleTime = currentTimeMs;
-      toggleCount++;
-      const t = getSafeCurrentTime(player);
-      return { debounced: false, time: t };
-    };
-
-    beforeEach(() => {
-      // Initialize to a time far in the past so first toggle always works
-      // This mirrors how the app starts: yapToggleTime = 0, but Date.now() is large
-      yapToggleTime = -Infinity;
-      lastKnownTime = 25;
-      toggleCount = 0;
-    });
-
-    it('debounces rapid yap toggles to prevent race condition', () => {
-      const player = createMockPlayer(25);
-
-      // First toggle at t=1000 (simulating Date.now())
-      const result1 = simulateYapToggle(player, 1000);
-      expect(result1.debounced).toBe(false);
-      expect(toggleCount).toBe(1);
-
-      // Rapid toggle at t=1050ms - should be debounced
-      const result2 = simulateYapToggle(player, 1050);
-      expect(result2.debounced).toBe(true);
-      expect(toggleCount).toBe(1);
-
-      // Rapid toggle at t=1100ms - should be debounced
-      const result3 = simulateYapToggle(player, 1100);
-      expect(result3.debounced).toBe(true);
-      expect(toggleCount).toBe(1);
-
-      // Toggle after debounce period at t=1350ms - should work
-      const result4 = simulateYapToggle(player, 1350);
-      expect(result4.debounced).toBe(false);
-      expect(toggleCount).toBe(2);
-    });
-
-    it('uses lastKnownTime when player.getCurrentTime() returns 0 during race', () => {
-      // Simulate race condition: player returns 0 during video loading transition
-      const racingPlayer = createMockPlayer(0);
-
-      const result = simulateYapToggle(racingPlayer, 1000);
-
-      // Should fall back to lastKnownTime (25) instead of 0
-      expect(result.time).toBe(25);
-    });
-
-    it('uses player time when getCurrentTime() returns valid positive value', () => {
-      const player = createMockPlayer(42);
-
-      const result = simulateYapToggle(player, 1000);
-
-      expect(result.time).toBe(42);
-    });
-
-    it('handles missing player gracefully', () => {
-      const result = simulateYapToggle(null, 1000);
-
-      expect(result.time).toBe(25); // Falls back to lastKnownTime
-    });
-
-    it('handles player without getCurrentTime method', () => {
-      const brokenPlayer = {};
-
-      const result = simulateYapToggle(brokenPlayer, 1000);
-
-      expect(result.time).toBe(25); // Falls back to lastKnownTime
-    });
-
-    it('updates lastKnownTime when player returns valid time', () => {
-      lastKnownTime = 10;
-      const player = createMockPlayer(50);
-
-      getSafeCurrentTime(player);
-
-      expect(lastKnownTime).toBe(50); // Should be updated
-    });
-
-    it('does not update lastKnownTime when player returns 0', () => {
-      lastKnownTime = 30;
-      const racingPlayer = createMockPlayer(0);
-
-      getSafeCurrentTime(racingPlayer);
-
-      expect(lastKnownTime).toBe(30); // Should remain unchanged
-    });
-
-    it('returns 0 when both player and lastKnownTime are 0 (legitimate stream start)', () => {
-      lastKnownTime = 0;
-      const player = createMockPlayer(0);
-
-      const time = getSafeCurrentTime(player);
-
-      expect(time).toBe(0); // Both are 0, so return 0 (stream start)
-    });
-  });
-
-  describe('Navigation buttons exist and are clickable', () => {
-    it('prev-stream button exists and is clickable', () => {
-      let clicked = false;
-      prevStreamBtn.addEventListener('click', () => { clicked = true; });
-      prevStreamBtn.click();
-      expect(clicked).toBe(true);
-    });
-
-    it('next-stream button exists and is clickable', () => {
-      let clicked = false;
-      nextStreamBtn.addEventListener('click', () => { clicked = true; });
-      nextStreamBtn.click();
-      expect(clicked).toBe(true);
-    });
-
-    it('prev-song button exists and is clickable', () => {
-      let clicked = false;
-      prevSongBtn.addEventListener('click', () => { clicked = true; });
-      prevSongBtn.click();
-      expect(clicked).toBe(true);
-    });
-
-    it('next-song button exists and is clickable', () => {
-      let clicked = false;
-      nextSongBtn.addEventListener('click', () => { clicked = true; });
-      nextSongBtn.click();
-      expect(clicked).toBe(true);
-    });
-  });
-});
-
-// ============================================================================
-// KEYBOARD SHORTCUT TESTS
-// ============================================================================
-
-describe('Global Keyboard Shortcuts', () => {
-  let modal, statusPanel, statusSongList;
-  let modalOpen = false;
-  let statusPanelOpen = false;
-  let keydownHandler;
-
-  beforeEach(() => {
-    setupDOM();
-    clearStorage();
-    modalOpen = false;
-    statusPanelOpen = false;
-
-    modal = document.getElementById('modal-overlay');
-    statusPanel = document.getElementById('status-panel');
-    statusSongList = document.getElementById('status-song-list');
-
-    // Add songs so status panel can open
-    populateStatusSongList(3);
-
-    // Wire up keyboard shortcuts
-    keydownHandler = (e) => {
-      if (e.key === 'Escape') {
-        if (modalOpen) {
-          modal.classList.remove('open');
-          modalOpen = false;
-          e.preventDefault();
-          return;
-        }
-        if (statusPanelOpen) {
-          statusPanel.classList.remove('open');
-          statusPanelOpen = false;
-          e.preventDefault();
-          return;
-        }
-      }
-
-      if (e.key === 'S' && e.shiftKey) {
-        e.preventDefault();
-        modalOpen = !modalOpen;
-        modal.classList.toggle('open', modalOpen);
-        return;
-      }
-
-      if (e.key === 'A' && e.shiftKey) {
-        e.preventDefault();
-        statusPanelOpen = !statusPanelOpen;
-        statusPanel.classList.toggle('open', statusPanelOpen);
-      }
-    };
-    document.addEventListener('keydown', keydownHandler);
-  });
-
-  afterEach(() => {
-    document.removeEventListener('keydown', keydownHandler);
-    vi.restoreAllMocks();
-  });
-
-  describe('Shift+S (Search)', () => {
-    it('opens search modal', () => {
-      pressKey('S', { shiftKey: true });
-      expect(modal.classList.contains('open')).toBe(true);
-    });
-
-    it('toggles search modal on repeated presses', () => {
-      pressKey('S', { shiftKey: true });
-      expect(modal.classList.contains('open')).toBe(true);
-      
-      pressKey('S', { shiftKey: true });
-      expect(modal.classList.contains('open')).toBe(false);
-    });
-  });
-
-  describe('Shift+A (Status Panel)', () => {
-    it('opens status panel', () => {
-      pressKey('A', { shiftKey: true });
-      expect(statusPanel.classList.contains('open')).toBe(true);
-    });
-
-    it('toggles status panel on repeated presses', () => {
-      pressKey('A', { shiftKey: true });
-      expect(statusPanel.classList.contains('open')).toBe(true);
-      
-      pressKey('A', { shiftKey: true });
-      expect(statusPanel.classList.contains('open')).toBe(false);
-    });
-  });
-
-  describe('Escape key priority', () => {
-    it('closes modal before status panel when both are open', () => {
-      modalOpen = true;
-      statusPanelOpen = true;
-      modal.classList.add('open');
-      statusPanel.classList.add('open');
-      
-      pressKey('Escape');
-      
-      expect(modal.classList.contains('open')).toBe(false);
-      expect(statusPanel.classList.contains('open')).toBe(true);
-    });
-
-    it('closes status panel when modal is not open', () => {
-      statusPanelOpen = true;
-      statusPanel.classList.add('open');
-      
-      pressKey('Escape');
-      
-      expect(statusPanel.classList.contains('open')).toBe(false);
-    });
-  });
-
-  describe('Shift+C (Share URL)', () => {
-    let writeTextSpy;
-    let shareHandler;
-    let originalClipboard;
-
-    beforeEach(() => {
-      // Mock clipboard API
-      writeTextSpy = vi.fn().mockResolvedValue();
-      originalClipboard = navigator.clipboard;
-      
-      Object.defineProperty(navigator, 'clipboard', {
-        value: {
-          writeText: writeTextSpy,
-        },
-        writable: true,
-        configurable: true,
-      });
-
-      // Mock core.getCurrentStream on window for access in handler
-      window.mockCore = {
-        getCurrentStream: () => ({
-          videoId: '-j397NNQ2Ok',
-          title: 'Test Stream'
-        })
-      };
-
-      // Mock getSafeCurrentTime
-      window.mockGetSafeCurrentTime = () => 1587.456;
-
-      // Set up share keybind handler (mirrors app.js logic)
-      shareHandler = (e) => {
-        if (e.key === 'C' && e.shiftKey && !modalOpen) {
-          e.preventDefault();
-          const stream = window.mockCore.getCurrentStream();
-          if (stream && stream.videoId) {
-            const currentTime = window.mockGetSafeCurrentTime();
-            const timeParam = Math.floor(currentTime);
-            const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
-            navigator.clipboard.writeText(shareUrl).catch(() => {});
-          }
-        }
-      };
-      document.addEventListener('keydown', shareHandler);
+        vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+        vi.spyOn(navigator.clipboard, 'readText').mockResolvedValue('');
+        await start();
     });
 
     afterEach(() => {
-      document.removeEventListener('keydown', shareHandler);
-      
-      // Restore original clipboard
-      Object.defineProperty(navigator, 'clipboard', {
-        value: originalClipboard,
-        writable: true,
-        configurable: true,
-      });
-      
-      delete window.mockCore;
-      delete window.mockGetSafeCurrentTime;
+        application.dispose();
+        vi.clearAllTimers();
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+        clearStorage();
+        history.replaceState(null, '', '/');
     });
 
-    it('copies share URL with videoId and time to clipboard', async () => {
-      pressKey('C', { shiftKey: true });
-      
-      // Wait a tick for the promise
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(writeTextSpy).toHaveBeenCalledTimes(1);
-      const copiedUrl = writeTextSpy.mock.calls[0][0];
-      expect(copiedUrl).toMatch(/\?v=-j397NNQ2Ok&t=1587$/);
+    describe('search', () => {
+        it.each(['click', 'shortcut', 'double shift'])('opens and focuses search through %s', method => {
+            if (method === 'click') element('search-btn').click();
+            else if (method === 'shortcut') shortcut('S');
+            else { pressKey('Shift'); vi.advanceTimersByTime(100); pressKey('Shift'); }
+            expect(isOpen('modal-overlay')).toBe(true);
+            expect(element('modal-overlay').inert).toBe(false);
+            expect(document.activeElement).toBe(element('search-input'));
+        });
+
+        it('does not open for two slow Shift presses', () => {
+            pressKey('Shift');
+            vi.advanceTimersByTime(400);
+            pressKey('Shift');
+            expect(isOpen('modal-overlay')).toBe(false);
+        });
+
+        it('clears the query and results when reopened', () => {
+            expect(search().length).toBe(5);
+            pressKey('Escape');
+            shortcut('S');
+            expect(element('search-input').value).toBe('');
+            expect(element('search-results').children.length).toBe(0);
+        });
+
+        it.each(['Escape', 'overlay', 'shortcut'])('closes through %s', method => {
+            search();
+            if (method === 'Escape') pressKey('Escape');
+            else if (method === 'overlay') element('modal-overlay').click();
+            else shortcut('S');
+            expect(isOpen('modal-overlay')).toBe(false);
+            expect(element('modal-overlay').inert).toBe(true);
+        });
+
+        it.each(['comic-box', 'search-input'])('stays open when %s is clicked', id => {
+            search();
+            element(id).click();
+            expect(isOpen('modal-overlay')).toBe(true);
+        });
+
+        it('selects a result through the actual row handler and closes', () => {
+            const rows = search('Song B');
+            rows.find(row => row.textContent.includes('Song B')).click();
+            expect(isOpen('modal-overlay')).toBe(false);
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+        });
+
+        it('moves selection with arrows, clamps at both ends, and ignores Tab', () => {
+            const rows = search();
+            pressKey('ArrowUp');
+            expect(rows[0].classList.contains('selected')).toBe(true);
+            pressKey('ArrowDown');
+            expect(rows[1].classList.contains('selected')).toBe(true);
+            pressKey('ArrowUp');
+            expect(rows[0].classList.contains('selected')).toBe(true);
+            for (let i = 0; i < rows.length + 1; i++) pressKey('ArrowDown');
+            expect(rows.at(-1).classList.contains('selected')).toBe(true);
+            expect(pressKey('Tab').defaultPrevented).toBe(false);
+        });
+
+        it('Enter selects the highlighted result', () => {
+            search('Song B');
+            pressKey('Enter');
+            expect(isOpen('modal-overlay')).toBe(false);
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+        });
+
+        it('shows duplicate count and searches matching songs', () => {
+            vi.advanceTimersByTime(2000);
+            expect(element('duplicates-btn').style.display).toBe('flex');
+            expect(element('duplicates-btn').querySelector('.note-count').textContent).toBe('1');
+            element('duplicates-btn').click();
+            expect(isOpen('modal-overlay')).toBe(true);
+            expect(element('search-input').value).toBe('Song A');
+            expect(element('search-results').textContent).toContain('Song A');
+        });
+
+        it('hides search controls in fullscreen and restores them afterward', () => {
+            Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: element('player') });
+            document.dispatchEvent(new Event('fullscreenchange'));
+            expect(element('search-btn').style.display).toBe('none');
+            expect(element('duplicates-btn').style.display).toBe('none');
+            Object.defineProperty(document, 'fullscreenElement', { configurable: true, value: null });
+            document.dispatchEvent(new Event('fullscreenchange'));
+            expect(element('search-btn').style.display).toBe('flex');
+        });
     });
 
-    it('floors timestamp to integer seconds', async () => {
-      window.mockGetSafeCurrentTime = () => 1587.999;
-      
-      pressKey('C', { shiftKey: true });
-      
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(writeTextSpy).toHaveBeenCalled();
-      const copiedUrl = writeTextSpy.mock.calls[0][0];
-      expect(copiedUrl).toContain('t=1587');
-      expect(copiedUrl).not.toContain('t=1588');
+    describe('status panel', () => {
+        it.each(['click', 'Enter', ' ', 'shortcut'])('opens through %s with accessibility state and selected song', method => {
+            if (method === 'click') element('status').click();
+            else if (method === 'shortcut') shortcut('A');
+            else pressKeyOn(element('status'), method);
+            expect(isOpen('status-panel')).toBe(true);
+            expect(element('status-panel').inert).toBe(false);
+            expect(element('status-panel').getAttribute('aria-hidden')).toBe('false');
+            expect(element('status').getAttribute('aria-expanded')).toBe('true');
+            expect(element('status-song-list').querySelectorAll('.status-song').length).toBe(3);
+            expect(element('status-song-list').querySelector('.nav-focus').dataset.songIndex).toBe('0');
+        });
+
+        it.each(['Escape', 'shortcut', 'outside', 'blur'])('closes through %s and clears selection', method => {
+            shortcut('A');
+            if (method === 'Escape') pressKey('Escape');
+            else if (method === 'shortcut') shortcut('A');
+            else if (method === 'blur') window.dispatchEvent(new Event('blur'));
+            else document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            expect(isOpen('status-panel')).toBe(false);
+            expect(element('status-panel').inert).toBe(true);
+            expect(element('status-panel').getAttribute('aria-hidden')).toBe('true');
+            expect(element('status').getAttribute('aria-expanded')).toBe('false');
+            expect(element('status-song-list').querySelector('.nav-focus')).toBeNull();
+        });
+
+        it('stays open for pointer events inside the panel', () => {
+            shortcut('A');
+            element('status-song-list').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            expect(isOpen('status-panel')).toBe(true);
+        });
+
+        it('moves selection with arrows and selects using Enter', () => {
+            shortcut('A');
+            pressKey('ArrowDown');
+            expect(element('status-song-list').querySelector('.nav-focus').dataset.songIndex).toBe('1');
+            pressKey('Enter');
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+            expect(isOpen('status-panel')).toBe(false);
+        });
+
+        it('uses separate Enter presses to open from the focused song bar and select', () => {
+            element('status').focus();
+            pressKeyOn(element('status'), 'Enter');
+            expect(isOpen('status-panel')).toBe(true);
+            expect(player.seekTo).not.toHaveBeenCalled();
+            pressKeyOn(document.activeElement, 'ArrowDown');
+            pressKeyOn(document.activeElement, 'Enter');
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+            expect(isOpen('status-panel')).toBe(false);
+        });
+
+        it('clicking a song selects its timestamp and closes the panel', () => {
+            shortcut('A');
+            element('status-song-list').children[2].click();
+            expect(player.seekTo).toHaveBeenLastCalledWith(50, true);
+            expect(isOpen('status-panel')).toBe(false);
+        });
+
+        it('tracks actual player time with active and aria-selected states', () => {
+            shortcut('A');
+            player.currentTime = 35;
+            vi.advanceTimersByTime(2000);
+            const rows = element('status-song-list').querySelectorAll('.status-song');
+            expect(rows[1].classList.contains('active')).toBe(true);
+            expect(rows[1].getAttribute('aria-selected')).toBe('true');
+            expect(rows[0].getAttribute('aria-selected')).toBe('false');
+        });
     });
 
-    it('does NOT copy when modal is open', async () => {
-      modalOpen = true;
-      modal.classList.add('open');
-      
-      pressKey('C', { shiftKey: true });
-      
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
-      expect(writeTextSpy).not.toHaveBeenCalled();
+    describe('controls and persistence', () => {
+        it('cycles all loop states and persists them', () => {
+            for (const [mode, text] of [[1, 'Track'], [2, 'Stream'], [0, 'None']]) {
+                element('loop-btn').click();
+                expect(label('loop-btn')).toBe(`Loop: ${text}`);
+                expect(element('loop-btn').classList.contains('active')).toBe(mode !== 0);
+                expect(localStorage.getItem('roxy_loopMode')).toBe(String(mode));
+            }
+        });
+
+        it('toggles shuffle on and off with persisted state', () => {
+            for (const enabled of [true, false]) {
+                element('shuffle-btn').click();
+                expect(label('shuffle-btn')).toBe(`Shuffle: ${enabled ? 'On' : 'Off'}`);
+                expect(localStorage.getItem('roxy_shuffleMode')).toBe(String(enabled));
+            }
+        });
+
+        it('debounces rapid Yap toggles and preserves the last valid time', () => {
+            element('yap-btn').click();
+            expect(label('yap-btn')).toBe('Yap: On');
+            expect(player.seekTo).toHaveBeenLastCalledWith(15, true);
+            element('yap-btn').click();
+            expect(label('yap-btn')).toBe('Yap: On');
+            vi.advanceTimersByTime(300);
+            player.currentTime = 0;
+            element('yap-btn').click();
+            expect(label('yap-btn')).toBe('Yap: Off');
+            expect(player.seekTo).toHaveBeenLastCalledWith(15, true);
+        });
+
+        it('next/previous song buttons invoke production navigation', () => {
+            element('next-song').click();
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+            player.currentTime = 31;
+            element('prev-song').click();
+            expect(player.seekTo).toHaveBeenLastCalledWith(10, true);
+        });
+
+        it('stream buttons load another video and restore previous navigation', () => {
+            vi.advanceTimersByTime(300);
+            element('next-stream').click();
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'bbbbbbbbbbb' }));
+            vi.advanceTimersByTime(300);
+            element('prev-stream').click();
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'aaaaaaaaaaa' }));
+        });
+
+        it('member mode changes the searchable catalogue', () => {
+            expect(search('Member song').some(row => row.textContent.includes('Member song'))).toBe(false);
+            pressKey('Escape');
+            shortcut('M');
+            expect(element('controls-container').classList.contains('member-mode')).toBe(true);
+            expect(search('Member song').some(row => row.textContent.includes('Member song'))).toBe(true);
+        });
+
+        it('saves the observed player time before unload', () => {
+            player.currentTime = 17.25;
+            window.dispatchEvent(new Event('beforeunload'));
+            expect(localStorage.getItem('roxy_videoId')).toBe('aaaaaaaaaaa');
+            expect(localStorage.getItem('roxy_lastTime')).toBe('17.25');
+        });
     });
 
-    it('includes current pathname in share URL', async () => {
-      pressKey('C', { shiftKey: true });
-      
-      await new Promise(resolve => setTimeout(resolve, 0));
-      
-      expect(writeTextSpy).toHaveBeenCalled();
-      const copiedUrl = writeTextSpy.mock.calls[0][0];
-      expect(copiedUrl).toContain(window.location.pathname);
+    describe('queue and modal coordination', () => {
+        it.each(['queue-cell', 'mobile-queue-btn', 'shortcut'])('opens queue through %s', target => {
+            if (target === 'shortcut') shortcut('Q'); else element(target).click();
+            expect(isOpen('queue-overlay')).toBe(true);
+            expect(element('queue-overlay').inert).toBe(false);
+            pressKey('Escape');
+            expect(isOpen('queue-overlay')).toBe(false);
+        });
+
+        it('typing shortcuts in the queue filter does not trigger global actions', () => {
+            shortcut('Q');
+            for (const key of ['Q', 'S', 'E', 'A', 'I']) expect(shortcut(key).defaultPrevented).toBe(false);
+            expect(isOpen('queue-overlay')).toBe(true);
+            expect(queue()).toEqual([]);
+            element('queue-search-input').blur();
+            shortcut('Q');
+            expect(isOpen('queue-overlay')).toBe(false);
+        });
+
+        it('enqueues the current song through Shift+E, including duplicates', () => {
+            shortcut('E'); shortcut('E'); shortcut('E');
+            expect(queue()).toEqual(Array(3).fill({ videoId: 'aaaaaaaaaaa', rIdx: 0 }));
+            expect(element('yap-btn').disabled).toBe(true);
+            element('loop-btn').click(); element('loop-btn').click();
+            expect(label('loop-btn')).toBe('Loop: Queue');
+        });
+
+        it('search enqueue buttons add the result without selecting or closing it', () => {
+            const row = search('Song B').find(row => row.textContent.includes('Song B'));
+            player.seekTo.mockClear();
+            row.querySelector('.enqueue-btn').click();
+            expect(queue()).toEqual([{ videoId: 'aaaaaaaaaaa', rIdx: 1 }]);
+            expect(player.seekTo).not.toHaveBeenCalled();
+            expect(isOpen('modal-overlay')).toBe(true);
+            expect(row.querySelector('.enqueue-btn').textContent).toBe('✓');
+            vi.advanceTimersByTime(500);
+            expect(row.querySelector('.enqueue-btn').textContent).toBe('+');
+        });
+
+        it('Shift+E enqueues the highlighted search result', () => {
+            search('Song B');
+            shortcut('E');
+            expect(queue()).toEqual([{ videoId: 'aaaaaaaaaaa', rIdx: 1 }]);
+        });
+
+        it('status enqueue adds the selected song without playing it', () => {
+            shortcut('A');
+            element('status-song-list').children[1].querySelector('.enqueue-btn').click();
+            expect(queue()).toEqual([{ videoId: 'aaaaaaaaaaa', rIdx: 1 }]);
+            expect(isOpen('status-panel')).toBe(true);
+        });
+
+        it('Shift+E enqueues the highlighted status song', () => {
+            shortcut('A'); pressKey('ArrowDown'); shortcut('E');
+            expect(queue()).toEqual([{ videoId: 'aaaaaaaaaaa', rIdx: 1 }]);
+        });
+
+        it('selects and removes queue entries using real keyboard handlers', () => {
+            shortcut('E');
+            shortcut('E');
+            shortcut('Q');
+            pressKey('ArrowDown'); // Transfers focus from filter to list.
+            pressKey('Delete');
+            expect(queue().length).toBe(1);
+            element('queue-clear-btn').click();
+            expect(queue()).toEqual([]);
+            expect(element('yap-btn').disabled).toBe(false);
+        });
+
+        it('opening another modal closes the existing one', () => {
+            shortcut('A'); shortcut('S');
+            expect(isOpen('status-panel')).toBe(false);
+            shortcut('Q');
+            expect(isOpen('modal-overlay')).toBe(false);
+            pressKey('Escape'); shortcut('I');
+            expect(isOpen('import-overlay')).toBe(true);
+            pressKey('Escape');
+            expect(isOpen('import-overlay')).toBe(false);
+        });
     });
 
-    it('does nothing when stream has no videoId', async () => {
-      window.mockCore.getCurrentStream = () => ({ title: 'No Video' });
-      
-      pressKey('C', { shiftKey: true });
-      
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
-      expect(writeTextSpy).not.toHaveBeenCalled();
+    describe('sharing and imports', () => {
+        it.each(['shortcut', 'more'])('copies the same floored URL through %s', async method => {
+            player.currentTime = 15.99;
+            if (method === 'shortcut') shortcut('C');
+            else { element('more-cell').click(); element('more-copy-btn').click(); }
+            await Promise.resolve();
+            expect(navigator.clipboard.writeText).toHaveBeenCalledWith(`${location.origin}/?v=aaaaaaaaaaa&t=15`);
+        });
+
+        it('does not share while search has focus', () => {
+            search(); shortcut('C');
+            expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+        });
+
+        it('extends with a whole-video URL import and resets to defaults', async () => {
+            navigator.clipboard.readText.mockResolvedValue('https://youtu.be/CmMimqir5z0');
+            shortcut('I'); element('import-extend-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual([{ videoId: 'CmMimqir5z0' }]);
+            shortcut('I'); element('import-reset-btn').click();
+            expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+        });
+
+        it('replaces the catalogue from JSON and rejects invalid replacements', async () => {
+            const imported = [{ videoId: 'CmMimqir5z0', name: 'Imported video' }];
+            navigator.clipboard.readText.mockResolvedValue(JSON.stringify(imported));
+            shortcut('I'); element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(300);
+            expect(localStorage.getItem('roxy_segmentsMode')).toBe('replaced');
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'CmMimqir5z0' }));
+            navigator.clipboard.readText.mockResolvedValue('{}');
+            shortcut('I'); element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe('Not a valid segment file');
+            expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual(imported);
+        });
+
+        it.each(['replace', 'extend'])('restores the catalogue after a %s import excludes every stream', async mode => {
+            shortcut('E');
+            const savedQueue = queue();
+            const membersOnly = SEGMENTS.map(stream => ({ ...stream, memberOnly: true }));
+            navigator.clipboard.readText.mockResolvedValue(JSON.stringify(membersOnly));
+            shortcut('I');
+            element(`import-${mode}-btn`).click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe(`${mode === 'replace' ? 'Import' : 'Merge'} produced an empty playlist`);
+            expect(isOpen('import-overlay')).toBe(true);
+            expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+            expect(queue()).toEqual(savedQueue);
+            pressKey('Escape');
+            expect(search('Song B')[0].textContent).toContain('Song B');
+        });
     });
-  });
+
+    describe('application lifecycle', () => {
+        it('resets an open status panel before recreating the application on the same page', async () => {
+            const panel = element('status-panel');
+            shortcut('A');
+            pressKey('ArrowDown');
+            expect(isOpen('status-panel')).toBe(true);
+            expect(element('status-song-list').children[1].classList.contains('nav-focus')).toBe(true);
+
+            application.dispose();
+            expect(isOpen('status-panel')).toBe(false);
+            expect(panel.getAttribute('aria-hidden')).toBe('true');
+            expect(panel.inert).toBe(true);
+            expect(element('status').getAttribute('aria-expanded')).toBe('false');
+            expect(panel.querySelector('.nav-focus')).toBeNull();
+            expect(vi.getTimerCount()).toBe(0);
+
+            await start();
+            expect(element('status-panel')).toBe(panel);
+            expect(isOpen('status-panel')).toBe(false);
+
+            shortcut('A');
+            pressKey('ArrowDown');
+            pressKey('Enter');
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+            expect(isOpen('status-panel')).toBe(false);
+
+            shortcut('A');
+            expect(isOpen('status-panel')).toBe(true);
+            pressKey('Escape');
+            expect(isOpen('status-panel')).toBe(false);
+
+            shortcut('A');
+            expect(isOpen('status-panel')).toBe(true);
+            document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            expect(isOpen('status-panel')).toBe(false);
+        });
+
+        it('removes listeners and timers, allowing a fresh instance on the same page', async () => {
+            const initialTimerCount = vi.getTimerCount();
+            application.dispose();
+            application.dispose();
+            expect(player.destroy).toHaveBeenCalledTimes(1);
+            expect(vi.getTimerCount()).toBe(0);
+            shortcut('S');
+            expect(isOpen('modal-overlay')).toBe(false);
+            await start();
+            expect(vi.getTimerCount()).toBe(initialTimerCount);
+            shortcut('S');
+            expect(isOpen('modal-overlay')).toBe(true);
+            element('loop-btn').click();
+            expect(localStorage.getItem('roxy_loopMode')).toBe('1');
+        });
+
+        it('cancels pending enqueue feedback on disposal', () => {
+            search('Song B')[0].querySelector('.enqueue-btn').click();
+            application.dispose();
+            expect(vi.getTimerCount()).toBe(0);
+        });
+
+        it.each(['search', 'status', 'queue'])('removes rendered %s row handlers on disposal', panel => {
+            let row;
+            if (panel === 'search') row = search('Song B')[0];
+            else if (panel === 'status') {
+                shortcut('A');
+                row = element('status-song-list').children[1];
+            } else {
+                shortcut('E');
+                shortcut('Q');
+                row = element('queue-list').querySelector('.queue-item');
+            }
+            const savedQueue = queue();
+            application.dispose();
+            row.querySelector('button').click();
+            row.click();
+            expect(queue()).toEqual(savedQueue);
+            expect(player.seekTo).not.toHaveBeenCalled();
+            expect(vi.getTimerCount()).toBe(0);
+        });
+
+        it('cancels a touch hold when its search results are replaced', () => {
+            vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true });
+            const row = search('Song B')[0];
+            row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', clientX: 10, clientY: 10 }));
+            search('Song C');
+            vi.advanceTimersByTime(600);
+            expect(row.classList.contains('armed')).toBe(false);
+        });
+
+        it('cancels a pending touch hold on disposal', () => {
+            vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true });
+            const row = search('Song B')[0];
+            row.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', clientX: 10, clientY: 10 }));
+            application.dispose();
+            expect(vi.getTimerCount()).toBe(0);
+            vi.advanceTimersByTime(600);
+            expect(row.classList.contains('armed')).toBe(false);
+        });
+
+        it('ignores clipboard results that arrive after disposal', async () => {
+            let resolveClipboard;
+            navigator.clipboard.readText.mockReturnValue(new Promise(resolve => { resolveClipboard = resolve; }));
+            shortcut('I');
+            element('import-extend-btn').click();
+            application.dispose();
+            const loadCount = player.loadVideoById.mock.calls.length;
+            resolveClipboard('https://www.youtube.com/watch?v=CmMimqir5z0');
+            await vi.advanceTimersByTimeAsync(0);
+            expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+            expect(player.loadVideoById).toHaveBeenCalledTimes(loadCount);
+            expect(vi.getTimerCount()).toBe(0);
+        });
+
+        it('does not allow a late iframe callback to restart disposed playback', () => {
+            application.dispose();
+            player.loadVideoById.mockClear();
+            events.onReady();
+            events.onStateChange({ data: 1 });
+            vi.advanceTimersByTime(20000);
+            expect(player.loadVideoById).not.toHaveBeenCalled();
+            expect(vi.getTimerCount()).toBe(0);
+        });
+    });
 });
-
-// ============================================================================
-// DUPLICATES BUTTON TESTS
-// ============================================================================
-
-describe('Duplicates Button', () => {
-  let duplicatesBtn, noteCount;
-
-  beforeEach(() => {
-    setupDOM();
-    duplicatesBtn = document.getElementById('duplicates-btn');
-    noteCount = duplicatesBtn.querySelector('.note-count');
-  });
-
-  it('exists in the DOM', () => {
-    expect(duplicatesBtn).not.toBeNull();
-    expect(noteCount).not.toBeNull();
-  });
-
-  it('can be shown when song has duplicates', () => {
-    duplicatesBtn.style.display = 'flex';
-    noteCount.textContent = '3';
-    
-    expect(duplicatesBtn.style.display).toBe('flex');
-    expect(noteCount.textContent).toBe('3');
-  });
-
-  it('updates count when duplicates change', () => {
-    noteCount.textContent = '5';
-    expect(noteCount.textContent).toBe('5');
-    
-    noteCount.textContent = '2';
-    expect(noteCount.textContent).toBe('2');
-  });
-
-  it('can be hidden when no duplicates exist', () => {
-    duplicatesBtn.style.display = 'flex';
-    duplicatesBtn.style.display = 'none';
-    
-    expect(duplicatesBtn.style.display).toBe('none');
-  });
-});
-
-// ============================================================================
-// START OVERLAY TESTS
-// ============================================================================
-
-describe('Start Overlay', () => {
-  let overlay, startBtn;
-
-  beforeEach(() => {
-    setupDOM();
-    overlay = document.getElementById('overlay');
-    startBtn = document.getElementById('start');
-  });
-
-  it('is visible initially', () => {
-    expect(overlay.style.display).not.toBe('none');
-  });
-
-  it('hides when start button is clicked', () => {
-    let startRequested = false;
-    
-    startBtn.addEventListener('click', () => {
-      startRequested = true;
-      overlay.style.display = 'none';
-    });
-    
-    startBtn.click();
-    
-    expect(startRequested).toBe(true);
-    expect(overlay.style.display).toBe('none');
-  });
-
-  it('start button has correct text', () => {
-    expect(startBtn.textContent).toBe('▶ Start');
-  });
-});
-
-// ============================================================================
-// ACCESSIBILITY TESTS
-// ============================================================================
-
-describe('Accessibility', () => {
-  beforeEach(() => {
-    setupDOM();
-  });
-
-  describe('Status element', () => {
-    it('has aria-expanded attribute', () => {
-      const statusEl = document.getElementById('status');
-      expect(statusEl.hasAttribute('aria-expanded')).toBe(true);
-    });
-
-    it('has aria-controls pointing to status-panel', () => {
-      const statusEl = document.getElementById('status');
-      expect(statusEl.getAttribute('aria-controls')).toBe('status-panel');
-    });
-  });
-
-  describe('Status panel', () => {
-    it('has aria-hidden attribute', () => {
-      const statusPanel = document.getElementById('status-panel');
-      expect(statusPanel.hasAttribute('aria-hidden')).toBe(true);
-    });
-  });
-
-  describe('Song list', () => {
-    it('exists in the DOM', () => {
-      const songList = document.getElementById('status-song-list');
-      expect(songList).not.toBeNull();
-      expect(songList.tagName).toBe('OL');
-    });
-
-    it('can have role="listbox" set dynamically', () => {
-      const songList = document.getElementById('status-song-list');
-      // Mirrors what app.js does at init
-      songList.setAttribute('role', 'listbox');
-      expect(songList.getAttribute('role')).toBe('listbox');
-    });
-
-    it('can have aria-label set dynamically', () => {
-      const songList = document.getElementById('status-song-list');
-      // Mirrors what app.js does at init
-      songList.setAttribute('aria-label', 'Current karaoke songs');
-      expect(songList.getAttribute('aria-label')).toBe('Current karaoke songs');
-    });
-  });
-
-  describe('Search button', () => {
-    it('has aria-label', () => {
-      const searchBtn = document.getElementById('search-btn');
-      expect(searchBtn.getAttribute('aria-label')).toBe('Search songs');
-    });
-
-    it('has title for tooltip', () => {
-      const searchBtn = document.getElementById('search-btn');
-      expect(searchBtn.getAttribute('title')).toBe('Search (Shift+S)');
-    });
-  });
-
-  describe('Wanted trigger', () => {
-    it('has aria-label', () => {
-      const boltTrigger = document.getElementById('bolt-trigger');
-      expect(boltTrigger.getAttribute('aria-label')).toBe('Wanted poster');
-    });
-  });
-});
-
-// ============================================================================
-// QUEUE MODAL TESTS
-// ============================================================================
-
-describe('Queue Modal', () => {
-  let queueOverlay, queueList, queueClearBtn, queueCell, mobileQueueBtn;
-
-  beforeEach(() => {
-    setupDOM();
-    clearStorage();
-
-    queueOverlay = document.getElementById('queue-overlay');
-    queueList = document.getElementById('queue-list');
-    queueClearBtn = document.getElementById('queue-clear-btn');
-    queueCell = document.getElementById('queue-cell');
-    mobileQueueBtn = document.getElementById('mobile-queue-btn');
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('DOM elements', () => {
-    it('queue overlay exists and starts inert', () => {
-      expect(queueOverlay).not.toBeNull();
-      expect(queueOverlay.inert).toBe(true);
-    });
-
-    it('queue list container exists', () => {
-      expect(queueList).not.toBeNull();
-    });
-
-    it('clear all button exists', () => {
-      expect(queueClearBtn).not.toBeNull();
-      expect(queueClearBtn.textContent).toBe('Clear All');
-    });
-
-    it('queue cell (desktop) exists and is always visible', () => {
-      expect(queueCell).not.toBeNull();
-      expect(queueCell.hidden).toBe(false);
-    });
-
-    it('mobile queue button exists and is always visible', () => {
-      expect(mobileQueueBtn).not.toBeNull();
-      expect(mobileQueueBtn.hidden).toBe(false);
-    });
-  });
-
-  describe('Toggle behavior', () => {
-    it('opens the overlay', () => {
-      queueOverlay.classList.add('open');
-      queueOverlay.inert = false;
-      expect(queueOverlay.classList.contains('open')).toBe(true);
-      expect(queueOverlay.inert).toBe(false);
-    });
-
-    it('closes the overlay', () => {
-      queueOverlay.classList.add('open');
-      queueOverlay.inert = false;
-
-      queueOverlay.classList.remove('open');
-      queueOverlay.inert = true;
-      expect(queueOverlay.classList.contains('open')).toBe(false);
-      expect(queueOverlay.inert).toBe(true);
-    });
-  });
-
-  describe('Keyboard shortcuts', () => {
-    let keydownHandler;
-    let queueOpen, searchOpen, queueSearchInput;
-
-    beforeEach(() => {
-      queueOpen = false;
-      searchOpen = false;
-
-      queueSearchInput = document.createElement('input');
-      queueSearchInput.id = 'queue-search-input';
-      queueOverlay.appendChild(queueSearchInput);
-
-      keydownHandler = (e) => {
-        if (e.key === 'Escape') {
-          if (queueOpen) {
-            e.preventDefault();
-            queueOpen = false;
-            queueOverlay.classList.remove('open');
-            return;
-          }
-          if (searchOpen) {
-            e.preventDefault();
-            searchOpen = false;
-            return;
-          }
-        }
-
-        // Mirrors app.js: while the queue filter box has focus, printable keys
-        // edit the query instead of firing the global Shift+letter shortcuts.
-        // Escape (above) still closes; the shortcuts stay live when unfocused.
-        if (queueOpen && document.activeElement === queueSearchInput) return;
-
-        if (e.key === 'Q' && e.shiftKey) {
-          e.preventDefault();
-          queueOpen = !queueOpen;
-          queueOverlay.classList.toggle('open', queueOpen);
-        }
-      };
-      document.addEventListener('keydown', keydownHandler);
-    });
-
-    afterEach(() => {
-      document.removeEventListener('keydown', keydownHandler);
-    });
-
-    it('Shift+Q opens queue modal', () => {
-      pressKey('Q', { shiftKey: true });
-      expect(queueOverlay.classList.contains('open')).toBe(true);
-    });
-
-    it('Shift+Q toggles queue modal', () => {
-      pressKey('Q', { shiftKey: true });
-      expect(queueOpen).toBe(true);
-
-      pressKey('Q', { shiftKey: true });
-      expect(queueOpen).toBe(false);
-    });
-
-    it('Escape closes queue modal', () => {
-      queueOpen = true;
-      queueOverlay.classList.add('open');
-
-      pressKey('Escape');
-      expect(queueOpen).toBe(false);
-      expect(queueOverlay.classList.contains('open')).toBe(false);
-    });
-
-    it('Escape closes queue before search in priority order', () => {
-      queueOpen = true;
-      searchOpen = true;
-      queueOverlay.classList.add('open');
-
-      pressKey('Escape');
-      expect(queueOpen).toBe(false);
-      expect(searchOpen).toBe(true);
-    });
-
-    it('Shift+Q types into the filter box when it has focus (no toggle)', () => {
-      queueOpen = true;
-      queueOverlay.classList.add('open');
-      queueSearchInput.focus();
-
-      const e = pressKey('Q', { shiftKey: true });
-      expect(queueOpen).toBe(true);           // modal stays open
-      expect(e.defaultPrevented).toBe(false); // key not consumed — edits the query
-    });
-
-    it('Shift+Q still toggles the queue when the filter box is unfocused', () => {
-      queueOpen = true;
-      queueOverlay.classList.add('open');
-      // No element focused → activeElement is not the filter box.
-
-      pressKey('Q', { shiftKey: true });
-      expect(queueOpen).toBe(false);          // close-toggle preserved
-    });
-  });
-
-  describe('Queue keyboard navigation', () => {
-    it('ArrowDown moves selection in queue items', () => {
-      // Populate queue items
-      for (let i = 0; i < 3; i++) {
-        const div = document.createElement('div');
-        div.className = 'queue-item';
-        if (i === 0) div.classList.add('selected');
-        queueList.appendChild(div);
-      }
-
-      const nav = resolveListNavigation('ArrowDown', 0, 3);
-      expect(nav.handled).toBe(true);
-      expect(nav.action).toBe(NAV_ACTION_MOVE);
-      expect(nav.nextIndex).toBe(1);
-    });
-
-    it('Delete triggers remove action', () => {
-      // Delete/Backspace handling is tested in queue-modal.test.js
-      // Here we verify the key is recognized
-      const items = queueList.querySelectorAll('.queue-item');
-      expect(items.length).toBe(0); // empty queue, no crash
-    });
-  });
-
-  describe('Enqueue via Shift+E', () => {
-    let keydownHandler;
-    let enqueuedItems;
-
-    beforeEach(() => {
-      enqueuedItems = [];
-
-      keydownHandler = (e) => {
-        if (e.key === 'E' && e.shiftKey) {
-          e.preventDefault();
-          // Simulate enqueuing current song when no modal is open
-          enqueuedItems.push({ videoId: 'test-v1', rIdx: 0 });
-        }
-      };
-      document.addEventListener('keydown', keydownHandler);
-    });
-
-    afterEach(() => {
-      document.removeEventListener('keydown', keydownHandler);
-    });
-
-    it('Shift+E triggers enqueue action', () => {
-      pressKey('E', { shiftKey: true });
-      expect(enqueuedItems.length).toBe(1);
-      expect(enqueuedItems[0]).toEqual({ videoId: 'test-v1', rIdx: 0 });
-    });
-
-    it('multiple Shift+E adds multiple items', () => {
-      pressKey('E', { shiftKey: true });
-      pressKey('E', { shiftKey: true });
-      pressKey('E', { shiftKey: true });
-      expect(enqueuedItems.length).toBe(3);
-    });
-  });
-
-  describe('Yap button disabled state', () => {
-    it('can be disabled', () => {
-      const yapBtn = document.getElementById('yap-btn');
-      yapBtn.disabled = true;
-      expect(yapBtn.disabled).toBe(true);
-    });
-
-    it('disabled button has correct style hooks', () => {
-      const yapBtn = document.getElementById('yap-btn');
-      yapBtn.disabled = true;
-      // CSS handles opacity/cursor — we verify the attribute exists
-      expect(yapBtn.getAttribute('disabled')).not.toBeNull();
-    });
-  });
-
-  describe('Loop label with queue', () => {
-    it('can display "Queue" label when queue is active and loop mode is Stream', () => {
-      const loopBtn = document.getElementById('loop-btn');
-      const label = loopBtn.querySelector('.btn-label');
-      if (label) {
-        label.textContent = 'Queue';
-        expect(label.textContent).toBe('Queue');
-      } else {
-        loopBtn.textContent = 'Loop: Queue';
-        expect(loopBtn.textContent).toBe('Loop: Queue');
-      }
-    });
-  });
-
-  describe('Enqueue buttons in search results', () => {
-    it('search results can have enqueue buttons', () => {
-      const results = populateSearchResults(3);
-      // Add enqueue buttons like the real search controller does
-      results.forEach(r => {
-        const btn = document.createElement('button');
-        btn.className = 'enqueue-btn';
-        btn.textContent = '+';
-        r.appendChild(btn);
-      });
-
-      const enqueueBtns = resultsContainer.querySelectorAll('.enqueue-btn');
-      expect(enqueueBtns.length).toBe(3);
-      expect(enqueueBtns[0].textContent).toBe('+');
-    });
-
-    it('enqueue button click does not propagate to result click', () => {
-      const results = populateSearchResults(1);
-      let resultClicked = false;
-      let enqueueClicked = false;
-
-      const btn = document.createElement('button');
-      btn.className = 'enqueue-btn';
-      btn.textContent = '+';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        enqueueClicked = true;
-      });
-      results[0].appendChild(btn);
-
-      results[0].addEventListener('click', (e) => {
-        if (e.target.classList.contains('enqueue-btn')) return;
-        resultClicked = true;
-      });
-
-      btn.click();
-      expect(enqueueClicked).toBe(true);
-      expect(resultClicked).toBe(false);
-    });
-
-    let resultsContainer;
-    beforeEach(() => {
-      resultsContainer = document.getElementById('search-results');
-    });
-  });
-
-  describe('Enqueue buttons in status panel', () => {
-    it('status songs can have enqueue buttons', () => {
-      const songs = populateStatusSongList(3);
-      songs.forEach(s => {
-        const btn = document.createElement('button');
-        btn.className = 'enqueue-btn';
-        btn.textContent = '+';
-        s.appendChild(btn);
-      });
-
-      const statusSongList = document.getElementById('status-song-list');
-      const enqueueBtns = statusSongList.querySelectorAll('.enqueue-btn');
-      expect(enqueueBtns.length).toBe(3);
-    });
-  });
-});
-
-// ============================================================================
-// SEARCH RESULT SORTING TESTS
-// ============================================================================
 
 describe('Search Result Sorting', () => {
   it('moves current stream to the end among exact matches', () => {

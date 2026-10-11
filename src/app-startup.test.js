@@ -9,6 +9,7 @@ vi.mock('virtual:roxy-segments', () => ({
 }));
 
 describe('shared-link startup', () => {
+    let application;
     let player;
     let events;
 
@@ -37,6 +38,7 @@ describe('shared-link startup', () => {
     });
 
     afterEach(() => {
+        application?.dispose();
         vi.clearAllTimers();
         vi.useRealTimers();
         vi.unstubAllGlobals();
@@ -56,7 +58,7 @@ describe('shared-link startup', () => {
         }
         vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
 
-        await import('./app.js');
+        ({ application } = await import('./app.js'));
         await vi.advanceTimersByTimeAsync(0);
         expect(document.getElementById('status-text').textContent).toMatch(
             exclusion === 'member' ? /members-only/ : /custom playlist/,
@@ -75,7 +77,7 @@ describe('shared-link startup', () => {
         localStorage.setItem('roxy_memberMode', 'true');
         vi.stubGlobal('fetch', vi.fn());
 
-        await import('./app.js');
+        ({ application } = await import('./app.js'));
         await vi.advanceTimersByTimeAsync(0);
         events.onReady();
 
@@ -95,7 +97,7 @@ describe('shared-link startup', () => {
             return stage === 'response' ? pending : Promise.resolve({ ok: true, json: () => pending });
         }));
 
-        await import('./app.js');
+        ({ application } = await import('./app.js'));
         await vi.advanceTimersByTimeAsync(0);
         events.onReady();
         document.getElementById('start').click();
@@ -111,6 +113,24 @@ describe('shared-link startup', () => {
         expect(document.getElementById('overlay').style.display).toBe('none');
     });
 
+    it('aborts a pending catalogue request on disposal without restarting playback', async () => {
+        let requestSignal;
+        vi.stubGlobal('fetch', vi.fn((_url, { signal }) => {
+            requestSignal = signal;
+            return new Promise((_resolve, reject) => {
+                signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+            });
+        }));
+        ({ application } = await import('./app.js'));
+        await vi.advanceTimersByTimeAsync(0);
+        events.onReady();
+        application.dispose();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(requestSignal.aborted).toBe(true);
+        expect(player.loadVideoById).not.toHaveBeenCalled();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
     it('uses fresh data received before the timeout and cancels the deadline', async () => {
         let requestSignal;
         vi.stubGlobal('fetch', vi.fn(async (_url, { signal }) => {
@@ -121,7 +141,7 @@ describe('shared-link startup', () => {
             };
         }));
 
-        await import('./app.js');
+        ({ application } = await import('./app.js'));
         await vi.advanceTimersByTimeAsync(0);
         events.onReady();
 

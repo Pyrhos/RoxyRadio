@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createQueueModalController } from './queue-modal.js';
 
 function makeDOM() {
@@ -60,6 +60,8 @@ describe('Queue Modal Controller', () => {
             onClearAll,
         });
     });
+
+    afterEach(() => ctrl.destroy());
 
     describe('toggle', () => {
         it('opens the modal', () => {
