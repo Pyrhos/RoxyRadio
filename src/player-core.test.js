@@ -197,6 +197,32 @@ describe('PlayerCore', () => {
         randomSpy.mockRestore();
     });
 
+    it('keeps backward shuffle moving through the catalogue after history is exhausted', () => {
+      core.init([...MOCK_SEGMENTS, { videoId: 'v4', songs: [] }]);
+      core.toggleShuffle();
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+      try {
+        core.nextStream();
+        core.nextStream();
+        core.prevStream();
+        core.prevStream();
+        expect(core.history).toEqual([]);
+        const visited = new Set();
+        for (let i = 0; i < 8; i++) {
+          const previous = { videoId: core.getCurrentStream().videoId, rIdx: core.rIdx };
+          core.prevStream();
+          visited.add(core.getCurrentStream().videoId);
+          expect(core.history).toEqual([]);
+          expect(core.recentTracks.at(-1)).toEqual(previous);
+          const saved = callbacks.saveSessionData.mock.calls.at(-1)[0];
+          expect(JSON.parse(saved.recent)).toEqual(core.recentTracks);
+        }
+        expect(visited.size).toBe(4);
+      } finally {
+        random.mockRestore();
+      }
+    });
+
     it('restores history from session storage on init', () => {
        const sessionHistory = [
            { vIdx: 0, rIdx: 0 },

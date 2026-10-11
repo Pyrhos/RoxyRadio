@@ -36,34 +36,44 @@ export function createPlaybackController({
         if (lifecycle.signal.aborted) return;
         const previousLoad = pendingLoad;
         cancelPendingLoad();
-        startPosition.cancel();
         const resolvedStream = stream || getCurrentStream();
         const safeStart = sanitizeStartTime(time, resolvedStream);
+        const player = getPlayer();
         if (previousLoad && previousLoad.stream.videoId === resolvedStream?.videoId
             && currentLoadedVideoId !== resolvedStream.videoId) {
             // A song pick within the selected video replaces its pending start;
             // seeking the iframe here would seek in the previous video instead.
             playVideoAt(resolvedStream, safeStart, previousLoad.endSeconds, previousLoad.forceReload);
+        } else if (currentLoadedVideoId === resolvedStream?.videoId && !startPosition.matchesVideo(player)) {
+            // The load was sent, but the iframe still reports the old video.
+            // Retarget confirmation so its arrival seeks to the latest song.
+            startPosition.begin(resolvedStream.videoId, safeStart, true);
         } else {
-            const player = getPlayer();
+            startPosition.cancel();
             if (player && player.seekTo) player.seekTo(safeStart, true);
         }
         lastKnownTime = safeStart;
         onSeek(safeStart);
     }
 
-    function getSafeCurrentTime() {
+    function getSafeCurrentTime({ allowZero = false } = {}) {
         // Navigation already addresses the selected stream during the delay.
-        // Its requested position is authoritative until the iframe load is sent.
+        // Its requested position remains authoritative until the iframe reports
+        // that video, including the interval after the load command is sent.
         if (pendingLoad) return pendingLoad.startSeconds;
         const player = getPlayer();
+        const pendingTime = startPosition.getPendingTime(player);
+        if (pendingTime !== null) return pendingTime;
         if (!player) {
             return lastKnownTime;
         }
 
         const playerTime = player.getCurrentTime();
 
-        if (Number.isFinite(playerTime) && playerTime > 0) {
+        // Navigation keeps the last position across transient zero samples;
+        // persistence also accepts a genuine native seek to the beginning.
+        if (Number.isFinite(playerTime) && playerTime >= 0
+            && (playerTime > 0 || allowZero)) {
             lastKnownTime = playerTime;
             return playerTime;
         }
@@ -80,7 +90,6 @@ export function createPlaybackController({
         // One pending load at most. A later selection replaces it, including a
         // selection of the video that is still loaded (which becomes a seek).
         cancelPendingLoad();
-        startPosition.cancel();
         const safeStart = sanitizeStartTime(desiredStart, stream);
         let safeEnd = Number.isFinite(endSeconds) && endSeconds > 0 ? endSeconds : undefined;
         if (safeEnd !== undefined && safeEnd <= safeStart) {
@@ -95,6 +104,8 @@ export function createPlaybackController({
             seekToSafe(safeStart, stream);
             return;
         }
+
+        startPosition.cancel();
 
         const now = Date.now();
         const timeSinceLastLoad = now - lastVideoLoadTime;
@@ -215,7 +226,7 @@ export function createPlaybackController({
         seekToSafe,
         getSafeCurrentTime,
         playVideoAt,
-        isLoadPending: () => pendingLoad !== null,
+        isLoadPending: () => pendingLoad !== null || !startPosition.matchesVideo(getPlayer()),
         reconcileStartOnPlaying,
         stopTickLoop,
         evaluateTickLoop,

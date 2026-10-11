@@ -219,6 +219,34 @@ describe('Queue (§13)', () => {
   });
 
   describe('advanceAuto with queue', () => {
+    it.each(['tick', 'ended'])('retains the queue position across seamless segments before advancing through %s', boundary => {
+      core.init([
+        { videoId: 'v1', songs: [
+          { name: 'First segment', range: [0, 10] },
+          { name: 'Adjacent segment', range: [10, 20] },
+        ] },
+        MOCK_SEGMENTS[1],
+      ]);
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      const originalQueue = core.getQueue();
+      core.selectQueueItem(0);
+      for (let cycle = 0; cycle < 3; cycle++) {
+        expect(core.checkTick(9.9).type).toBe('none');
+        expect(core.checkTick(11.2).type).toBe('none');
+        expect(core.rIdx).toBe(1);
+        expect(core.getNowPlayingQueueIndex()).toBe(0);
+        const action = boundary === 'tick' ? core.checkTick(19.9) : core.onVideoEnded();
+        expect(action.type).toBe('load');
+        expect(core.getCurrentStream().videoId).toBe('v2');
+        expect(core.getNowPlayingQueueIndex()).toBe(1);
+        core.onVideoEnded();
+        expect([core.vIdx, core.rIdx]).toEqual([0, 0]);
+        expect(core.getQueue()).toEqual(originalQueue);
+      }
+    });
+
     it('Loop None: takes front item and plays it', () => {
       core.loopMode = LOOP_NONE;
       core.enqueue('v3', 0);
@@ -754,6 +782,57 @@ describe('Queue (§13)', () => {
       expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]);
     });
 
+    it('shuffle history skips a removed song even when another song from its stream remains queued', () => {
+      core.loopMode = LOOP_STREAM;
+      core.shuffleMode = true;
+      core.enqueue('v1', 0);
+      core.enqueue('v1', 1);
+      core.enqueue('v3', 0);
+      core.selectQueueItem(0);
+      core.selectQueueItem(1);
+      core.selectQueueItem(2);
+      core.removeFromQueue(1);
+      core.prevSong(0);
+      expect([core.vIdx, core.rIdx]).toEqual([0, 0]);
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
+      expect(core.isQueued(core.getCurrentStream().videoId, core.rIdx)).toBe(true);
+      core.toggleShuffle();
+      core.nextSong(0);
+      expect(core.vIdx).toBe(2);
+    });
+
+    it.each(['search', 'status'])('clears a detached queue cursor after a same-stream %s selection', source => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v3', 0);
+      core.enqueue('v1', 0);
+      core.enqueue('v2', 0);
+      core.selectQueueItem(1);
+      core.removeFromQueue(1);
+      if (source === 'search') core.selectTrack(0, 1);
+      else core.selectSong(1);
+      core.nextSong(20);
+      expect(core.getCurrentStream().videoId).toBe('v3');
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
+    });
+
+    it.each(['search', 'status'])('reconciles the queue cursor after a same-stream %s selection', source => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v3', 0);
+      const originalQueue = core.getQueue();
+      for (const direction of ['next', 'previous']) {
+        core.selectQueueItem(0);
+        if (source === 'search') core.selectTrack(0, 1);
+        else core.selectSong(1);
+        expect(core.getNowPlayingQueueIndex()).toBe(-1);
+        const action = direction === 'next' ? core.nextSong(20) : core.prevSong(20);
+        expect(action.type).toBe('load');
+        expect([core.vIdx, core.rIdx]).toEqual([direction === 'next' ? 0 : 2, 0]);
+        expect(core.getNowPlayingQueueIndex()).toBe(direction === 'next' ? 0 : 1);
+        expect(core.getQueue()).toEqual(originalQueue);
+      }
+    });
+
     it('Shuffle + Loop Queue prevSong uses history when valid entry exists', () => {
       core.shuffleMode = true;
       core.loopMode = LOOP_STREAM;
@@ -778,28 +857,52 @@ describe('Queue (§13)', () => {
       spy.mockRestore();
     });
 
-    it('Shuffle + Loop Queue prevSong picks random when no valid history', () => {
+    it('Shuffle + Loop Queue keeps choosing randomly after exhausting history', () => {
       core.shuffleMode = true;
       core.loopMode = LOOP_STREAM;
       core.enqueue('v1', 0);
+      core.enqueue('v1', 1);
+      core.enqueue('v2', 0);
       core.enqueue('v3', 0);
-      core.vIdx = 0;
-      core.rIdx = 0;
+      const originalQueue = core.getQueue();
+      core.selectQueueItem(1);
+      core.selectQueueItem(3);
+      core.selectQueueItem(2);
 
-      const spy = vi.spyOn(Math, 'random').mockReturnValue(0);
+      const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+      try {
+        for (const track of [[2, 0], [0, 1], [0, 0]]) {
+          expect(core.prevSong(0)).toEqual({ type: 'load' });
+          expect([core.vIdx, core.rIdx]).toEqual(track);
+        }
+        expect(random).not.toHaveBeenCalled();
+        expect(core.history).toEqual([]);
 
-      // Enter queue
-      core.nextSong(5);
-      expect(core.vIdx).toBe(2); // v3
+        for (let i = 0; i < 6; i++) {
+          const leaving = { videoId: core.getCurrentStream().videoId, rIdx: core.rIdx };
+          expect(core.prevSong(0)).toEqual({ type: 'load' });
+          expect(random).toHaveBeenCalledTimes(i + 1);
+          expect(core.history).toEqual([]);
+          const saved = callbacks.saveSessionData.mock.lastCall[0];
+          expect(JSON.parse(saved.history)).toEqual([]);
+          expect(JSON.parse(saved.recent).at(-1)).toEqual(leaving);
+          expect(core.getQueue()).toEqual(originalQueue);
+          expect(originalQueue[core.getNowPlayingQueueIndex()]).toEqual({
+            videoId: core.getCurrentStream().videoId, rIdx: core.rIdx,
+          });
+        }
 
-      // Clear history to force random fallback
-      core.history = [];
-
-      const action = core.prevSong(5);
-      expect(action.type).toBe('load');
-      // Should have picked from queue via _playFromQueue
-
-      spy.mockRestore();
+        // Forward navigation still creates real history for the next Previous.
+        const previous = [core.vIdx, core.rIdx];
+        core.nextSong(0);
+        expect(core.history).toHaveLength(1);
+        core.prevSong(0);
+        expect([core.vIdx, core.rIdx]).toEqual(previous);
+        expect(core.history).toEqual([]);
+        expect(random).toHaveBeenCalledTimes(7);
+      } finally {
+        random.mockRestore();
+      }
     });
 
     it('Shuffle + Loop Queue prevSong navigates even when not attached to the queue', () => {

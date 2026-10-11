@@ -152,6 +152,32 @@ describe('createPlaybackController', () => {
             expect(vi.getTimerCount()).toBe(0);
         });
 
+        it.each([70, 120])('applies a pending selection at %s when the requested video arrives', time => {
+            mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=previous');
+            mockPlayer.getCurrentTime.mockReturnValue(100);
+            ctrl.playVideoAt({ videoId: 'abc' }, 100);
+            ctrl.seekToSafe(time);
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            expect(ctrl.getSafeCurrentTime()).toBe(time);
+            expect(ctrl.isLoadPending()).toBe(true);
+            mockPlayer.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=abc');
+            expect(ctrl.getSafeCurrentTime()).toBe(time);
+            ctrl.reconcileStartOnPlaying();
+            expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(time, true);
+            expect(ctrl.getSafeCurrentTime()).toBe(time);
+            ctrl.evaluateTickLoop();
+            vi.advanceTimersByTime(1000); // Retry a seek ignored by the iframe.
+            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.seekTo).toHaveBeenLastCalledWith(time, true);
+            mockPlayer.getCurrentTime.mockReturnValue(time);
+            vi.advanceTimersByTime(200);
+            mockPlayer.getCurrentTime.mockReturnValue(time + 1);
+            vi.advanceTimersByTime(1000);
+            expect(ctrl.getSafeCurrentTime()).toBe(time + 1);
+            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+        });
+
         it('does not forward old playback times while a new selection awaits loading', () => {
             ctrl.playVideoAt({ videoId: 'a' }, 10);
             ctrl.evaluateTickLoop();

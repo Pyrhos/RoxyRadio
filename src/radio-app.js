@@ -150,6 +150,9 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         sanitizeStartTime: (time, stream) => core.sanitizeStartTime(time, stream),
         isYapMode: () => core.yapMode,
         onTick: (t) => {
+            // A PLAYING event can precede the iframe's video ID update. The
+            // tick accepts timestamps only after the requested video arrives.
+            initializeCurrentVideoMetadata();
             updateStatus(t);
             applyPlaybackAction(core.checkTick(t));
         },
@@ -309,13 +312,10 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
     lifecycle.listen(window, 'beforeunload', () => {
         let time = playbackCtrl.getLastKnownTime();
-        if (player && typeof player.getCurrentTime === 'function') {
-            try {
-                const live = player.getCurrentTime();
-                if (Number.isFinite(live)) time = live;
-            } catch (err) {
-                console.warn('Failed to read current time on unload', err);
-            }
+        try {
+            time = playbackCtrl.getSafeCurrentTime({ allowZero: true });
+        } catch (err) {
+            console.warn('Failed to read current time on unload', err);
         }
         core.saveState(Number.isFinite(time) ? time : 0);
     });
@@ -393,6 +393,9 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
     }
 
     function completeImport(message, closeModal) {
+        // History uses playlist indices, which an import or reset can replace.
+        // Clear it only after acceptance so rejected imports preserve navigation.
+        core.clearHistory();
         core.selectTrack(0);
         rebuildPlaylistDerivedState();
         updateButtons();
@@ -754,47 +757,51 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
     function onStateChange(ev) {
         if (lifecycle.signal.aborted) return;
-        // Selection changes before a debounced iframe load. Events during that
-        // delay still describe the previous video, including its end and metadata.
-        if (playbackCtrl.isLoadPending()) return;
+        // Until the iframe reports the requested video, events can still describe
+        // the previous video's end or metadata, even after the load is sent.
+        if (playbackCtrl.isLoadPending()) {
+            // PLAYING can precede the video ID update. Keep confirmation on
+            // the existing tick loop even when this event cannot drive policy.
+            playbackCtrl.evaluateTickLoop();
+            return;
+        }
         if (ev.data === YT.PlayerState.ENDED) {
             applyPlaybackAction(core.onVideoEnded());
         } else if (ev.data === YT.PlayerState.PLAYING) {
             playbackCtrl.reconcileStartOnPlaying();
-            // Rule 0: If no segments, get duration now if not set
-            const stream = core.getCurrentStream();
-            if (stream && !stream.songs && !core.getDuration(stream.videoId)) {
-                const d = player.getDuration();
-                if (d) {
-                    core.setDuration(stream.videoId, d);
-                    if (stream.title === stream.videoId) {
-                        const data = player.getVideoData();
-                        if (data && data.title) {
-                            stream.title = data.title;
-                            // Enrich bare imports so they appear in search
-                            if (!stream.name) {
-                                stream.name = data.title;
-                                const seg = activeSegments.find(s => s.videoId === stream.videoId);
-                                if (seg && !seg.name) {
-                                    seg.name = data.title;
-                                    if (activeSegments !== canonicalBase) {
-                                        if (localStorage.getItem(SEGMENTS_MODE_STORAGE_KEY) === SEGMENTS_MODE_REPLACED) {
-                                            persistCustomSegments(activeSegments);
-                                        } else {
-                                            const defaultIds = new Set(canonicalBase.map(e => e.videoId));
-                                            persistCustomSegments(activeSegments.filter(e => !defaultIds.has(e.videoId)));
-                                        }
-                                    }
-                                }
-                            }
-                            rebuildPlaylistDerivedState();
-                        }
+            initializeCurrentVideoMetadata();
+        }
+
+        playbackCtrl.evaluateTickLoop();
+    }
+
+    function initializeCurrentVideoMetadata() {
+        const stream = core.getCurrentStream();
+        if (!stream || stream.songs || core.getDuration(stream.videoId)) return;
+        const duration = player.getDuration();
+        if (!duration) return;
+        core.setDuration(stream.videoId, duration);
+        if (stream.title !== stream.videoId) return;
+        const data = player.getVideoData();
+        if (!data?.title) return;
+        stream.title = data.title;
+        // Enrich bare imports so they appear in search and survive a reload.
+        if (!stream.name) {
+            stream.name = data.title;
+            const seg = activeSegments.find(s => s.videoId === stream.videoId);
+            if (seg && !seg.name) {
+                seg.name = data.title;
+                if (activeSegments !== canonicalBase) {
+                    if (localStorage.getItem(SEGMENTS_MODE_STORAGE_KEY) === SEGMENTS_MODE_REPLACED) {
+                        persistCustomSegments(activeSegments);
+                    } else {
+                        const defaultIds = new Set(canonicalBase.map(e => e.videoId));
+                        persistCustomSegments(activeSegments.filter(e => !defaultIds.has(e.videoId)));
                     }
                 }
             }
         }
-
-        playbackCtrl.evaluateTickLoop();
+        rebuildPlaylistDerivedState();
     }
 
     function loadCurrentContent(startTimeOverride = null) {

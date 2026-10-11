@@ -10,11 +10,30 @@ const START_CONFIRMATION_MS = 1000;
 export function createStartPositionMonitor({ onCorrection }) {
     let request = null;
 
-    function begin(videoId, startSeconds) {
+    function begin(videoId, startSeconds, seekOnArrival = false) {
         request = {
             videoId, startSeconds, startedAt: null, lastSeekAt: -Infinity,
-            attempts: 0, confirmation: null,
+            attempts: 0, confirmation: null, seekOnArrival,
         };
+    }
+
+    function matchesVideo(player) {
+        if (!request) return true;
+        if (!player) return false;
+        if (!player.getVideoUrl) return true;
+        try {
+            return new URL(player.getVideoUrl()).searchParams.get('v') === request.videoId;
+        } catch {
+            // The iframe may not have reported its new video yet.
+            return false;
+        }
+    }
+
+    function getPendingTime(player) {
+        // A replacement song or a corrective seek remains authoritative until
+        // playback confirms it; the iframe can still report the original start.
+        return request && (!matchesVideo(player) || request.seekOnArrival || request.attempts > 0)
+            ? request.startSeconds : null;
     }
 
     // A PLAYING event or seek command is not an acknowledgement of the start time.
@@ -32,15 +51,9 @@ export function createStartPositionMonitor({ onCorrection }) {
             return true;
         }
 
-        if (player.getVideoUrl) {
-            let videoId = null;
-            try {
-                videoId = new URL(player.getVideoUrl()).searchParams.get('v');
-            } catch { /* The iframe may not have reported its new video yet. */ }
-            if (videoId !== pending.videoId) {
-                pending.confirmation = null;
-                return false;
-            }
+        if (!matchesVideo(player)) {
+            pending.confirmation = null;
+            return false;
         }
         if (!Number.isFinite(time)) {
             pending.confirmation = null;
@@ -49,14 +62,17 @@ export function createStartPositionMonitor({ onCorrection }) {
 
         // The video ID may update before the old video's time does. A position
         // beyond any plausible progress from this request cannot confirm it.
+        // A song selection made during loading must also correct backward from
+        // the original start, using the same bounded retries as forward seeks.
         const playbackRate = player.getPlaybackRate ? player.getPlaybackRate() : 1;
         const elapsedSeconds = (now - pending.startedAt) / 1000;
-        if (time > pending.startSeconds + START_CORRECTION_TOLERANCE_SECONDS + elapsedSeconds * playbackRate) {
+        const beyondStart = time > pending.startSeconds + START_CORRECTION_TOLERANCE_SECONDS + elapsedSeconds * playbackRate;
+        if (beyondStart && !pending.seekOnArrival) {
             pending.confirmation = null;
             return false;
         }
 
-        if (time >= pending.startSeconds - START_CORRECTION_TOLERANCE_SECONDS) {
+        if (!beyondStart && time >= pending.startSeconds - START_CORRECTION_TOLERANCE_SECONDS) {
             if (!pending.confirmation) pending.confirmation = { time, at: now };
             if (now - pending.confirmation.at >= START_CONFIRMATION_MS && time > pending.confirmation.time) {
                 request = null;
@@ -76,6 +92,8 @@ export function createStartPositionMonitor({ onCorrection }) {
 
     return {
         begin,
+        matchesVideo,
+        getPendingTime,
         reconcile,
         cancel: () => { request = null; },
         isPending: () => request !== null,

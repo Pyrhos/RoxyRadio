@@ -338,6 +338,47 @@ describe('Radio application', () => {
             }));
         });
 
+        it.each([
+            ['replaced', false], ['replaced', true], ['extended', false], ['extended', true],
+        ])('initializes metadata after a deferred PLAYING event for a %s import (hidden=%s)', async (mode, hidden) => {
+            application.dispose();
+            localStorage.setItem('roxy_customSegments', JSON.stringify([{ videoId: 'CmMimqir5z0' }]));
+            if (mode === 'replaced') localStorage.setItem('roxy_segmentsMode', mode);
+            localStorage.setItem('roxy_videoId', 'CmMimqir5z0');
+            vi.spyOn(document, 'hidden', 'get').mockReturnValue(hidden);
+            player.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=aaaaaaaaaaa');
+            player.getVideoData.mockReturnValue({ title: 'Previous video' });
+            await start();
+            player.getPlayerState.mockReturnValue(1);
+            events.onStateChange({ data: 1 });
+            vi.advanceTimersByTime(200);
+            expect(player.getDuration).not.toHaveBeenCalled();
+            expect(player.getVideoData).not.toHaveBeenCalled();
+
+            player.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=CmMimqir5z0');
+            player.currentTime = 0;
+            player.getDuration.mockReturnValue(480);
+            player.getVideoData.mockReturnValue({ title: 'Imported video' });
+            vi.advanceTimersByTime(200); // No second PLAYING event.
+            expect(player.getDuration).toHaveBeenCalledTimes(1);
+            expect(player.getVideoData).toHaveBeenCalledTimes(1);
+            expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual([
+                { videoId: 'CmMimqir5z0', name: 'Imported video' },
+            ]);
+            expect(search('Imported video')).toHaveLength(1);
+            pressKey('Escape');
+            player.currentTime = 1.2;
+            vi.advanceTimersByTime(1200);
+            expect(player.getDuration).toHaveBeenCalledTimes(1);
+            expect(player.getVideoData).toHaveBeenCalledTimes(1);
+
+            events.onError({ data: 150 });
+            element('yap-btn').click();
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'CmMimqir5z0', endSeconds: 480,
+            }));
+        });
+
         it('processes ended events after the pending load is sent', () => {
             vi.advanceTimersByTime(100);
             element('next-stream').click();
@@ -378,6 +419,66 @@ describe('Radio application', () => {
             element('prev-song').click();
             vi.advanceTimersByTime(200);
             expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 70,
+            }));
+        });
+
+        it.each([
+            [false, false], [false, true], [true, false], [true, true],
+        ])('preserves the latest song until the iframe reports the selected stream (member=%s, Yap=%s)', async (memberMode, yapMode) => {
+            application.dispose();
+            player.loadVideoById.mockClear();
+            localStorage.setItem('roxy_memberMode', String(memberMode));
+            localStorage.setItem('roxy_yapMode', String(yapMode));
+            await start();
+            player.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=aaaaaaaaaaa');
+            player.currentTime = 15;
+            vi.advanceTimersByTime(300);
+            element('next-stream').click();
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'bbbbbbbbbbb', startSeconds: 70 }));
+            player.seekTo.mockClear();
+            element('next-song').click();
+            expect(player.seekTo).not.toHaveBeenCalled(); // A is still the reported video.
+            shortcut('C');
+            expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(`${location.origin}/?v=bbbbbbbbbbb&t=90`);
+            element('prev-song').click();
+            shortcut('C');
+            expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(`${location.origin}/?v=bbbbbbbbbbb&t=70`);
+            element('next-song').click();
+            events.onStateChange({ data: 0 }); // Late ENDED from A cannot advance B.
+            player.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=bbbbbbbbbbb');
+            player.currentTime = 70; // The iframe used B's original load position.
+            events.onStateChange({ data: 1 });
+            expect(player.seekTo).toHaveBeenLastCalledWith(90, true);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+        });
+
+        it('continues start confirmation when PLAYING arrives before the selected video ID', () => {
+            player.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=aaaaaaaaaaa');
+            vi.advanceTimersByTime(300);
+            element('next-stream').click();
+            element('next-song').click();
+            player.getPlayerState.mockReturnValue(1);
+            events.onStateChange({ data: 1 });
+            player.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=bbbbbbbbbbb');
+            player.currentTime = 70;
+            vi.advanceTimersByTime(200);
+            expect(player.seekTo).toHaveBeenLastCalledWith(90, true);
+        });
+
+        it.each([[false, false], [false, true], [true, false], [true, true]])('resumes the requested position after reload (Yap=%s, load sent=%s)', async (yapMode, loadSent) => {
+            if (yapMode) element('yap-btn').click();
+            player.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=aaaaaaaaaaa');
+            player.currentTime = 95;
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            if (loadSent) vi.advanceTimersByTime(200);
+            window.dispatchEvent(new Event('beforeunload'));
+            expect(localStorage.getItem('roxy_videoId')).toBe('bbbbbbbbbbb');
+            expect(localStorage.getItem('roxy_lastTime')).toBe('70.00');
+            application.dispose();
+            await start();
             expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
                 videoId: 'bbbbbbbbbbb', startSeconds: 70,
             }));
@@ -425,6 +526,17 @@ describe('Radio application', () => {
             expect(search('Member song').some(row => row.textContent.includes('Member song'))).toBe(true);
         });
 
+        it('saves a native seek to zero after the initial load is confirmed', () => {
+            player.currentTime = 10;
+            events.onStateChange({ data: 1 });
+            vi.advanceTimersByTime(1000);
+            player.currentTime = 11;
+            events.onStateChange({ data: 1 });
+            player.currentTime = 0;
+            window.dispatchEvent(new Event('beforeunload'));
+            expect(localStorage.getItem('roxy_lastTime')).toBe('0.00');
+        });
+
         it('saves the observed player time before unload', () => {
             player.currentTime = 17.25;
             window.dispatchEvent(new Event('beforeunload'));
@@ -434,6 +546,46 @@ describe('Radio application', () => {
     });
 
     describe('queue and modal coordination', () => {
+        it.each([false, true])('keeps Previous Song shuffled after restored history is exhausted with member=%s', async memberMode => {
+            application.dispose();
+            const savedQueue = [
+                { videoId: 'aaaaaaaaaaa', rIdx: 0 },
+                { videoId: 'aaaaaaaaaaa', rIdx: 1 },
+                { videoId: 'aaaaaaaaaaa', rIdx: 2 },
+                { videoId: 'bbbbbbbbbbb', rIdx: 0 },
+            ];
+            localStorage.setItem('roxy_queue', JSON.stringify(savedQueue));
+            localStorage.setItem('roxy_loopMode', '2');
+            localStorage.setItem('roxy_shuffleMode', 'true');
+            localStorage.setItem('roxy_memberMode', String(memberMode));
+            localStorage.setItem('roxy_videoId', 'bbbbbbbbbbb');
+            sessionStorage.setItem('roxy_session_history', JSON.stringify([
+                { vIdx: 0, rIdx: 0, time: 10 },
+                { vIdx: 0, rIdx: 1, time: 30 },
+                { vIdx: 0, rIdx: 2, time: 50 },
+            ]));
+            await start();
+            expect(label('loop-btn')).toBe('Loop: Queue');
+            expect(label('shuffle-btn')).toBe('Shuffle: On');
+            const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+
+            for (const time of [50, 30, 10]) {
+                element('prev-song').click();
+                vi.advanceTimersByTime(300);
+                expect(Number(localStorage.getItem('roxy_lastTime'))).toBe(time);
+            }
+            expect(random).not.toHaveBeenCalled();
+
+            for (const [index, time] of [30, 50, 70, 10].entries()) {
+                element('prev-song').click();
+                vi.advanceTimersByTime(300);
+                expect(random).toHaveBeenCalledTimes(index + 1);
+                expect(Number(localStorage.getItem('roxy_lastTime'))).toBe(time);
+                expect(JSON.parse(sessionStorage.getItem('roxy_session_history'))).toEqual([]);
+                expect(queue()).toEqual(savedQueue);
+            }
+        });
+
         it.each(['queue-cell', 'mobile-queue-btn', 'shortcut'])('opens queue through %s', target => {
             if (target === 'shortcut') shortcut('Q'); else element(target).click();
             expect(isOpen('queue-overlay')).toBe(true);
@@ -549,6 +701,44 @@ describe('Radio application', () => {
             await vi.advanceTimersByTimeAsync(0);
             expect(element('import-status').textContent).toBe('Not a valid segment file');
             expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual(imported);
+        });
+
+        it.each(['replace', 'extend', 'reset'])('clears persisted navigation history after a successful %s', async mode => {
+            vi.advanceTimersByTime(300);
+            element('next-stream').click();
+            vi.advanceTimersByTime(300);
+            element('next-stream').click();
+            expect(JSON.parse(sessionStorage.getItem('roxy_session_history'))).toHaveLength(2);
+            const recent = sessionStorage.getItem('roxy_session_recent');
+            const data = mode === 'extend' ? [SEGMENTS[0]] : [{ videoId: 'CmMimqir5z0' }];
+            navigator.clipboard.readText.mockResolvedValue(JSON.stringify(data));
+            shortcut('I'); element(`import-${mode}-btn`).click();
+            await vi.advanceTimersByTimeAsync(300);
+            expect(sessionStorage.getItem('roxy_session_history')).toBe('[]');
+            expect(sessionStorage.getItem('roxy_session_recent')).toBe(recent);
+            if (isOpen('import-overlay')) pressKey('Escape');
+            element('prev-stream').click();
+            const expectedVideoId = mode === 'replace' ? 'CmMimqir5z0'
+                : mode === 'extend' ? 'aaaaaaaaaaa' : 'bbbbbbbbbbb';
+            expect(localStorage.getItem('roxy_videoId')).toBe(expectedVideoId);
+            element('next-song').click();
+            await vi.advanceTimersByTimeAsync(300);
+            expect(localStorage.getItem('roxy_videoId')).not.toBe('');
+        });
+
+        it('preserves navigation history when a replacement import is rejected', async () => {
+            vi.advanceTimersByTime(300);
+            element('next-stream').click();
+            const savedHistory = sessionStorage.getItem('roxy_session_history');
+            navigator.clipboard.readText.mockResolvedValue(JSON.stringify(
+                SEGMENTS.map(stream => ({ ...stream, memberOnly: true }))));
+            shortcut('I'); element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe('Import produced an empty playlist');
+            expect(sessionStorage.getItem('roxy_session_history')).toBe(savedHistory);
+            pressKey('Escape');
+            element('prev-stream').click();
+            expect(localStorage.getItem('roxy_videoId')).toBe('aaaaaaaaaaa');
         });
 
         it.each(['replace', 'extend'])('restores the catalogue after a %s import excludes every stream', async mode => {
