@@ -1,4 +1,5 @@
 import { PlayerCore } from './player-core.js';
+import { executePlaybackAction } from './playback-action.js';
 import { createMessageBarController } from './message-bar-ui.js';
 import { initWantedPoster } from './wanted-poster.js';
 import { createSearchController } from './search-modal.js';
@@ -108,10 +109,6 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
     // Core Logic Instance
     const core = new PlayerCore({
-        playVideo: (forceStart = true) => loadCurrentContent(forceStart),
-        seekTo: (time) => {
-            playbackCtrl.seekToSafe(time);
-        },
         saveSettings: (settings) => {
             for (const [key, val] of Object.entries(settings)) {
                 localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${key}`, val);
@@ -142,8 +139,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             }
             return s;
         },
-        now: () => Date.now(),
-        onStatus: () => updateStatus()
+        now: () => Date.now()
     });
 
     // ======== CONTROLLERS ========
@@ -155,7 +151,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         isYapMode: () => core.yapMode,
         onTick: (t) => {
             updateStatus(t);
-            core.checkTick(t);
+            applyPlaybackAction(core.checkTick(t));
         },
         onSeek: (t) => {
             updateStatus(t);
@@ -170,16 +166,13 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         getCurrentStreamIdx: () => core.vIdx,
         getCurrentSong: () => core.getCurrentSong(),
         onSelectResult: (vIdx, rIdx) => {
-            core.vIdx = vIdx;
-            core.rIdx = rIdx;
-            loadCurrentContent(true);
+            applyPlaybackAction(core.selectTrack(vIdx, rIdx));
         },
         onEnqueueResult: (vIdx, rIdx) => {
             const stream = core.playlist[vIdx];
             if (stream) {
                 core.enqueue(stream.videoId, rIdx);
-                updateQueueIndicator();
-                updateButtons();
+                updateQueueControls();
             }
         },
         isResultQueued: (vIdx, rIdx) => {
@@ -200,29 +193,10 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         isPlaylistReady: () => playlistReady,
         onEnqueueSong: (videoId, rIdx) => {
             core.enqueue(videoId, rIdx);
-            updateQueueIndicator();
-            updateButtons();
+            updateQueueControls();
         },
         isSongQueued: (videoId, rIdx) => core.isQueued(videoId, rIdx),
-        onSongPick: (safeIdx) => {
-            const stream = core.getCurrentStream();
-            if (!stream) return;
-
-            core.rIdx = safeIdx;
-
-            const songs = stream.songs || [{ name: stream.title || stream.name || 'Full Stream', range: [core.getStreamDefaultStart(stream) || 0, null] }];
-            const targetRange = songs[safeIdx].range;
-            const startSeconds = Array.isArray(targetRange) && Number.isFinite(targetRange[0])
-                ? targetRange[0]
-                : core.getStreamDefaultStart(stream);
-
-            if (!stream.songs || !stream.songs.length || core.yapMode) {
-                playbackCtrl.seekToSafe(startSeconds, stream);
-            } else {
-                loadCurrentContent(true, startSeconds);
-            }
-        },
-        beforeOpen: () => closeAllModals(),
+        onSongPick: (songIndex) => applyPlaybackAction(core.selectSong(songIndex)),
     });
 
     const importCtrl = createImportAndMoreController({
@@ -231,26 +205,11 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         importReplaceBtn, importAppendBtn,
         importResetBtn: document.getElementById('import-reset-btn'),
         onImportReplace: (data) => {
-            core.init(data);
-            if (!core.playlist.length) {
-                importCtrl.setImportStatus('Import produced an empty playlist', 'error');
-                console.warn('[Import] Imported data produced an empty playlist');
-                core.init(activeSegments);
-                rebuildPlaylistDerivedState();
-                return;
-            }
-
-            activeSegments = data;
+            if (!applyImportedSegments(data, 'Import produced an empty playlist')) return;
             persistCustomSegments(data);
             localStorage.setItem(SEGMENTS_MODE_STORAGE_KEY, SEGMENTS_MODE_REPLACED);
 
-            core.vIdx = 0;
-            core.rIdx = 0;
-            rebuildPlaylistDerivedState();
-            updateButtons();
-            loadCurrentContent(true);
-            importCtrl.setImportStatus(`Replaced - ${core.playlist.length} streams loaded`, 'ok');
-            importCtrl.toggleImportModal();
+            completeImport(`Replaced - ${core.playlist.length} streams loaded`, true);
             console.log(`[Import] Replaced with ${core.playlist.length} streams from clipboard`);
         },
         onImportAppend: (data) => {
@@ -258,27 +217,13 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             const kept = activeSegments.filter(entry => !importedIds.has(entry.videoId));
             const merged = [...kept, ...data];
 
-            core.init(merged);
-            if (!core.playlist.length) {
-                importCtrl.setImportStatus('Merge produced an empty playlist', 'error');
-                console.warn('[Import] Merged data produced an empty playlist');
-                core.init(activeSegments);
-                rebuildPlaylistDerivedState();
-                return;
-            }
-
-            activeSegments = merged;
+            if (!applyImportedSegments(merged, 'Merge produced an empty playlist')) return;
             // Defaults always load fresh. Persist non-default custom entries
             const defaultIds = new Set(canonicalBase.map(e => e.videoId));
             persistCustomSegments(merged.filter(e => !defaultIds.has(e.videoId)));
             localStorage.removeItem(SEGMENTS_MODE_STORAGE_KEY);
 
-            core.vIdx = 0;
-            core.rIdx = 0;
-            rebuildPlaylistDerivedState();
-            updateButtons();
-            loadCurrentContent(true);
-            importCtrl.setImportStatus(`Extended - ${core.playlist.length} streams total`, 'ok');
+            completeImport(`Extended - ${core.playlist.length} streams total`, false);
             console.log(`[Import] Appended ${data.length} streams (${importedIds.size} unique), total ${core.playlist.length}`);
         },
         onImportReset: () => {
@@ -287,32 +232,15 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             localStorage.removeItem(SEGMENTS_MODE_STORAGE_KEY);
 
             core.init(activeSegments);
-            core.vIdx = 0;
-            core.rIdx = 0;
-            rebuildPlaylistDerivedState();
-            updateButtons();
-            loadCurrentContent(true);
-            importCtrl.setImportStatus(`Reset - ${core.playlist.length} default streams restored`, 'ok');
-            importCtrl.toggleImportModal();
+            completeImport(`Reset - ${core.playlist.length} default streams restored`, true);
             console.log(`[Import] Reset to default playlist (${core.playlist.length} streams)`);
         },
         onMemberToggle: () => performMemberModeToggle(),
-        onCopyShareUrl: (buttonEl) => {
-            const stream = core.getCurrentStream();
-            if (stream && stream.videoId) {
-                const currentTime = playbackCtrl.getSafeCurrentTime();
-                const timeParam = Math.floor(currentTime);
-                const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    if (lifecycle.signal.aborted) return;
-                    const original = buttonEl.textContent;
-                    buttonEl.textContent = 'Copied!';
-                    lifecycle.timeout(() => { buttonEl.textContent = original; }, 1500);
-                }).catch(err => {
-                    console.error('[Share] Failed to copy URL to clipboard', err);
-                });
-            }
-        },
+        onCopyShareUrl: (buttonEl) => copyShareUrl(() => {
+            const original = buttonEl.textContent;
+            buttonEl.textContent = 'Copied!';
+            lifecycle.timeout(() => { buttonEl.textContent = original; }, 1500);
+        }),
         isMemberMode: () => core.memberMode,
     });
 
@@ -327,19 +255,18 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         onRemoveItem: (idx) => {
             core.removeFromQueue(idx);
             queueCtrl.render();
-            updateQueueIndicator();
-            updateButtons();
+            updateQueueControls();
         },
         onSelectItem: (idx) => {
-            if (!core.selectQueueItem(idx)) return;
+            const action = core.selectQueueItem(idx);
+            if (action.type === 'none') return;
             queueCtrl.toggle();
-            loadCurrentContent(true);
+            applyPlaybackAction(action);
         },
         onClearAll: () => {
             core.clearQueue();
             queueCtrl.render();
-            updateQueueIndicator();
-            updateButtons();
+            updateQueueControls();
         },
     });
 
@@ -465,6 +392,28 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         statusCtrl.refresh(true);
     }
 
+    function completeImport(message, closeModal) {
+        core.selectTrack(0);
+        rebuildPlaylistDerivedState();
+        updateButtons();
+        loadCurrentContent();
+        importCtrl.setImportStatus(message, 'ok');
+        if (closeModal) importCtrl.toggleImportModal();
+    }
+
+    function applyImportedSegments(segments, errorMessage) {
+        core.init(segments);
+        if (core.playlist.length) {
+            activeSegments = segments;
+            return true;
+        }
+        importCtrl.setImportStatus(errorMessage, 'error');
+        console.warn(`[Import] ${errorMessage}`);
+        core.init(activeSegments);
+        rebuildPlaylistDerivedState();
+        return false;
+    }
+
     /** @param {Segment[]} data */
     function persistCustomSegments(data) {
         try {
@@ -523,8 +472,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             }
 
             if (urlOverride) {
-                core.vIdx = urlOverride.streamIdx;
-                core.rIdx = 0;
+                core.selectTrack(urlOverride.streamIdx);
             }
 
             updateButtons();
@@ -691,14 +639,13 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         if (targetVideoId) {
             const idx = core.playlist.findIndex(p => p.videoId === targetVideoId);
             if (idx !== -1) {
-                core.vIdx = idx;
-                core.rIdx = 0;
+                core.selectTrack(idx);
             }
         }
 
         rebuildPlaylistDerivedState();
         updateButtons();
-        loadCurrentContent(true);
+        loadCurrentContent();
     }
 
     function updateButtons() {
@@ -735,6 +682,11 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         }
 
         importCtrl.updateMoreMemberBtn();
+    }
+
+    function updateQueueControls() {
+        updateQueueIndicator();
+        updateButtons();
     }
 
     function updateQueueIndicator() {
@@ -794,7 +746,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             startTime = resumeTime > 0 ? resumeTime : null;
         }
 
-        loadCurrentContent(true, startTime);
+        loadCurrentContent(startTime);
 
         playbackCtrl.stopTickLoop();
         playbackCtrl.evaluateTickLoop();
@@ -802,8 +754,11 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
     function onStateChange(ev) {
         if (lifecycle.signal.aborted) return;
+        // Selection changes before a debounced iframe load. Events during that
+        // delay still describe the previous video, including its end and metadata.
+        if (playbackCtrl.isLoadPending()) return;
         if (ev.data === YT.PlayerState.ENDED) {
-            core.onVideoEnded();
+            applyPlaybackAction(core.onVideoEnded());
         } else if (ev.data === YT.PlayerState.PLAYING) {
             playbackCtrl.reconcileStartOnPlaying();
             // Rule 0: If no segments, get duration now if not set
@@ -842,71 +797,37 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         playbackCtrl.evaluateTickLoop();
     }
 
-    function loadCurrentContent(autoplay, startTimeOverride = null) {
-        const stream = core.getCurrentStream();
-        const song = core.getCurrentSong();
-
-        if (!stream || !song) return;
-
-        let startSeconds = song.range[0];
-        let endSeconds = undefined;
-
-        if (core.yapMode && stream.songs) {
-            startSeconds = stream.songs[0].range[0];
-            endSeconds = stream.songs[stream.songs.length - 1].range[1];
-        } else if (!core.yapMode && !stream.songs) {
-            endSeconds = song.range[1];
-        } else if (core.yapMode && !stream.songs) {
-            endSeconds = song.range[1];
-        }
-
-        if (core.yapMode && stream.songs && core.rIdx > 0 && startTimeOverride === null) {
-            startSeconds = song.range[0];
-        }
-
-        if (startTimeOverride !== null && startTimeOverride >= 0) {
-            startSeconds = startTimeOverride;
-        }
-
-        if (endSeconds === 0 || !endSeconds) {
-            endSeconds = undefined;
-        }
-
+    function loadCurrentContent(startTimeOverride = null) {
+        const request = core.getPlaybackRequest(startTimeOverride);
+        if (!request) return;
+        const { stream, startSeconds, endSeconds } = request;
         playbackCtrl.playVideoAt(stream, startSeconds, endSeconds);
         statusCtrl.refresh();
-        updateQueueIndicator();
-        updateButtons();
+        updateQueueControls();
         // Keep the ▶ marker on the currently-playing queue slot while the modal is open.
         if (queueCtrl.isOpen()) queueCtrl.refreshNowPlaying();
     }
 
+    const playbackActions = { load: loadCurrentContent, seek: playbackCtrl.seekToSafe };
+    function applyPlaybackAction(action) {
+        return executePlaybackAction(action, playbackActions);
+    }
+
     // ======== UI WIRES ========
     lifecycle.listen(btnPrevStream, 'click', (event) => {
-        if (core.prevStream({ skipHistory: event.shiftKey })) loadCurrentContent(true);
+        applyPlaybackAction(core.prevStream({ skipHistory: event.shiftKey }));
     });
 
     lifecycle.listen(btnNextStream, 'click', () => {
-        if (core.nextStream()) loadCurrentContent(true);
+        applyPlaybackAction(core.nextStream());
     });
 
     lifecycle.listen(btnPrevSong, 'click', () => {
-        const curTime = playbackCtrl.getSafeCurrentTime();
-        const action = core.prevSong(curTime);
-        if (action.type === 'load') {
-            loadCurrentContent(true);
-        } else if (action.type === 'seek') {
-            core.cb.seekTo(action.time);
-            if (action.reload) {
-                loadCurrentContent(true);
-            }
-        }
+        applyPlaybackAction(core.prevSong(playbackCtrl.getSafeCurrentTime()));
     });
 
     lifecycle.listen(btnNextSong, 'click', () => {
-        const curTime = playbackCtrl.getSafeCurrentTime();
-        const action = core.nextSong(curTime);
-        if (action.type === 'load') loadCurrentContent(true);
-        if (action.type === 'seek') core.cb.seekTo(action.time);
+        applyPlaybackAction(core.nextSong(playbackCtrl.getSafeCurrentTime()));
     });
 
     lifecycle.listen(btnLoop, 'click', () => {
@@ -931,29 +852,21 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         const t = playbackCtrl.getSafeCurrentTime();
         core.syncToTime(t);
 
-        if (!core.yapMode) { // Switched TO Standard
-            const stream = core.getCurrentStream();
-            if (stream.songs) {
-                const idx = stream.songs.findIndex(s => t >= s.range[0] && t < s.range[1]);
-                if (idx !== -1) core.rIdx = idx;
-            }
-        }
-
-        const stream = core.getCurrentStream();
-        if (!stream) return;
-        const song = core.getCurrentSong();
-
-        let endSeconds = undefined;
-        if (core.yapMode && stream.songs) {
-            endSeconds = stream.songs[stream.songs.length - 1].range[1];
-        } else if (!core.yapMode && !stream.songs) {
-            endSeconds = song.range[1];
-        }
-
-        playbackCtrl.playVideoAt(stream, t, endSeconds);
+        const request = core.getPlaybackRequest(t);
+        if (request) playbackCtrl.playVideoAt(request.stream, request.startSeconds, request.endSeconds);
     });
 
     lifecycle.listen(btnStart, 'click', () => requestStartPlayback());
+
+    function copyShareUrl(onCopied) {
+        const stream = core.getCurrentStream();
+        if (!stream?.videoId) return;
+        const time = Math.floor(playbackCtrl.getSafeCurrentTime());
+        const url = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${time}`;
+        navigator.clipboard.writeText(url).then(() => {
+            if (!lifecycle.signal.aborted) onCopied(url);
+        }).catch(err => console.error('[Share] Failed to copy URL to clipboard', err));
+    }
 
     function setStatus(msg) {
         if (!statusTextEl) return;
@@ -1046,8 +959,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
                     const stream = core.playlist[item.streamId];
                     if (stream) {
                         core.enqueue(stream.videoId, item.songId);
-                        updateQueueIndicator();
-                        updateButtons();
+                        updateQueueControls();
                         // Flash the highlighted row's button
                         const selRow = resultsContainer.querySelectorAll('.result-item.selected')[0];
                         if (selRow) flashEnqueue(selRow.querySelector('.enqueue-btn'), undefined, lifecycle.timeout);
@@ -1060,8 +972,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
                 const item = statusCtrl.enqueueHighlighted();
                 if (item) {
                     core.enqueue(item.videoId, item.rIdx);
-                    updateQueueIndicator();
-                    updateButtons();
+                    updateQueueControls();
                     if (btn) flashEnqueue(btn, undefined, lifecycle.timeout);
                 }
             } else {
@@ -1069,8 +980,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
                 const stream = core.getCurrentStream();
                 if (stream) {
                     core.enqueue(stream.videoId, core.rIdx);
-                    updateQueueIndicator();
-                    updateButtons();
+                    updateQueueControls();
                 }
             }
             return;
@@ -1098,18 +1008,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
         if (e.key === 'C' && e.shiftKey && !modalOpen && !queueOpen) {
             e.preventDefault();
-            const stream = core.getCurrentStream();
-            if (stream && stream.videoId) {
-                const currentTime = playbackCtrl.getSafeCurrentTime();
-                const timeParam = Math.floor(currentTime);
-                const shareUrl = `${window.location.origin}${window.location.pathname}?v=${stream.videoId}&t=${timeParam}`;
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    if (lifecycle.signal.aborted) return;
-                    console.log(`[Share] Copied URL to clipboard: ${shareUrl}`);
-                }).catch(err => {
-                    console.error('[Share] Failed to copy URL to clipboard', err);
-                });
-            }
+            copyShareUrl(shareUrl => console.log(`[Share] Copied URL to clipboard: ${shareUrl}`));
             return;
         }
 

@@ -1,3 +1,4 @@
+import { executePlaybackAction } from './playback-action.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlayerCore, LOOP_NONE, LOOP_TRACK, LOOP_STREAM, RESTART_THRESHOLD_SECONDS, resolveRIdx } from './player-core.js';
 
@@ -10,6 +11,12 @@ const MOCK_SEGMENTS = [
 describe('PlayerCore', () => {
   let core;
   let callbacks;
+  let playbackCommands;
+
+  function applyAction(action) {
+    executePlaybackAction(action, playbackCommands);
+  }
+
 
   beforeEach(() => {
     callbacks = {
@@ -18,9 +25,8 @@ describe('PlayerCore', () => {
       saveSessionData: vi.fn(),
       getSessionData: vi.fn(() => ({})),
       now: vi.fn(() => 1000000), // Fixed time
-      playVideo: vi.fn(),
-      seekTo: vi.fn()
     };
+    playbackCommands = { load: vi.fn(), seek: vi.fn() };
     core = new PlayerCore(callbacks);
     core.init(MOCK_SEGMENTS);
   });
@@ -37,6 +43,35 @@ describe('PlayerCore', () => {
       const song = core.getCurrentSong();
       expect(song.name).toBe('Video 2');
       expect(song.range[0]).toBe(0);
+    });
+  });
+
+  describe('Playback bounds', () => {
+    it.each([false, true])('starts the selected song with Yap=%s', yapMode => {
+      core.yapMode = yapMode;
+      core.selectTrack(0, 1);
+      expect(core.getPlaybackRequest()).toEqual({
+        stream: core.getCurrentStream(), startSeconds: 20,
+        endSeconds: yapMode ? 30 : undefined,
+      });
+    });
+
+    it.each([false, true])('preserves explicit intro and gap positions with Yap=%s', yapMode => {
+      core.yapMode = yapMode;
+      core.selectTrack(0, 1);
+      for (const time of [0, 15, 22]) {
+        expect(core.getPlaybackRequest(time).startSeconds).toBe(time);
+        expect(core.rIdx).toBe(1);
+      }
+    });
+
+    it.each([false, true])('uses the known whole-video duration with Yap=%s', yapMode => {
+      core.yapMode = yapMode;
+      core.selectTrack(1);
+      core.setDuration('v2', 200);
+      expect(core.getPlaybackRequest(15)).toEqual({
+        stream: core.getCurrentStream(), startSeconds: 15, endSeconds: 200,
+      });
     });
   });
 
@@ -258,9 +293,9 @@ describe('PlayerCore', () => {
   describe('Loop Modes', () => {
      it('Loop Song stays on song on auto-advance', () => {
          core.loopMode = LOOP_TRACK;
-         core.advanceAuto();
+         applyAction(core.advanceAuto());
          expect(core.rIdx).toBe(0); // Stays same
-         expect(callbacks.seekTo).toHaveBeenCalledWith(0);
+         expect(playbackCommands.seek).toHaveBeenCalledWith(0);
      });
 
      it('Loop Song still allows manual skip', () => {
@@ -272,7 +307,7 @@ describe('PlayerCore', () => {
      it('Loop Stream wraps song index but stays on stream', () => {
          core.loopMode = LOOP_STREAM;
          core.rIdx = 1; // Last song
-         core.advanceAuto();
+         applyAction(core.advanceAuto());
          expect(core.vIdx).toBe(0); // Same stream
          expect(core.rIdx).toBe(0); // First song
      });
@@ -463,6 +498,35 @@ describe('PlayerCore', () => {
     });
   });
 
+  describe('consistent loop handling', () => {
+      it.each([false, true].flatMap(yapMode => [LOOP_NONE, LOOP_TRACK, LOOP_STREAM].flatMap(loopMode =>
+          ['checkTick', 'onVideoEnded'].map(method => ({ yapMode, loopMode, method }))
+      )))('honors loop=$loopMode for $method with yap=$yapMode', ({ yapMode, loopMode, method }) => {
+          core.yapMode = yapMode;
+          core.loopMode = loopMode;
+          core.rIdx = 1;
+          const action = core[method](29.9);
+          expect(core.vIdx).toBe(loopMode === LOOP_NONE ? 1 : 0);
+          expect(core.rIdx).toBe(loopMode === LOOP_TRACK ? 1 : 0);
+          expect(action).toEqual(loopMode === LOOP_TRACK ? { type: 'seek', time: 20 } : { type: 'load' });
+          // Decisions alone must not issue an external player command.
+          expect(playbackCommands.load).not.toHaveBeenCalled();
+          expect(playbackCommands.seek).not.toHaveBeenCalled();
+          applyAction(action);
+          if (loopMode === LOOP_TRACK) expect(playbackCommands.seek).toHaveBeenCalledWith(20);
+          else expect(playbackCommands.load).toHaveBeenCalledTimes(1);
+      });
+
+      it.each([false, true])('wraps Next Song within Loop Stream with yap=%s', yapMode => {
+          core.yapMode = yapMode;
+          core.loopMode = LOOP_STREAM;
+          core.rIdx = 1;
+          expect(core.nextSong(25)).toEqual(yapMode ? { type: 'seek', time: 0 } : { type: 'load' });
+          expect(core.vIdx).toBe(0);
+          expect(core.rIdx).toBe(0);
+      });
+  });
+
   describe('Yap Mode - Tick Logic', () => {
       it('does NOT skip when crossing internal song boundaries', () => {
           core.toggleYap();
@@ -472,9 +536,9 @@ describe('PlayerCore', () => {
 
           // Tick at 11 (past S1 end, in gap)
           // Should NOT trigger nextStream or advanceAuto or any callback
-          core.checkTick(11);
-          expect(callbacks.playVideo).not.toHaveBeenCalled();
-          expect(callbacks.seekTo).not.toHaveBeenCalled();
+          applyAction(core.checkTick(11));
+          expect(playbackCommands.load).not.toHaveBeenCalled();
+          expect(playbackCommands.seek).not.toHaveBeenCalled();
       });
 
       it('advances to next stream when reaching global end', () => {
@@ -483,8 +547,8 @@ describe('PlayerCore', () => {
           // Last song ends at 30. Global end is 30.
           // Logic checks: currentTime >= lastSong.range[1] - 0.2
 
-          core.checkTick(29.9);
-          expect(callbacks.playVideo).toHaveBeenCalled();
+          applyAction(core.checkTick(29.9));
+          expect(playbackCommands.load).toHaveBeenCalled();
           expect(core.vIdx).toBe(1); // Next stream
       });
 
@@ -492,7 +556,7 @@ describe('PlayerCore', () => {
           core.toggleYap();
           core.vIdx = 0;
           core.rIdx = 0;
-          core.checkTick(25);
+          applyAction(core.checkTick(25));
           expect(core.rIdx).toBe(1);
       });
   });
@@ -508,22 +572,22 @@ describe('PlayerCore', () => {
           core.rIdx = 0;
           core.yapMode = false;
 
-          callbacks.playVideo.mockClear();
+          playbackCommands.load.mockClear();
 
           // Tick just before the boundary – should NOT trigger auto-advance
-          core.checkTick(9.9);
-          expect(callbacks.playVideo).not.toHaveBeenCalled();
+          applyAction(core.checkTick(9.9));
+          expect(playbackCommands.load).not.toHaveBeenCalled();
           expect(core.vIdx).toBe(0);
           expect(core.rIdx).toBe(0);
 
           // Tick slightly after the boundary – we allow playback to continue,
           // and we still should not have auto-advanced streams.
-          core.checkTick(10.5);
-          expect(callbacks.playVideo).not.toHaveBeenCalled();
+          applyAction(core.checkTick(10.5));
+          expect(playbackCommands.load).not.toHaveBeenCalled();
           expect(core.vIdx).toBe(0);
 
           // Once sufficiently into the second segment, rIdx should catch up.
-          core.checkTick(11.5);
+          applyAction(core.checkTick(11.5));
           expect(core.rIdx).toBe(1);
       });
   });
@@ -796,14 +860,14 @@ describe('PlayerCore', () => {
           core.rIdx = 0;
 
           // Simulate seek to 5 (middle of Song 1)
-          core.checkTick(5);
+          applyAction(core.checkTick(5));
           expect(core.rIdx).toBe(0);
 
           // Simulate seek to 25 (middle of Song 2)
           // The bug is that previously logic might try to enforce rIdx=0 end bound or snap back
           // But checkTick logic updates rIdx if we land in a valid song range
 
-          core.checkTick(25);
+          applyAction(core.checkTick(25));
           expect(core.rIdx).toBe(1); // Should update index to match time
 
           // CRITICAL: Ensure we don't trigger a 'load' or 'seek' that would snap to START of song
@@ -811,7 +875,7 @@ describe('PlayerCore', () => {
           // In the UI integration, `checkTick` is just passive.
 
           // However, if we seek to a GAP (e.g. 15), what happens?
-          core.checkTick(15);
+          applyAction(core.checkTick(15));
           // rIdx should probably stay at last known valid or be indeterminate?
           // Current logic: checkTick ignores gaps if Yap is Off?
           // Let's check logic.
@@ -821,7 +885,7 @@ describe('PlayerCore', () => {
           // User seeks to 15 (Gap between 10 and 20)
           core.vIdx = 0;
           core.rIdx = 0;
-          core.checkTick(15);
+          applyAction(core.checkTick(15));
 
           // If we are in a gap, standard mode (Yap Off) usually implies we only play segments?
           // "Rule 4b: When off, the player strictly plays only parts specified within the songs array"
@@ -847,7 +911,7 @@ describe('PlayerCore', () => {
 
           // FIX: Logic to detect discontinuity or allow gap playback if seeked.
           // Assert that we do NOT call playVideo (reload)
-          expect(callbacks.playVideo).not.toHaveBeenCalled();
+          expect(playbackCommands.load).not.toHaveBeenCalled();
       });
   });
 

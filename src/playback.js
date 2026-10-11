@@ -1,10 +1,5 @@
 import { createLifecycle } from './lifecycle.js';
-
-const START_CORRECTION_TOLERANCE_SECONDS = 3;
-const START_CORRECTION_RETRY_MS = 1000;
-const START_CORRECTION_MAX_ATTEMPTS = 3;
-const START_CORRECTION_TIMEOUT_MS = 15000;
-const START_CONFIRMATION_MS = 1000;
+import { createStartPositionMonitor } from './playback-start.js';
 
 /**
  * @param {object} deps
@@ -26,25 +21,41 @@ export function createPlaybackController({
     const lifecycle = createLifecycle();
     let tickHandle = null;
     let lastKnownTime = 0;
-    let pendingStartCorrection = null;
+    const startPosition = createStartPositionMonitor({ onCorrection: time => { lastKnownTime = time; } });
     let currentLoadedVideoId = null;
     let lastVideoLoadTime = 0;
+    let pendingLoad = null;
     let titleRefreshHandle = null;
+
+    function cancelPendingLoad() {
+        lifecycle.cancelTimeout(pendingLoad?.handle);
+        pendingLoad = null;
+    }
 
     function seekToSafe(time, stream) {
         if (lifecycle.signal.aborted) return;
-        pendingStartCorrection = null;
+        const previousLoad = pendingLoad;
+        cancelPendingLoad();
+        startPosition.cancel();
         const resolvedStream = stream || getCurrentStream();
         const safeStart = sanitizeStartTime(time, resolvedStream);
-        const player = getPlayer();
-        if (player && player.seekTo) {
-            player.seekTo(safeStart, true);
+        if (previousLoad && previousLoad.stream.videoId === resolvedStream?.videoId
+            && currentLoadedVideoId !== resolvedStream.videoId) {
+            // A song pick within the selected video replaces its pending start;
+            // seeking the iframe here would seek in the previous video instead.
+            playVideoAt(resolvedStream, safeStart, previousLoad.endSeconds, previousLoad.forceReload);
+        } else {
+            const player = getPlayer();
+            if (player && player.seekTo) player.seekTo(safeStart, true);
         }
         lastKnownTime = safeStart;
         onSeek(safeStart);
     }
 
     function getSafeCurrentTime() {
+        // Navigation already addresses the selected stream during the delay.
+        // Its requested position is authoritative until the iframe load is sent.
+        if (pendingLoad) return pendingLoad.startSeconds;
         const player = getPlayer();
         if (!player) {
             return lastKnownTime;
@@ -66,6 +77,10 @@ export function createPlaybackController({
 
     function playVideoAt(stream, desiredStart, endSeconds, forceReload = false) {
         if (!stream || lifecycle.signal.aborted) return;
+        // One pending load at most. A later selection replaces it, including a
+        // selection of the video that is still loaded (which becomes a seek).
+        cancelPendingLoad();
+        startPosition.cancel();
         const safeStart = sanitizeStartTime(desiredStart, stream);
         let safeEnd = Number.isFinite(endSeconds) && endSeconds > 0 ? endSeconds : undefined;
         if (safeEnd !== undefined && safeEnd <= safeStart) {
@@ -77,7 +92,6 @@ export function createPlaybackController({
 
         const isSameVideo = currentLoadedVideoId === stream.videoId;
         if (isSameVideo && !forceReload) {
-            pendingStartCorrection = null;
             seekToSafe(safeStart, stream);
             return;
         }
@@ -86,7 +100,13 @@ export function createPlaybackController({
         const timeSinceLastLoad = now - lastVideoLoadTime;
         if (timeSinceLastLoad < VIDEO_LOAD_DEBOUNCE_MS) {
             const delay = VIDEO_LOAD_DEBOUNCE_MS - timeSinceLastLoad;
-            lifecycle.timeout(() => playVideoAt(stream, desiredStart, endSeconds, forceReload), delay);
+            pendingLoad = {
+                stream, startSeconds: safeStart, endSeconds: safeEnd, forceReload,
+                handle: lifecycle.timeout(() => {
+                    pendingLoad = null;
+                    playVideoAt(stream, desiredStart, endSeconds, forceReload);
+                }, delay),
+            };
             return;
         }
         lastVideoLoadTime = now;
@@ -103,79 +123,15 @@ export function createPlaybackController({
         if (safeEnd !== undefined) {
             payload.endSeconds = safeEnd;
         }
-        pendingStartCorrection = {
-            videoId: stream.videoId,
-            startSeconds: safeStart,
-            startedAt: null,
-            lastSeekAt: -Infinity,
-            attempts: 0,
-            confirmation: null,
-        };
+        startPosition.begin(stream.videoId, safeStart);
         player.loadVideoById(payload);
     }
 
     function reconcileStartOnPlaying() {
         const player = getPlayer();
-        if (pendingStartCorrection && player) {
-            reconcileStart(player, player.getCurrentTime());
+        if (startPosition.isPending() && player) {
+            startPosition.reconcile(player, player.getCurrentTime());
         }
-    }
-
-    // A PLAYING event or seek command is not an acknowledgement of the start time.
-    // Keep checking on the existing tick loop until the requested video progresses
-    // near its start. Do not feed old/incorrect timestamps into song-boundary logic.
-    function reconcileStart(player, time) {
-        const pending = pendingStartCorrection;
-        if (!pending) return true;
-
-        const now = Date.now();
-        if (pending.startedAt === null) pending.startedAt = now;
-        if (now - pending.startedAt >= START_CORRECTION_TIMEOUT_MS) {
-            console.warn(`[Playback] Start position not confirmed for ${pending.videoId} at ${pending.startSeconds}`);
-            pendingStartCorrection = null;
-            return true;
-        }
-
-        if (player.getVideoUrl) {
-            let videoId = null;
-            try {
-                videoId = new URL(player.getVideoUrl()).searchParams.get('v');
-            } catch { /* The iframe may not have reported its new video yet. */ }
-            if (videoId !== pending.videoId) {
-                pending.confirmation = null;
-                return false;
-            }
-        }
-        if (!Number.isFinite(time)) {
-            pending.confirmation = null;
-            return false;
-        }
-
-        // The video ID may update before the old video's time does. A position
-        // beyond any plausible progress from this request cannot confirm it.
-        const playbackRate = player.getPlaybackRate ? player.getPlaybackRate() : 1;
-        const elapsedSeconds = (now - pending.startedAt) / 1000;
-        if (time > pending.startSeconds + START_CORRECTION_TOLERANCE_SECONDS + elapsedSeconds * playbackRate) {
-            pending.confirmation = null;
-            return false;
-        }
-
-        if (time >= pending.startSeconds - START_CORRECTION_TOLERANCE_SECONDS) {
-            if (!pending.confirmation) pending.confirmation = { time, at: now };
-            if (now - pending.confirmation.at >= START_CONFIRMATION_MS && time > pending.confirmation.time) {
-                pendingStartCorrection = null;
-            }
-            return true;
-        }
-
-        pending.confirmation = null;
-        if (pending.attempts < START_CORRECTION_MAX_ATTEMPTS && now - pending.lastSeekAt >= START_CORRECTION_RETRY_MS) {
-            pending.lastSeekAt = now;
-            pending.attempts++;
-            player.seekTo(pending.startSeconds, true);
-            lastKnownTime = pending.startSeconds;
-        }
-        return false;
     }
 
     function startTickLoop() {
@@ -197,7 +153,7 @@ export function createPlaybackController({
         const state = player.getPlayerState();
         if (state !== YT.PlayerState.PLAYING) return false;
 
-        if (document.hidden && !pendingStartCorrection) {
+        if (document.hidden && !startPosition.isPending()) {
             const stream = getCurrentStream();
             const needsGapSkipping = stream && stream.songs && stream.songs.length > 0 && !isYapMode();
             if (!needsGapSkipping) {
@@ -221,12 +177,15 @@ export function createPlaybackController({
             stopTickLoop();
             return;
         }
+        // The core already holds the newly selected song. Do not interpret the
+        // previous video's clock against it while that song awaits loading.
+        if (pendingLoad !== null) return;
         const player = getPlayer();
         if (!player || !player.getCurrentTime) return;
         const t = player.getCurrentTime();
-        const wasPending = pendingStartCorrection !== null;
-        const usableTime = reconcileStart(player, t);
-        if (wasPending && !pendingStartCorrection) evaluateTickLoop();
+        const wasPending = startPosition.isPending();
+        const usableTime = startPosition.reconcile(player, t);
+        if (wasPending && !startPosition.isPending()) evaluateTickLoop();
         if (!usableTime || !Number.isFinite(t)) return;
         lastKnownTime = t;
 
@@ -246,32 +205,22 @@ export function createPlaybackController({
         return lastKnownTime;
     }
 
-    function setLastKnownTime(t) {
-        lastKnownTime = t;
-    }
-
-    function getCurrentLoadedVideoId() {
-        return currentLoadedVideoId;
-    }
-
     function resetLoadedVideoId() {
         currentLoadedVideoId = null;
-        pendingStartCorrection = null;
+        startPosition.cancel();
     }
 
     return {
-        destroy: () => { lifecycle.dispose(); pendingStartCorrection = null; },
+        destroy: () => { cancelPendingLoad(); lifecycle.dispose(); startPosition.cancel(); },
         seekToSafe,
         getSafeCurrentTime,
         playVideoAt,
+        isLoadPending: () => pendingLoad !== null,
         reconcileStartOnPlaying,
-        startTickLoop,
         stopTickLoop,
         evaluateTickLoop,
         ensureTitleRefreshLoop,
         getLastKnownTime,
-        setLastKnownTime,
-        getCurrentLoadedVideoId,
         resetLoadedVideoId,
     };
 }

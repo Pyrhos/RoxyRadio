@@ -32,6 +32,7 @@ describe('createPlaybackController', () => {
     });
 
     afterEach(() => {
+        ctrl.destroy();
         vi.clearAllTimers();
         vi.useRealTimers();
         vi.restoreAllMocks();
@@ -111,6 +112,59 @@ describe('createPlaybackController', () => {
             expect(mockPlayer.seekTo).toHaveBeenCalledTimes(1);
             expect(mockPlayer.seekTo).toHaveBeenCalledWith(savedTime, true);
             expect(ctrl.getLastKnownTime()).toBe(savedTime);
+        });
+    });
+
+    describe('pending video loads', () => {
+        it('does not load B after a rapid A → B → A selection', () => {
+            ctrl.playVideoAt({ videoId: 'a' }, 10);
+            vi.advanceTimersByTime(100);
+            ctrl.playVideoAt({ videoId: 'b' }, 20);
+            vi.advanceTimersByTime(50);
+            ctrl.playVideoAt({ videoId: 'a' }, 30);
+            vi.advanceTimersByTime(1000);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+            expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(30, true);
+        });
+
+        it('loads only the latest requested video after the existing cooldown', () => {
+            ctrl.playVideoAt({ videoId: 'a' }, 10);
+            vi.advanceTimersByTime(100);
+            ctrl.playVideoAt({ videoId: 'b' }, 20);
+            vi.advanceTimersByTime(50);
+            ctrl.playVideoAt({ videoId: 'c' }, 30);
+            expect(vi.getTimerCount()).toBe(1);
+            vi.advanceTimersByTime(149);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+            vi.advanceTimersByTime(1);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'c', startSeconds: 30 }));
+            expect(vi.getTimerCount()).toBe(0);
+        });
+
+        it.each(['seek', 'dispose'])('cancels a pending load on explicit %s', operation => {
+            ctrl.playVideoAt({ videoId: 'a' }, 10);
+            ctrl.playVideoAt({ videoId: 'b' }, 20);
+            if (operation === 'seek') ctrl.seekToSafe(50);
+            else ctrl.destroy();
+            vi.advanceTimersByTime(1000);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+            expect(vi.getTimerCount()).toBe(0);
+        });
+
+        it('does not forward old playback times while a new selection awaits loading', () => {
+            ctrl.playVideoAt({ videoId: 'a' }, 10);
+            ctrl.evaluateTickLoop();
+            vi.advanceTimersByTime(100);
+            ctrl.playVideoAt({ videoId: 'b' }, 120);
+            mockPlayer.getCurrentTime.mockReturnValue(10);
+            vi.advanceTimersByTime(100);
+            expect(deps.onTick).not.toHaveBeenCalled();
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(100);
+            mockPlayer.getCurrentTime.mockReturnValue(120);
+            vi.advanceTimersByTime(100);
+            expect(deps.onTick).toHaveBeenCalledExactlyOnceWith(120);
         });
     });
 

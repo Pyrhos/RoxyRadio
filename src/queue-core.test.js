@@ -1,3 +1,4 @@
+import { executePlaybackAction } from './playback-action.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlayerCore, LOOP_NONE, LOOP_TRACK, LOOP_STREAM } from './player-core.js';
 
@@ -10,6 +11,11 @@ const MOCK_SEGMENTS = [
 describe('Queue (§13)', () => {
   let core;
   let callbacks;
+  let playbackCommands;
+
+  function applyAction(action) {
+    executePlaybackAction(action, playbackCommands);
+  }
 
   beforeEach(() => {
     callbacks = {
@@ -18,9 +24,8 @@ describe('Queue (§13)', () => {
       saveSessionData: vi.fn(),
       getSessionData: vi.fn(() => ({})),
       now: vi.fn(() => 1000000),
-      playVideo: vi.fn(),
-      seekTo: vi.fn()
     };
+    playbackCommands = { load: vi.fn(), seek: vi.fn() };
     core = new PlayerCore(callbacks);
     core.init(MOCK_SEGMENTS);
   });
@@ -221,13 +226,13 @@ describe('Queue (§13)', () => {
       core.vIdx = 0; // currently at v1
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // Front item (v3) taken and played, v1/1 remains in queue
       expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 1 }]);
       expect(core.vIdx).toBe(2); // v3
       expect(core.rIdx).toBe(0);
-      expect(callbacks.playVideo).toHaveBeenCalled();
+      expect(playbackCommands.load).toHaveBeenCalled();
     });
 
     it('Loop Queue (LOOP_STREAM): plays front and moves the cursor, queue untouched', () => {
@@ -237,7 +242,7 @@ describe('Queue (§13)', () => {
       core.vIdx = 0;
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // v3 played; the arrangement is untouched — only the cursor marks it
       expect(core.getQueue()).toEqual([
@@ -247,7 +252,7 @@ describe('Queue (§13)', () => {
       expect(core.getNowPlayingQueueIndex()).toBe(0);
       expect(core.vIdx).toBe(2); // v3
       expect(core.rIdx).toBe(0);
-      expect(callbacks.playVideo).toHaveBeenCalled();
+      expect(playbackCommands.load).toHaveBeenCalled();
     });
 
     it('Loop Track: repeats current song, queue unchanged', () => {
@@ -257,13 +262,13 @@ describe('Queue (§13)', () => {
       core.vIdx = 2;
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       expect(core.getQueue().length).toBe(2);
       expect(core.vIdx).toBe(2);
       expect(core.rIdx).toBe(0);
-      expect(callbacks.seekTo).toHaveBeenCalledWith(0);
-      expect(callbacks.playVideo).not.toHaveBeenCalled();
+      expect(playbackCommands.seek).toHaveBeenCalledWith(0);
+      expect(playbackCommands.load).not.toHaveBeenCalled();
     });
 
     it('silently drops invalid videoIds and plays next valid item', () => {
@@ -274,12 +279,12 @@ describe('Queue (§13)', () => {
       core.vIdx = 0;
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // Both invalid items dropped, v1 taken and played
       expect(core.getQueue()).toEqual([]);
       expect(core.vIdx).toBe(0); // v1
-      expect(callbacks.playVideo).toHaveBeenCalled();
+      expect(playbackCommands.load).toHaveBeenCalled();
     });
 
     it('falls through to normal behavior when queue exhausts', () => {
@@ -288,14 +293,14 @@ describe('Queue (§13)', () => {
       core.vIdx = 0;
       core.rIdx = 0; // v1, first song
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // Queue exhausted (invalid item dropped). Normal advanceAuto:
       // v1 has songs [0,10] and [20,30]. rIdx was 0, so advances to rIdx 1.
       expect(core.getQueue()).toEqual([]);
       expect(core.vIdx).toBe(0);
       expect(core.rIdx).toBe(1);
-      expect(callbacks.playVideo).toHaveBeenCalled();
+      expect(playbackCommands.load).toHaveBeenCalled();
     });
 
     it('pushes history when playing a queue item', () => {
@@ -304,7 +309,7 @@ describe('Queue (§13)', () => {
       core.rIdx = 1;
       core.enqueue('v3', 0);
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // History should have the position before queue item loaded
       expect(core.history.length).toBe(1);
@@ -319,7 +324,7 @@ describe('Queue (§13)', () => {
       core.vIdx = 0;
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // v2 taken, v1 remains
       expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 0 }]);
@@ -333,7 +338,7 @@ describe('Queue (§13)', () => {
       core.vIdx = 2;
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // rIdx 99 should be clamped; since 99 >= songs.length (2), it falls to 0
       expect(core.vIdx).toBe(0);
@@ -1062,7 +1067,7 @@ describe('Queue (§13)', () => {
       // Switch to Loop None; an auto-advance consumes the front item and
       // plays it, so the lingering cursor no longer matches playback.
       core.loopMode = LOOP_NONE;
-      core.advanceAuto(); // plays v1, queue [v2, v3]
+      applyAction(core.advanceAuto()); // plays v1, queue [v2, v3]
       expect(core.vIdx).toBe(0); // v1
 
       // Back to Loop Queue. No explicit reconcile runs on loop change — the
@@ -1096,7 +1101,7 @@ describe('Queue (§13)', () => {
       // Same for auto-advance: re-perturb, then advanceAuto re-enters from front.
       core.vIdx = 1; // v2 again
       core.rIdx = 0;
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect(core.vIdx).toBe(2); // v3 (front)
     });
   });
@@ -1111,7 +1116,7 @@ describe('Queue (§13)', () => {
 
       const result = core.selectQueueItem(1);
 
-      expect(result).toBe(true);
+      expect(result).toEqual({ type: 'load' });
       expect(core.vIdx).toBe(0); // v1
       expect(core.rIdx).toBe(1);
       expect(core.getNowPlayingQueueIndex()).toBe(1);
@@ -1135,15 +1140,15 @@ describe('Queue (§13)', () => {
       expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 1 }]);
     });
 
-    it('returns false for invalid index', () => {
+    it('returns no playback action for invalid index', () => {
       core.enqueue('v3', 0);
-      expect(core.selectQueueItem(-1)).toBe(false);
-      expect(core.selectQueueItem(5)).toBe(false);
+      expect(core.selectQueueItem(-1)).toEqual({ type: 'none' });
+      expect(core.selectQueueItem(5)).toEqual({ type: 'none' });
     });
 
-    it('returns false for invalid videoId', () => {
+    it('returns no playback action for invalid videoId', () => {
       core.enqueue('nonexistent', 0);
-      expect(core.selectQueueItem(0)).toBe(false);
+      expect(core.selectQueueItem(0)).toEqual({ type: 'none' });
     });
 
     it('pushes history before switching', () => {
@@ -1171,7 +1176,7 @@ describe('Queue (§13)', () => {
       core.vIdx = 0;
       core.rIdx = 1; // Last song of v1
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // Should wrap to first song of same stream (Loop Stream behavior)
       expect(core.vIdx).toBe(0);
@@ -1186,13 +1191,13 @@ describe('Queue (§13)', () => {
       core.vIdx = 2; // at v3
       core.rIdx = 0;
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       // Single item cycled to back = still front
       expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]);
       expect(core.vIdx).toBe(2);
       expect(core.rIdx).toBe(0);
-      expect(callbacks.playVideo).toHaveBeenCalled();
+      expect(playbackCommands.load).toHaveBeenCalled();
     });
   });
 
@@ -1341,10 +1346,10 @@ describe('Queue (§13)', () => {
       // Mock: pick index 1 (v3)
       const spy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect(core.vIdx).toBe(2); // v3
       expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 0 }]);
-      expect(callbacks.playVideo).toHaveBeenCalled();
+      expect(playbackCommands.load).toHaveBeenCalled();
 
       spy.mockRestore();
     });
@@ -1391,7 +1396,7 @@ describe('Queue (§13)', () => {
       core.rIdx = 0;
       core.recentTracks = recent('v1', 'v2'); // last-2 window covers v1, v2
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect(core.vIdx).toBe(3); // only v3 is neither current nor recent
     });
 
@@ -1403,7 +1408,7 @@ describe('Queue (§13)', () => {
       // the 2-item tail leaves v1 as the single fresh candidate.
       core.recentTracks = recent('v1', 'v2', 'v3');
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect(core.vIdx).toBe(1); // v1 fell out of the 2-item window
     });
 
@@ -1413,7 +1418,7 @@ describe('Queue (§13)', () => {
       core.rIdx = 0;
       core.recentTracks = recent('v1'); // v1 recent, v0 current — nothing "fresh"
 
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect(core.vIdx).toBe(1); // relaxes to any-non-current: still plays v1
     });
 
@@ -1428,7 +1433,7 @@ describe('Queue (§13)', () => {
       core.recentTracks = [];
 
       const spy = vi.spyOn(Math, 'random').mockReturnValue(0); // pick first fresh
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect([core.vIdx, core.rIdx]).toEqual([0, 1]); // v1/1, not barred by v1/0
       spy.mockRestore();
     });
@@ -1451,7 +1456,7 @@ describe('Queue (§13)', () => {
       core.recentTracks = [{ videoId: 'v1', rIdx: 0 }]; // window = ceil(3/2) = 2
 
       const spy = vi.spyOn(Math, 'random').mockReturnValue(0); // pick first fresh
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
       expect([core.vIdx, core.rIdx]).toEqual([0, 1]); // fresh sibling v1/1, not the recent v1/0
       spy.mockRestore();
     });
@@ -1496,7 +1501,7 @@ describe('Queue (§13)', () => {
       core.nextSong(5);
       core.prevSong(0);
       core.prevSong(0);
-      core.advanceAuto();
+      applyAction(core.advanceAuto());
 
       expect(core.getQueue()).toEqual(original);
     });

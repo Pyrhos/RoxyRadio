@@ -266,6 +266,21 @@ describe('Radio application', () => {
             expect(player.seekTo).toHaveBeenLastCalledWith(15, true);
         });
 
+        it('uses the known whole-video duration when Yap changes after a player error', async () => {
+            application.dispose();
+            await start([{ videoId: 'CmMimqir5z0', name: 'Imported video' }]);
+            events.onStateChange({ data: 1 }); // Learn the whole-video duration.
+            for (const enabled of [true, false]) {
+                vi.advanceTimersByTime(300);
+                events.onError({ data: 150 }); // Next request must load, not just seek.
+                element('yap-btn').click();
+                expect(label('yap-btn')).toBe(`Yap: ${enabled ? 'On' : 'Off'}`);
+                expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                    videoId: 'CmMimqir5z0', startSeconds: 15, endSeconds: 200,
+                }));
+            }
+        });
+
         it('next/previous song buttons invoke production navigation', () => {
             element('next-song').click();
             expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
@@ -281,6 +296,125 @@ describe('Radio application', () => {
             vi.advanceTimersByTime(300);
             element('prev-stream').click();
             expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'aaaaaaaaaaa' }));
+        });
+
+        it('keeps the latest stream selection when navigation occurs during the load cooldown', () => {
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            vi.advanceTimersByTime(50);
+            element('prev-stream').click();
+            vi.advanceTimersByTime(1000);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(1);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'aaaaaaaaaaa' }));
+            expect(player.seekTo).toHaveBeenLastCalledWith(10, true);
+            expect(localStorage.getItem('roxy_videoId')).toBe('aaaaaaaaaaa');
+        });
+
+        it.each([0, 1, 2])('ignores the previous video ending during a pending load with loop=%s', loopMode => {
+            for (let i = 0; i < loopMode; i++) element('loop-btn').click();
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            events.onStateChange({ data: 0 });
+            vi.advanceTimersByTime(200);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 70,
+            }));
+        });
+
+        it('learns imported video metadata only after its pending load is sent', async () => {
+            application.dispose();
+            await start([SEGMENTS[0], { videoId: 'CmMimqir5z0' }]);
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            events.onStateChange({ data: 1 }); // Previous video's duration is 200.
+            vi.advanceTimersByTime(200);
+            player.getDuration.mockReturnValue(480);
+            events.onStateChange({ data: 1 });
+            vi.advanceTimersByTime(300);
+            events.onError({ data: 150 });
+            element('yap-btn').click();
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'CmMimqir5z0', endSeconds: 480,
+            }));
+        });
+
+        it('processes ended events after the pending load is sent', () => {
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            vi.advanceTimersByTime(200);
+            events.onStateChange({ data: 0 });
+            expect(player.seekTo).toHaveBeenLastCalledWith(90, true);
+        });
+
+        it('keeps the selected video when a Yap song pick occurs during its load delay', () => {
+            element('yap-btn').click();
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            shortcut('A');
+            element('status-song-list').children[1].click();
+            vi.advanceTimersByTime(200);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 90, endSeconds: 100,
+            }));
+        });
+
+        it.each([false, true])('advances within the pending stream using its requested time with Yap=%s', yapMode => {
+            if (yapMode) element('yap-btn').click();
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            element('next-song').click();
+            vi.advanceTimersByTime(200);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 90,
+            }));
+        });
+
+        it.each([false, true])('moves back within the pending stream using its requested time with Yap=%s', yapMode => {
+            if (yapMode) element('yap-btn').click();
+            vi.advanceTimersByTime(100);
+            element('next-stream').click();
+            element('next-song').click();
+            element('prev-song').click();
+            vi.advanceTimersByTime(200);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 70,
+            }));
+        });
+
+        it.each(['timer', 'ended'])('restarts Yap Loop Stream through the %s path', method => {
+            element('yap-btn').click();
+            element('loop-btn').click();
+            element('loop-btn').click();
+            player.currentTime = 59.9;
+            if (method === 'timer') {
+                player.getPlayerState.mockReturnValue(1);
+                events.onStateChange({ data: 1 });
+                vi.advanceTimersByTime(200);
+            } else {
+                events.onStateChange({ data: 0 });
+            }
+            expect(player.loadVideoById).toHaveBeenCalledTimes(1);
+            expect(player.seekTo).toHaveBeenLastCalledWith(10, true);
+        });
+
+        it.each([0, 1, 2])('uses the effective stream end after hidden Yap playback with loop=%s', loopMode => {
+            element('yap-btn').click();
+            for (let i = 0; i < loopMode; i++) element('loop-btn').click();
+            vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+            player.getPlayerState.mockReturnValue(1);
+            events.onStateChange({ data: 1 });
+            player.seekTo.mockClear();
+            vi.advanceTimersByTime(1000);
+            expect(player.seekTo).not.toHaveBeenCalled();
+            player.currentTime = 60;
+            events.onStateChange({ data: 0 });
+            if (loopMode === 0) {
+                expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'bbbbbbbbbbb', startSeconds: 70 }));
+            } else {
+                expect(player.seekTo).toHaveBeenLastCalledWith(loopMode === 1 ? 50 : 10, true);
+            }
         });
 
         it('member mode changes the searchable catalogue', () => {

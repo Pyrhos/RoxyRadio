@@ -1,3 +1,5 @@
+import { NO_PLAYBACK_ACTION } from './playback-action.js';
+
 export const LOOP_NONE = 0;
 export const LOOP_TRACK = 1;
 export const LOOP_STREAM = 2;
@@ -27,17 +29,16 @@ export function resolveRIdx(stream, rIdx) {
     return Number.isInteger(rIdx) && rIdx >= 0 && rIdx < stream.songs.length ? rIdx : 0;
 }
 
+// Playback policy and persisted state. Navigation returns a PlaybackAction;
+// the application executes it through the playback controller.
 export class PlayerCore {
   constructor(callbacks = {}) {
     this.cb = {
-      playVideo: callbacks.playVideo || (() => {}),
-      seekTo: callbacks.seekTo || (() => {}),
       saveSettings: callbacks.saveSettings || (() => {}),
       getSettings: callbacks.getSettings || (() => ({})),
       saveSessionData: callbacks.saveSessionData || (() => {}),
       getSessionData: callbacks.getSessionData || (() => ({})),
       now: callbacks.now || (() => Date.now()), // Mockable time
-      onStatus: callbacks.onStatus || (() => {}),
     };
 
     this.playlist = [];
@@ -98,6 +99,12 @@ export class PlayerCore {
     const savedLoop = parseInt(saved.loopMode, 10);
     this.loopMode = isNaN(savedLoop) ? LOOP_NONE : savedLoop;
 
+    this._restorePosition(saved);
+    this._restoreSession(this.cb.getSessionData());
+    this._restoreQueue(saved);
+  }
+
+  _restorePosition(saved) {
     // Restore stream by explicit videoId first, fallback to saved index
     const savedVideoId = saved.videoId;
     let restoredIndex = false;
@@ -117,9 +124,10 @@ export class PlayerCore {
             this.vIdx = 0;
         }
     }
-    
+  }
+
+  _restoreSession(sessionData) {
     // Restore history from session storage (session-only, cleared on tab close)
-    const sessionData = this.cb.getSessionData();
     let rawHistory = [];
     if (sessionData.history) {
         try {
@@ -153,7 +161,9 @@ export class PlayerCore {
     } catch {
         this.recentTracks = [];
     }
+  }
 
+  _restoreQueue(saved) {
     // Restore queue from localStorage (persistent across sessions, §13)
     if (saved.queue) {
         try {
@@ -304,6 +314,44 @@ export class PlayerCore {
         return { name: stream.title, range: [0, duration] };
     }
     return stream.songs[this.rIdx];
+  }
+
+  // Playback bounds belong to the same policy as navigation. The controller
+  // sanitizes these values before sending them to the iframe.
+  getPlaybackRequest(startTimeOverride = null) {
+      const stream = this.getCurrentStream();
+      const song = this.getCurrentSong();
+      if (!stream || !song) return null;
+
+      let startSeconds = song.range[0];
+      let endSeconds = song.range[1];
+      if (stream.songs) {
+          endSeconds = this.yapMode ? stream.songs[stream.songs.length - 1].range[1] : undefined;
+          if (this.yapMode && (this.rIdx === 0 || startTimeOverride !== null)) {
+              startSeconds = stream.songs[0].range[0];
+          }
+      }
+      if (startTimeOverride !== null && startTimeOverride >= 0) startSeconds = startTimeOverride;
+      return { stream, startSeconds, endSeconds };
+  }
+
+  // Direct selection does not push history or save settings. Queue selection
+  // has its own cursor/history policy in selectQueueItem().
+  selectTrack(vIdx, rIdx = 0) {
+      this.vIdx = vIdx;
+      this.rIdx = rIdx;
+      return { type: 'load' };
+  }
+
+  selectSong(rIdx) {
+      const stream = this.getCurrentStream();
+      if (!stream) return NO_PLAYBACK_ACTION;
+      this.rIdx = rIdx;
+      const song = this.getCurrentSong();
+      const time = Number.isFinite(song?.range?.[0])
+          ? song.range[0] : this.getStreamDefaultStart(stream);
+      return !stream.songs || this.yapMode
+          ? { type: 'seek', time } : { type: 'load', time };
   }
 
   // Used by UI to update duration when player loads
@@ -528,10 +576,10 @@ export class PlayerCore {
   // arrangement is untouched and the cycle continues from that position; in
   // other modes it's consumed.
   selectQueueItem(index) {
-      if (index < 0 || index >= this.queue.length) return false;
+      if (index < 0 || index >= this.queue.length) return NO_PLAYBACK_ACTION;
       const item = this.queue[index];
       const streamIdx = this.playlist.findIndex(p => p.videoId === item.videoId);
-      if (streamIdx === -1) return false;
+      if (streamIdx === -1) return NO_PLAYBACK_ACTION;
       this.pushHistory();
       if (this.loopMode === LOOP_STREAM) {
           this._queueCursor = index;
@@ -544,7 +592,7 @@ export class PlayerCore {
       this.rIdx = resolveRIdx(stream, item.rIdx);
       const song = this.getCurrentSong();
       this._saveState(song ? song.range[0] : 0);
-      return true;
+      return { type: 'load' };
   }
 
   // Index of the queue item currently playing (Loop Queue cycling), or -1
@@ -654,17 +702,15 @@ export class PlayerCore {
   nextStream() {
       this.pushHistory();
 
-      if (this.isQueueActive()) {
-          if (this._playFromQueue(false)) {
-              return true;
-          }
+      if (this.isQueueActive() && this._playFromQueue(false)) {
+          return { type: 'load' };
       }
 
       this._clearQueueCursor();
       this.vIdx = this._getNextStreamIndex();
       this.rIdx = 0;
       this._saveState(this.getStreamDefaultStart());
-      return true;
+      return { type: 'load' };
   }
 
   prevStream(options = {}) {
@@ -685,7 +731,7 @@ export class PlayerCore {
         this.rIdx = 0;
         saveTime = this.getStreamDefaultStart();
         this._saveState(saveTime);
-        return true;
+        return { type: 'load' };
     }
 
     if (this.history.length > 0) {
@@ -718,7 +764,7 @@ export class PlayerCore {
         saveTime = this.getStreamDefaultStart();
       }
     this._saveState(saveTime);
-      return true;
+      return { type: 'load' };
   }
 
   nextSong(currentTime) {
@@ -742,17 +788,13 @@ export class PlayerCore {
 
       this._clearQueueCursor();
       const posContext = this._syncIndexToTime(currentTime, stream);
-      const jumpToNextStreamStart = () => {
-          this.nextStream();
-          return { type: 'load' };
-      };
       // Rule 0: treat whole video as a single segment.
       if (!stream.songs) {
           if (this.loopMode === LOOP_STREAM) {
               const start = this.getStreamDefaultStart(stream);
               return { type: 'seek', time: start };
           }
-          return jumpToNextStreamStart();
+          return this.nextStream();
       }
 
       // If before the first song, "next" goes TO song 0 (don't skip past it)
@@ -769,7 +811,7 @@ export class PlayerCore {
               this.rIdx = 0;
               return { type: 'load' };
           }
-          return jumpToNextStreamStart();
+          return this.nextStream();
       }
 
       // Yap mode advances within the continuous range without reloading.
@@ -777,10 +819,11 @@ export class PlayerCore {
           if (this.rIdx < stream.songs.length - 1) {
               this.rIdx++;
               return { type: 'seek', time: stream.songs[this.rIdx].range[0] };
-          } else {
-              this.nextStream();
-              return { type: 'load' };
+          } else if (this.loopMode === LOOP_STREAM) {
+              this.rIdx = 0;
+              return { type: 'seek', time: stream.songs[0].range[0] };
           }
+          return this.nextStream();
       }
 
       // Standard segmented playback reloads so end bounds remain enforced.
@@ -793,7 +836,7 @@ export class PlayerCore {
               this.rIdx = 0;
               return { type: 'load' };
           } else {
-             return jumpToNextStreamStart();
+             return this.nextStream();
           }
       }
   }
@@ -887,7 +930,6 @@ export class PlayerCore {
           const prev = this.getCurrentStream();
           if (prev && prev.songs && prev.songs.length > 0) {
               this.rIdx = prev.songs.length - 1;
-              return { type: 'load' };
           }
           return { type: 'load' };
       };
@@ -957,20 +999,19 @@ export class PlayerCore {
   // Enforces per-song boundaries specified in behavior.md §4A/§4E.
   checkTick(currentTime) {
       const stream = this.getCurrentStream();
-      if (!stream) return;
+      if (!stream) return NO_PLAYBACK_ACTION;
 
       if (!stream.songs) {
-          return;
+          return NO_PLAYBACK_ACTION;
       }
 
       if (this.yapMode) {
            this._syncIndexToTime(currentTime, stream);
            const lastSong = stream.songs[stream.songs.length - 1];
            if (currentTime >= lastSong.range[1] - 0.2) { // SEEK_EARLY
-               this.nextStream();
-               this.cb.playVideo(); // Trigger load
+               return this.advanceAuto();
            }
-           return;
+           return NO_PLAYBACK_ACTION;
       }
 
       const currentSong = stream.songs[this.rIdx];
@@ -979,10 +1020,9 @@ export class PlayerCore {
           const matchIdx = stream.songs.findIndex(s => currentTime >= s.range[0] && currentTime < s.range[1]);
           if (matchIdx !== -1) {
               this.rIdx = matchIdx;
-          } else {
-              // Manual seeks into gaps should play uninterrupted (behavior §4E).
           }
-          return; 
+          // Manual seeks into gaps should play uninterrupted (behavior §4E).
+          return NO_PLAYBACK_ACTION;
       }
 
       const nextSong = stream.songs[this.rIdx + 1];
@@ -994,52 +1034,42 @@ export class PlayerCore {
       // we do not auto-advance at that internal boundary – we just let
       // playback continue and rely on status text updating from rIdx tracking.
       if (!hasSeamlessNext && currentTime >= currentSong.range[1] - 0.2) {
-          this.advanceAuto();
+          return this.advanceAuto();
       }
+      return NO_PLAYBACK_ACTION;
   }
 
   onVideoEnded() {
-      this.advanceAuto();
+      // The last defined song is the effective stream end in Yap mode.
+      // Background playback can stop index tracking, so an end event must not
+      // advance from an earlier song that happened to be stored at that point.
+      const stream = this.getCurrentStream();
+      if (this.yapMode && stream?.songs) this.rIdx = stream.songs.length - 1;
+      return this.advanceAuto();
   }
 
   advanceAuto() {
       if (this.loopMode === LOOP_TRACK) {
-          this.cb.seekTo(this.getCurrentSong().range[0]);
-          return;
+          return { type: 'seek', time: this.getCurrentSong().range[0] };
       }
-
-      if (this.isQueueActive()) {
-          if (this._playFromQueue(true)) {
-              this.cb.playVideo();
-              return;
-          }
-          // Queue exhausted, fall through to normal auto-advance
+      if (this.isQueueActive() && this._playFromQueue(true)) {
+          return { type: 'load' };
       }
 
       this._clearQueueCursor();
       const stream = this.getCurrentStream();
       if (!stream.songs) {
-           if (this.loopMode === LOOP_STREAM) {
-               this.cb.seekTo(0);
-           } else {
-               this.nextStream();
-               this.cb.playVideo();
-           }
-           return;
+          return this.loopMode === LOOP_STREAM
+              ? { type: 'seek', time: 0 } : this.nextStream();
       }
-
       if (this.rIdx < stream.songs.length - 1) {
           this.rIdx++;
-          this.cb.playVideo(); 
+      } else if (this.loopMode === LOOP_STREAM) {
+          this.rIdx = 0;
       } else {
-          if (this.loopMode === LOOP_STREAM) {
-              this.rIdx = 0;
-              this.cb.playVideo();
-          } else {
-              this.nextStream();
-              this.cb.playVideo();
-          }
+          return this.nextStream();
       }
+      return { type: 'load' };
   }
 
   // Status Text Generation
