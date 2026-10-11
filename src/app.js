@@ -490,23 +490,30 @@ async function initializePlaylist() {
         const { videoId, timestamp } = readUrlParams();
         urlOverride = resolveUrlOverride(core.playlist, videoId, timestamp);
 
-        // Cold path: a shared link this (possibly stale) bundle can't resolve. Re-check
-        // against freshly-fetched canonical data — it may name a stream added after this
-        // build was cached, or one that's genuinely gone / member-gated.
+        // Check the unfiltered catalogue before fetching: member mode and Replace
+        // imports can exclude a known stream without making this bundle stale.
         let coldNotice = null;
         if (!urlOverride && looksLikeVideoId(videoId)) {
-            const fresh = await fetchFreshSegments();
-            if (fresh) {
-                canonicalBase = fresh; // this bundle was stale — adopt newer canonical
-                applyActiveSegments();
-                urlOverride = resolveUrlOverride(core.playlist, videoId, timestamp);
-                if (!urlOverride) {
-                    coldNotice = classifyMissing(fresh, videoId) === 'member-gated'
-                        ? "That's a members-only stream — enable Member Mode to play it."
-                        : 'Shared stream not found — it may have been removed.';
+            let knownStream = canonicalBase.find(entry => entry.videoId === videoId);
+            let checkedCatalogue = !!knownStream;
+            if (!knownStream) {
+                const fresh = await fetchFreshSegments();
+                if (fresh) {
+                    canonicalBase = fresh;
+                    applyActiveSegments();
+                    urlOverride = resolveUrlOverride(core.playlist, videoId, timestamp);
+                    knownStream = canonicalBase.find(entry => entry.videoId === videoId);
+                    checkedCatalogue = true;
                 }
             }
-            // fresh === null → keep baked data + default state, silently (offline / error).
+            if (!urlOverride && checkedCatalogue) {
+                coldNotice = classifyMissing(canonicalBase, videoId) === 'member-gated' && !core.memberMode
+                    ? "That's a members-only stream — enable Member Mode to play it."
+                    : knownStream
+                        ? 'Shared stream is not in your custom playlist — reset your imports to play it.'
+                        : 'Shared stream not found — it may have been removed.';
+            }
+            // Failed fetch → keep bundled data + default state silently (offline / error).
         }
 
         if (urlOverride) {

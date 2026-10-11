@@ -1,4 +1,8 @@
 const START_CORRECTION_TOLERANCE_SECONDS = 3;
+const START_CORRECTION_RETRY_MS = 1000;
+const START_CORRECTION_MAX_ATTEMPTS = 3;
+const START_CORRECTION_TIMEOUT_MS = 15000;
+const START_CONFIRMATION_MS = 1000;
 
 /**
  * @param {object} deps
@@ -95,20 +99,79 @@ export function createPlaybackController({
         if (safeEnd !== undefined) {
             payload.endSeconds = safeEnd;
         }
+        pendingStartCorrection = {
+            videoId: stream.videoId,
+            startSeconds: safeStart,
+            startedAt: null,
+            lastSeekAt: -Infinity,
+            attempts: 0,
+            confirmation: null,
+        };
         player.loadVideoById(payload);
-        pendingStartCorrection = safeStart;
     }
 
     function reconcileStartOnPlaying() {
-        if (pendingStartCorrection === null) return;
-
         const player = getPlayer();
-        const cur = player && player.getCurrentTime ? player.getCurrentTime() : NaN;
-        if (Number.isFinite(cur) && cur < pendingStartCorrection - START_CORRECTION_TOLERANCE_SECONDS) {
-            player.seekTo(pendingStartCorrection, true);
-            lastKnownTime = pendingStartCorrection;
+        if (pendingStartCorrection && player) {
+            reconcileStart(player, player.getCurrentTime());
         }
-        pendingStartCorrection = null;
+    }
+
+    // A PLAYING event or seek command is not an acknowledgement of the start time.
+    // Keep checking on the existing tick loop until the requested video progresses
+    // near its start. Do not feed old/incorrect timestamps into song-boundary logic.
+    function reconcileStart(player, time) {
+        const pending = pendingStartCorrection;
+        if (!pending) return true;
+
+        const now = Date.now();
+        if (pending.startedAt === null) pending.startedAt = now;
+        if (now - pending.startedAt >= START_CORRECTION_TIMEOUT_MS) {
+            console.warn(`[Playback] Start position not confirmed for ${pending.videoId} at ${pending.startSeconds}`);
+            pendingStartCorrection = null;
+            return true;
+        }
+
+        if (player.getVideoUrl) {
+            let videoId = null;
+            try {
+                videoId = new URL(player.getVideoUrl()).searchParams.get('v');
+            } catch { /* The iframe may not have reported its new video yet. */ }
+            if (videoId !== pending.videoId) {
+                pending.confirmation = null;
+                return false;
+            }
+        }
+        if (!Number.isFinite(time)) {
+            pending.confirmation = null;
+            return false;
+        }
+
+        // The video ID may update before the old video's time does. A position
+        // beyond any plausible progress from this request cannot confirm it.
+        const playbackRate = player.getPlaybackRate ? player.getPlaybackRate() : 1;
+        const elapsedSeconds = (now - pending.startedAt) / 1000;
+        if (time > pending.startSeconds + START_CORRECTION_TOLERANCE_SECONDS + elapsedSeconds * playbackRate) {
+            pending.confirmation = null;
+            return false;
+        }
+
+        if (time >= pending.startSeconds - START_CORRECTION_TOLERANCE_SECONDS) {
+            if (!pending.confirmation) pending.confirmation = { time, at: now };
+            if (now - pending.confirmation.at >= START_CONFIRMATION_MS && time > pending.confirmation.time) {
+                pendingStartCorrection = null;
+            }
+            return true;
+        }
+
+        pending.confirmation = null;
+        if (pending.attempts < START_CORRECTION_MAX_ATTEMPTS && now - pending.lastSeekAt >= START_CORRECTION_RETRY_MS) {
+            pending.lastSeekAt = now;
+            pending.attempts++;
+            player.seekTo(pending.startSeconds, true);
+            lastKnownTime = pending.startSeconds;
+        }
+        return false;
     }
 
     function startTickLoop() {
@@ -130,7 +193,7 @@ export function createPlaybackController({
         const state = player.getPlayerState();
         if (state !== YT.PlayerState.PLAYING) return false;
 
-        if (document.hidden) {
+        if (document.hidden && !pendingStartCorrection) {
             const stream = getCurrentStream();
             const needsGapSkipping = stream && stream.songs && stream.songs.length > 0 && !isYapMode();
             if (!needsGapSkipping) {
@@ -150,10 +213,18 @@ export function createPlaybackController({
     }
 
     function tick() {
+        if (!shouldTickRun()) {
+            stopTickLoop();
+            return;
+        }
         const player = getPlayer();
         if (!player || !player.getCurrentTime) return;
         const t = player.getCurrentTime();
-        if (Number.isFinite(t)) lastKnownTime = t;
+        const wasPending = pendingStartCorrection !== null;
+        const usableTime = reconcileStart(player, t);
+        if (wasPending && !pendingStartCorrection) evaluateTickLoop();
+        if (!usableTime || !Number.isFinite(t)) return;
+        lastKnownTime = t;
 
         onTick(t);
     }
@@ -181,6 +252,7 @@ export function createPlaybackController({
 
     function resetLoadedVideoId() {
         currentLoadedVideoId = null;
+        pendingStartCorrection = null;
     }
 
     return {

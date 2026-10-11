@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearStorage, setupDOM } from './test-setup.js';
 
 vi.mock('virtual:roxy-segments', () => ({
-    default: [{ videoId: 'aaaaaaaaaaa', songs: [{ name: 'Bundled song', range: [10, 80] }] }],
+    default: [
+        { videoId: 'aaaaaaaaaaa', songs: [{ name: 'Bundled song', range: [10, 80] }] },
+        { videoId: 'mmmmmmmmmmm', memberOnly: true, songs: [{ name: 'Member song', range: [10, 80] }] },
+    ],
 }));
 
 describe('shared-link startup', () => {
@@ -41,6 +44,45 @@ describe('shared-link startup', () => {
         delete window.onYouTubeIframeAPIReady;
         history.replaceState(null, '', '/');
         clearStorage();
+    });
+
+    it.each(['member', 'replaced'])('starts immediately for a known %s exclusion without fetching', async (exclusion) => {
+        history.replaceState(null, '', exclusion === 'member' ? '/?v=mmmmmmmmmmm' : '/?v=aaaaaaaaaaa');
+        if (exclusion === 'replaced') {
+            localStorage.setItem('roxy_segmentsMode', 'replaced');
+            localStorage.setItem('roxy_customSegments', JSON.stringify([
+                { videoId: 'ccccccccccc', name: 'Imported song' },
+            ]));
+        }
+        vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+
+        await import('./app.js');
+        await vi.advanceTimersByTimeAsync(0);
+        expect(document.getElementById('status-text').textContent).toMatch(
+            exclusion === 'member' ? /members-only/ : /custom playlist/,
+        );
+        events.onReady();
+
+        expect(fetch).not.toHaveBeenCalled();
+        expect(player.loadVideoById).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+            videoId: exclusion === 'member' ? 'aaaaaaaaaaa' : 'ccccccccccc',
+        }));
+        expect(document.getElementById('overlay').style.display).toBe('none');
+    });
+
+    it('plays a known members-only link immediately when Member Mode is enabled', async () => {
+        history.replaceState(null, '', '/?v=mmmmmmmmmmm&t=30');
+        localStorage.setItem('roxy_memberMode', 'true');
+        vi.stubGlobal('fetch', vi.fn());
+
+        await import('./app.js');
+        await vi.advanceTimersByTimeAsync(0);
+        events.onReady();
+
+        expect(fetch).not.toHaveBeenCalled();
+        expect(player.loadVideoById).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+            videoId: 'mmmmmmmmmmm', startSeconds: 30,
+        }));
     });
 
     it.each(['response', 'body'])('resumes bundled playback when the %s stalls', async (stage) => {
