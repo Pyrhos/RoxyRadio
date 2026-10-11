@@ -12,6 +12,7 @@ describe('createPlaybackController', () => {
         mockPlayer = {
             seekTo: vi.fn(),
             loadVideoById: vi.fn(),
+            playVideo: vi.fn(),
             getCurrentTime: vi.fn(() => 50),
             getPlayerState: vi.fn(() => 1),
         };
@@ -116,12 +117,45 @@ describe('createPlaybackController', () => {
     });
 
     describe('pending video loads', () => {
+        it.each([false, true])('preserves A when it supersedes B (B command sent=%s)', sent => {
+            mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=a');
+            mockPlayer.getCurrentTime.mockReturnValue(19.9);
+            mockPlayer.getPlayerState.mockReturnValue(0);
+            ctrl.playVideoAt({ videoId: 'a' }, 10);
+            if (sent) vi.advanceTimersByTime(300);
+            ctrl.playVideoAt({ videoId: 'b' }, 70);
+            ctrl.playVideoAt({ videoId: 'a' }, 50);
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+            vi.advanceTimersByTime(300);
+            // A may still be reported even after B's command was sent. An old
+            // ENDED must not advance the newly requested A before it starts.
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+            if (sent) {
+                expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(3);
+                expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                    videoId: 'a', startSeconds: 50,
+                }));
+            } else {
+                expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+                expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(50, true);
+                expect(mockPlayer.playVideo).toHaveBeenCalledOnce();
+            }
+            mockPlayer.getPlayerState.mockReturnValue(1);
+            mockPlayer.getCurrentTime.mockReturnValue(50);
+            ctrl.reconcileStartOnPlaying();
+            ctrl.evaluateTickLoop();
+            mockPlayer.getCurrentTime.mockReturnValue(51.2);
+            vi.advanceTimersByTime(1200);
+            expect(deps.onTick).toHaveBeenLastCalledWith(51.2);
+        });
+
         it('does not load B after a rapid A → B → A selection', () => {
             ctrl.playVideoAt({ videoId: 'a' }, 10);
             vi.advanceTimersByTime(100);
             ctrl.playVideoAt({ videoId: 'b' }, 20);
             vi.advanceTimersByTime(50);
             ctrl.playVideoAt({ videoId: 'a' }, 30);
+            mockPlayer.getCurrentTime.mockReturnValue(30);
             vi.advanceTimersByTime(1000);
             expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
             expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(30, true);
@@ -145,37 +179,72 @@ describe('createPlaybackController', () => {
         it.each(['seek', 'dispose'])('cancels a pending load on explicit %s', operation => {
             ctrl.playVideoAt({ videoId: 'a' }, 10);
             ctrl.playVideoAt({ videoId: 'b' }, 20);
-            if (operation === 'seek') ctrl.seekToSafe(50);
+            if (operation === 'seek') ctrl.seekToSafe(50, { videoId: 'a' });
             else ctrl.destroy();
             vi.advanceTimersByTime(1000);
             expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
-            expect(vi.getTimerCount()).toBe(0);
+            if (operation === 'dispose') expect(vi.getTimerCount()).toBe(0);
+            else expect(ctrl.isLoadPending()).toBe(false);
         });
 
-        it.each([70, 120])('applies a pending selection at %s when the requested video arrives', time => {
+        it.each([70, 120])('replaces an in-flight load with selection at %s without waiting for PLAYING', time => {
             mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=previous');
-            mockPlayer.getCurrentTime.mockReturnValue(100);
-            ctrl.playVideoAt({ videoId: 'abc' }, 100);
+            mockPlayer.getPlayerState.mockReturnValue(0);
+            ctrl.playVideoAt({ videoId: 'abc' }, 100, 150);
             ctrl.seekToSafe(time);
-            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
             expect(ctrl.getSafeCurrentTime()).toBe(time);
             expect(ctrl.isLoadPending()).toBe(true);
-            mockPlayer.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=abc');
-            expect(ctrl.getSafeCurrentTime()).toBe(time);
-            ctrl.reconcileStartOnPlaying();
-            expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(time, true);
-            expect(ctrl.getSafeCurrentTime()).toBe(time);
-            ctrl.evaluateTickLoop();
-            vi.advanceTimersByTime(1000); // Retry a seek ignored by the iframe.
-            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(2);
-            expect(mockPlayer.seekTo).toHaveBeenLastCalledWith(time, true);
-            mockPlayer.getCurrentTime.mockReturnValue(time);
+            vi.advanceTimersByTime(300);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'abc', startSeconds: time, endSeconds: 150,
+            }));
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            vi.advanceTimersByTime(60000);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(2);
+        });
+
+        it('coalesces successive selections during a sent load into the latest load', () => {
+            mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=previous');
+            mockPlayer.getPlayerState.mockReturnValue(0);
+            ctrl.playVideoAt({ videoId: 'abc' }, 100);
+            ctrl.playVideoAt({ videoId: 'abc' }, 70);
+            vi.advanceTimersByTime(100);
+            ctrl.playVideoAt({ videoId: 'abc' }, 120);
             vi.advanceTimersByTime(200);
-            mockPlayer.getCurrentTime.mockReturnValue(time + 1);
-            vi.advanceTimersByTime(1000);
-            expect(ctrl.getSafeCurrentTime()).toBe(time + 1);
-            expect(mockPlayer.seekTo).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'abc', startSeconds: 120,
+            }));
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+        });
+
+        it('keeps the selected position when the replacement video ID arrives before its clock', () => {
+            mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=previous');
+            ctrl.playVideoAt({ videoId: 'abc' }, 10);
+            ctrl.seekToSafe(30);
+            vi.advanceTimersByTime(300);
+            mockPlayer.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=abc');
+            mockPlayer.getCurrentTime.mockReturnValue(10);
+            expect(ctrl.getSafeCurrentTime()).toBe(30);
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+            ctrl.reconcileStartOnPlaying();
+            expect(mockPlayer.seekTo).toHaveBeenLastCalledWith(30, true);
+            mockPlayer.getCurrentTime.mockReturnValue(30);
+            ctrl.reconcileStartOnPlaying();
+            mockPlayer.getCurrentTime.mockReturnValue(31.2);
+            vi.advanceTimersByTime(1200);
+            expect(ctrl.getSafeCurrentTime()).toBe(31.2);
+        });
+
+        it.each([-1, 0, 2, 3])('does not retry a load that remains in player state %s', state => {
+            mockPlayer.getPlayerState.mockReturnValue(state);
+            ctrl.playVideoAt({ videoId: 'abc' }, 10);
+            ctrl.evaluateTickLoop();
+            vi.advanceTimersByTime(60000);
             expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            expect(mockPlayer.playVideo).not.toHaveBeenCalled();
         });
 
         it('does not forward old playback times while a new selection awaits loading', () => {
@@ -190,11 +259,43 @@ describe('createPlaybackController', () => {
             vi.advanceTimersByTime(100);
             mockPlayer.getCurrentTime.mockReturnValue(120);
             vi.advanceTimersByTime(100);
-            expect(deps.onTick).toHaveBeenCalledExactlyOnceWith(120);
+            expect(deps.onTick).not.toHaveBeenCalled();
+            mockPlayer.getCurrentTime.mockReturnValue(121);
+            vi.advanceTimersByTime(1000);
+            expect(deps.onTick).toHaveBeenCalledExactlyOnceWith(121);
         });
     });
 
     describe('start confirmation across player updates', () => {
+        it('keeps a nearby old end time from confirming a selected song', () => {
+            mockPlayer.getCurrentTime.mockReturnValue(19.9);
+            ctrl.seekToSafe(20.1);
+            vi.advanceTimersByTime(800);
+            expect(deps.onTick).not.toHaveBeenCalled();
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+            mockPlayer.getCurrentTime.mockReturnValue(20.1);
+            vi.advanceTimersByTime(400);
+            expect(deps.onTick).toHaveBeenLastCalledWith(20.1);
+        });
+
+        it.each(['load', 'seek'])('accepts a short segment ending after a confirmed position from %s', operation => {
+            if (operation === 'load') ctrl.playVideoAt({ videoId: 'abc' }, 50);
+            else ctrl.seekToSafe(50);
+            mockPlayer.getCurrentTime.mockReturnValue(50);
+            ctrl.reconcileStartOnPlaying();
+            vi.advanceTimersByTime(100);
+            mockPlayer.getCurrentTime.mockReturnValue(50.1);
+            expect(ctrl.reconcileStartOnEnded()).toBe(true);
+        });
+
+        it('does not issue corrective seeks in response to an unconfirmed end event', () => {
+            ctrl.playVideoAt({ videoId: 'abc' }, 50);
+            mockPlayer.getCurrentTime.mockReturnValue(0);
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            expect(mockPlayer.playVideo).not.toHaveBeenCalled();
+        });
+
         function begin(start = 2428) {
             mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=8crU8T3mv5Y');
             ctrl.playVideoAt({ videoId: '8crU8T3mv5Y' }, start);

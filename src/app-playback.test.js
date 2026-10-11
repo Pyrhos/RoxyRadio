@@ -78,7 +78,8 @@ describe('imported video to shuffled queue segment', () => {
         }));
         playerState = 1;
         events.onStateChange({ data: playerState });
-        await vi.advanceTimersByTimeAsync(400);
+        currentTime = 1.2;
+        await vi.advanceTimersByTimeAsync(1200);
 
         currentTime = 200.041;
         playerState = 0;

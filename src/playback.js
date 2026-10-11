@@ -22,7 +22,8 @@ export function createPlaybackController({
     let tickHandle = null;
     let lastKnownTime = 0;
     const startPosition = createStartPositionMonitor({ onCorrection: time => { lastKnownTime = time; } });
-    let currentLoadedVideoId = null;
+    let requestedVideoId = null;
+    let requestedEndSeconds;
     let lastVideoLoadTime = 0;
     let pendingLoad = null;
     let titleRefreshHandle = null;
@@ -39,21 +40,22 @@ export function createPlaybackController({
         const resolvedStream = stream || getCurrentStream();
         const safeStart = sanitizeStartTime(time, resolvedStream);
         const player = getPlayer();
-        if (previousLoad && previousLoad.stream.videoId === resolvedStream?.videoId
-            && currentLoadedVideoId !== resolvedStream.videoId) {
+        if (previousLoad && previousLoad.stream.videoId === resolvedStream?.videoId) {
             // A song pick within the selected video replaces its pending start;
             // seeking the iframe here would seek in the previous video instead.
             playVideoAt(resolvedStream, safeStart, previousLoad.endSeconds, previousLoad.forceReload);
-        } else if (currentLoadedVideoId === resolvedStream?.videoId && !startPosition.matchesVideo(player)) {
-            // The load was sent, but the iframe still reports the old video.
-            // Retarget confirmation so its arrival seeks to the latest song.
-            startPosition.begin(resolvedStream.videoId, safeStart, true);
+        } else if (requestedVideoId === resolvedStream?.videoId && !startPosition.matchesVideo(player, resolvedStream.videoId)) {
+            // Replace the in-flight command itself. Waiting to seek on arrival
+            // loses the user's request if the previous load never starts.
+            playVideoAt(resolvedStream, safeStart, requestedEndSeconds, true);
         } else {
-            startPosition.cancel();
+            startPosition.begin(resolvedStream?.videoId, safeStart, { seekIssued: true });
             if (player && player.seekTo) player.seekTo(safeStart, true);
+            player?.playVideo?.();
         }
         lastKnownTime = safeStart;
         onSeek(safeStart);
+        evaluateTickLoop();
     }
 
     function getSafeCurrentTime({ allowZero = false } = {}) {
@@ -62,7 +64,7 @@ export function createPlaybackController({
         // that video, including the interval after the load command is sent.
         if (pendingLoad) return pendingLoad.startSeconds;
         const player = getPlayer();
-        const pendingTime = startPosition.getPendingTime(player);
+        const pendingTime = startPosition.getPendingTime();
         if (pendingTime !== null) return pendingTime;
         if (!player) {
             return lastKnownTime;
@@ -99,8 +101,8 @@ export function createPlaybackController({
         const player = getPlayer();
         if (!player || !player.loadVideoById) return;
 
-        const isSameVideo = currentLoadedVideoId === stream.videoId;
-        if (isSameVideo && !forceReload) {
+        const isSameVideo = requestedVideoId === stream.videoId;
+        if (isSameVideo && !forceReload && startPosition.matchesVideo(player, stream.videoId)) {
             seekToSafe(safeStart, stream);
             return;
         }
@@ -124,7 +126,8 @@ export function createPlaybackController({
 
         console.log(`Loading ${stream.videoId} [${safeStart}-${safeEnd ?? 'end'}]`);
         lastKnownTime = safeStart;
-        currentLoadedVideoId = stream.videoId;
+        requestedVideoId = stream.videoId;
+        requestedEndSeconds = safeEnd;
 
         const payload = {
             videoId: stream.videoId,
@@ -206,9 +209,7 @@ export function createPlaybackController({
     function ensureTitleRefreshLoop(updateFn) {
         if (titleRefreshHandle) return;
         titleRefreshHandle = lifecycle.interval(() => {
-            const player = getPlayer();
-            const t = player && player.getCurrentTime ? player.getCurrentTime() : lastKnownTime;
-            updateFn(t);
+            updateFn(getSafeCurrentTime());
         }, TITLE_REFRESH_MS);
     }
 
@@ -217,7 +218,7 @@ export function createPlaybackController({
     }
 
     function resetLoadedVideoId() {
-        currentLoadedVideoId = null;
+        requestedVideoId = null;
         startPosition.cancel();
     }
 
@@ -227,6 +228,11 @@ export function createPlaybackController({
         getSafeCurrentTime,
         playVideoAt,
         isLoadPending: () => pendingLoad !== null || !startPosition.matchesVideo(getPlayer()),
+        reconcileStartOnEnded: () => {
+            const player = getPlayer();
+            return pendingLoad === null && !!player
+                && startPosition.reconcile(player, player.getCurrentTime(), { ended: true });
+        },
         reconcileStartOnPlaying,
         stopTickLoop,
         evaluateTickLoop,

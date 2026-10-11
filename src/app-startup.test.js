@@ -87,6 +87,29 @@ describe('shared-link startup', () => {
         }));
     });
 
+    it.each([false, true])('leaves a blocked member link awaiting user action (error reported=%s)', async reportError => {
+        history.replaceState(null, '', '/?v=mmmmmmmmmmm&t=30');
+        localStorage.setItem('roxy_memberMode', 'true');
+        player.seekTo = vi.fn();
+        player.playVideo = vi.fn();
+        vi.stubGlobal('fetch', vi.fn());
+        ({ application } = await import('./app.js'));
+        await vi.advanceTimersByTimeAsync(0);
+        events.onReady();
+        if (reportError) events.onError({ data: 150 });
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(player.loadVideoById).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+            videoId: 'mmmmmmmmmmm', startSeconds: 30,
+        }));
+        expect(player.seekTo).not.toHaveBeenCalled();
+        expect(player.playVideo).not.toHaveBeenCalled();
+        if (reportError) {
+            document.getElementById('status').click();
+            document.getElementById('status-song-list').children[0].click();
+            expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+        }
+    });
+
     it.each(['response', 'body'])('resumes bundled playback when the %s stalls', async (stage) => {
         let requestSignal;
         vi.stubGlobal('fetch', vi.fn((_url, { signal }) => {

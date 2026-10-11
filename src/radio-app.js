@@ -766,7 +766,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             return;
         }
         if (ev.data === YT.PlayerState.ENDED) {
-            applyPlaybackAction(core.onVideoEnded());
+            if (playbackCtrl.reconcileStartOnEnded()) applyPlaybackAction(core.onVideoEnded());
         } else if (ev.data === YT.PlayerState.PLAYING) {
             playbackCtrl.reconcileStartOnPlaying();
             initializeCurrentVideoMetadata();

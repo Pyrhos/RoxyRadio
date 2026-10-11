@@ -35,6 +35,14 @@ describe('Radio application', () => {
         events.onReady();
     }
 
+    function confirmPlayback(startSeconds = 10) {
+        player.getPlayerState.mockReturnValue(1);
+        player.currentTime = startSeconds;
+        events.onStateChange({ data: 1 });
+        player.currentTime = startSeconds + 1.2;
+        vi.advanceTimersByTime(1200);
+    }
+
     function search(query = 'Song') {
         if (!isOpen('modal-overlay')) shortcut('S');
         element('search-input').value = query;
@@ -56,6 +64,7 @@ describe('Radio application', () => {
             getVideoData: vi.fn(() => ({ title: 'Imported video' })),
             loadVideoById: vi.fn(),
             seekTo: vi.fn(),
+            playVideo: vi.fn(),
             destroy: vi.fn(),
         };
         vi.stubGlobal('YT', {
@@ -225,6 +234,7 @@ describe('Radio application', () => {
         });
 
         it('tracks actual player time with active and aria-selected states', () => {
+            confirmPlayback();
             shortcut('A');
             player.currentTime = 35;
             vi.advanceTimersByTime(2000);
@@ -236,6 +246,68 @@ describe('Radio application', () => {
     });
 
     describe('controls and persistence', () => {
+        it('does not replace a song-list selection with a shuffled jump while its seek is pending', () => {
+            player.getPlayerState.mockReturnValue(1);
+            player.currentTime = 10;
+            events.onStateChange({ data: 1 });
+            player.currentTime = 11;
+            vi.advanceTimersByTime(1200);
+            element('shuffle-btn').click();
+            search('Song D')[0].querySelector('.enqueue-btn').click();
+            pressKey('Escape');
+            player.currentTime = 19.9;
+            shortcut('A');
+            element('status-song-list').children[2].click();
+            expect(player.seekTo).toHaveBeenLastCalledWith(50, true);
+
+            // The iframe has not applied the seek yet. Neither the old clock
+            // nor a delayed end event may consume the next shuffled queue item.
+            vi.advanceTimersByTime(400);
+            events.onStateChange({ data: 0 });
+            expect(player.loadVideoById).toHaveBeenCalledTimes(1);
+            expect(queue()).toEqual([{ videoId: 'bbbbbbbbbbb', rIdx: 1 }]);
+            expect(player.playVideo).toHaveBeenCalled();
+
+            player.currentTime = 50;
+            events.onStateChange({ data: 1 });
+            vi.advanceTimersByTime(200);
+            player.currentTime = 51.2;
+            vi.advanceTimersByTime(1200);
+            expect(element('status-text').textContent).toContain('Song C');
+            expect(player.loadVideoById).toHaveBeenCalledTimes(1);
+        });
+
+        it('starts a song selected while the iframe is paused', () => {
+            player.getPlayerState.mockReturnValue(2);
+            shortcut('A');
+            element('status-song-list').children[1].click();
+            expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
+            expect(player.playVideo).toHaveBeenCalledTimes(1);
+        });
+
+        it('sends a new song-list selection while the shuffled stream has not started', () => {
+            player.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=aaaaaaaaaaa');
+            element('shuffle-btn').click();
+            search('Song D')[0].querySelector('.enqueue-btn').click();
+            pressKey('Escape');
+            vi.advanceTimersByTime(300);
+            element('next-song').click();
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 90,
+            }));
+            player.getPlayerState.mockReturnValue(0);
+            shortcut('A');
+            element('status-song-list').children[0].click();
+            events.onStateChange({ data: 0 });
+            vi.advanceTimersByTime(300);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 70,
+            }));
+            expect(player.loadVideoById).toHaveBeenCalledTimes(3);
+            vi.advanceTimersByTime(60000);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(3);
+        });
+
         it('cycles all loop states and persists them', () => {
             for (const [mode, text] of [[1, 'Track'], [2, 'Stream'], [0, 'None']]) {
                 element('loop-btn').click();
@@ -254,6 +326,8 @@ describe('Radio application', () => {
         });
 
         it('debounces rapid Yap toggles and preserves the last valid time', () => {
+            confirmPlayback();
+            player.currentTime = 15;
             element('yap-btn').click();
             expect(label('yap-btn')).toBe('Yap: On');
             expect(player.seekTo).toHaveBeenLastCalledWith(15, true);
@@ -360,6 +434,8 @@ describe('Radio application', () => {
             player.getDuration.mockReturnValue(480);
             player.getVideoData.mockReturnValue({ title: 'Imported video' });
             vi.advanceTimersByTime(200); // No second PLAYING event.
+            player.currentTime = 1.2;
+            vi.advanceTimersByTime(1200);
             expect(player.getDuration).toHaveBeenCalledTimes(1);
             expect(player.getVideoData).toHaveBeenCalledTimes(1);
             expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual([
@@ -379,10 +455,15 @@ describe('Radio application', () => {
             }));
         });
 
-        it('processes ended events after the pending load is sent', () => {
+        it('processes ended events after the pending load is confirmed', () => {
             vi.advanceTimersByTime(100);
             element('next-stream').click();
             vi.advanceTimersByTime(200);
+            player.getPlayerState.mockReturnValue(1);
+            player.currentTime = 70;
+            events.onStateChange({ data: 1 });
+            player.currentTime = 71.2;
+            vi.advanceTimersByTime(1200);
             events.onStateChange({ data: 0 });
             expect(player.seekTo).toHaveBeenLastCalledWith(90, true);
         });
@@ -447,11 +528,15 @@ describe('Radio application', () => {
             expect(navigator.clipboard.writeText).toHaveBeenLastCalledWith(`${location.origin}/?v=bbbbbbbbbbb&t=70`);
             element('next-song').click();
             events.onStateChange({ data: 0 }); // Late ENDED from A cannot advance B.
+            vi.advanceTimersByTime(300); // Dispatch the replacement without awaiting PLAYING.
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'bbbbbbbbbbb', startSeconds: 90,
+            }));
             player.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=bbbbbbbbbbb');
-            player.currentTime = 70; // The iframe used B's original load position.
+            player.currentTime = 70; // A delayed sample from B's original load.
             events.onStateChange({ data: 1 });
             expect(player.seekTo).toHaveBeenLastCalledWith(90, true);
-            expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(3);
         });
 
         it('continues start confirmation when PLAYING arrives before the selected video ID', () => {
@@ -463,7 +548,7 @@ describe('Radio application', () => {
             events.onStateChange({ data: 1 });
             player.getVideoUrl.mockReturnValue('https://www.youtube.com/watch?v=bbbbbbbbbbb');
             player.currentTime = 70;
-            vi.advanceTimersByTime(200);
+            vi.advanceTimersByTime(400);
             expect(player.seekTo).toHaveBeenLastCalledWith(90, true);
         });
 
@@ -485,9 +570,13 @@ describe('Radio application', () => {
         });
 
         it.each(['timer', 'ended'])('restarts Yap Loop Stream through the %s path', method => {
+            confirmPlayback();
+            player.currentTime = 15;
             element('yap-btn').click();
             element('loop-btn').click();
             element('loop-btn').click();
+            confirmPlayback(15);
+            player.seekTo.mockClear();
             player.currentTime = 59.9;
             if (method === 'timer') {
                 player.getPlayerState.mockReturnValue(1);
@@ -501,13 +590,14 @@ describe('Radio application', () => {
         });
 
         it.each([0, 1, 2])('uses the effective stream end after hidden Yap playback with loop=%s', loopMode => {
+            confirmPlayback();
+            player.currentTime = 15;
             element('yap-btn').click();
             for (let i = 0; i < loopMode; i++) element('loop-btn').click();
             vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
-            player.getPlayerState.mockReturnValue(1);
-            events.onStateChange({ data: 1 });
+            confirmPlayback(15);
             player.seekTo.mockClear();
-            vi.advanceTimersByTime(1000);
+            vi.advanceTimersByTime(1200);
             expect(player.seekTo).not.toHaveBeenCalled();
             player.currentTime = 60;
             events.onStateChange({ data: 0 });
@@ -538,6 +628,7 @@ describe('Radio application', () => {
         });
 
         it('saves the observed player time before unload', () => {
+            confirmPlayback();
             player.currentTime = 17.25;
             window.dispatchEvent(new Event('beforeunload'));
             expect(localStorage.getItem('roxy_videoId')).toBe('aaaaaaaaaaa');
@@ -668,6 +759,7 @@ describe('Radio application', () => {
 
     describe('sharing and imports', () => {
         it.each(['shortcut', 'more'])('copies the same floored URL through %s', async method => {
+            confirmPlayback();
             player.currentTime = 15.99;
             if (method === 'shortcut') shortcut('C');
             else { element('more-cell').click(); element('more-copy-btn').click(); }
