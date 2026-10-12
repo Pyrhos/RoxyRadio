@@ -308,7 +308,14 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
     // ======== PLAYBACK LIFECYCLE ========
 
-    playbackCtrl.ensureTitleRefreshLoop((t) => updateStatus(t));
+    playbackCtrl.ensureTitleRefreshLoop((t) => {
+        // A missed end callback otherwise leaves whole-video songs stopped.
+        // This timer also runs when background playback suspends the fast tick.
+        if (player && player.getPlayerState?.() === YT.PlayerState.ENDED && advanceEndedVideo()) {
+            t = playbackCtrl.getSafeCurrentTime();
+        }
+        updateStatus(t);
+    });
 
     lifecycle.listen(window, 'beforeunload', () => {
         let time = playbackCtrl.getLastKnownTime();
@@ -766,13 +773,18 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
             return;
         }
         if (ev.data === YT.PlayerState.ENDED) {
-            if (playbackCtrl.reconcileStartOnEnded()) applyPlaybackAction(core.onVideoEnded());
+            advanceEndedVideo();
         } else if (ev.data === YT.PlayerState.PLAYING) {
             playbackCtrl.reconcileStartOnPlaying();
             initializeCurrentVideoMetadata();
         }
 
         playbackCtrl.evaluateTickLoop();
+    }
+
+    function advanceEndedVideo() {
+        if (!playbackCtrl.reconcileStartOnEnded()) return false;
+        return applyPlaybackAction(core.onVideoEnded());
     }
 
     function initializeCurrentVideoMetadata() {

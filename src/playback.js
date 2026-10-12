@@ -242,7 +242,10 @@ export function createPlaybackController({
         isLoadPending: () => pendingLoad !== null || !startPosition.matchesVideo(getPlayer()),
         reconcileStartOnEnded: () => {
             const player = getPlayer();
-            return pendingLoad === null && !!player
+            // Events and periodic recovery must both belong to the requested
+            // video, even after its start-position monitor has been released.
+            return !lifecycle.signal.aborted && pendingLoad === null && !!player && !!requestedVideoId
+                && startPosition.matchesVideo(player, requestedVideoId)
                 && startPosition.reconcile(player, player.getCurrentTime(), { ended: true });
         },
         reconcileStartOnPlaying,

@@ -285,6 +285,18 @@ describe('createPlaybackController', () => {
     });
 
     describe('start confirmation across player updates', () => {
+        it('rejects an end from another video after start confirmation has finished', () => {
+            confirmPlayback();
+            mockPlayer.getVideoUrl = vi.fn(() => 'https://www.youtube.com/watch?v=previous');
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+        });
+
+        it('rejects an end after a player error invalidates the loaded video', () => {
+            confirmPlayback();
+            ctrl.resetLoadedVideoId();
+            expect(ctrl.reconcileStartOnEnded()).toBe(false);
+        });
+
         it('keeps a nearby old end time from confirming a selected song', () => {
             confirmPlayback();
             mockPlayer.getCurrentTime.mockReturnValue(19.9);

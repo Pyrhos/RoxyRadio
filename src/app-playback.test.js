@@ -54,6 +54,63 @@ describe('imported video to shuffled queue segment', () => {
         clearStorage();
     });
 
+    it.each([false, true])('advances a shuffled loop queue when the end callback is missing (hidden=%s)', async hidden => {
+        vi.spyOn(document, 'hidden', 'get').mockReturnValue(hidden);
+        const nextStream = segments.find(stream => stream.songs && !stream.memberOnly);
+        const queue = [{ videoId, rIdx: 0 }, { videoId: nextStream.videoId, rIdx: 0 }];
+        localStorage.setItem('roxy_queue', JSON.stringify(queue));
+
+        ({ application } = await import('./app.js'));
+        await vi.advanceTimersByTimeAsync(0);
+        events.onReady();
+        playerState = 1;
+        events.onStateChange({ data: playerState });
+        currentTime = 1.2;
+        await vi.advanceTimersByTimeAsync(1200);
+
+        // The iframe reaches its end without delivering onStateChange.
+        currentTime = 200.041;
+        playerState = 0;
+        await vi.advanceTimersByTimeAsync(4000);
+        expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+        const next = player.loadVideoById.mock.lastCall[0];
+        expect(next).toEqual(expect.objectContaining({
+            videoId: nextStream.videoId, startSeconds: nextStream.songs[0].range[0],
+        }));
+        expect(JSON.parse(localStorage.getItem('roxy_queue'))).toEqual(queue);
+
+        // A delayed callback and an early ID update must not consume another item.
+        events.onStateChange({ data: 0 });
+        videoId = next.videoId;
+        events.onStateChange({ data: 0 });
+        await vi.advanceTimersByTimeAsync(4000);
+        expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+        expect(player.seekTo).not.toHaveBeenCalled();
+    });
+
+    it('rechecks an end callback received before the final playback time', async () => {
+        const next = segments.find(stream => stream.songs && !stream.memberOnly);
+        localStorage.setItem('roxy_queue', JSON.stringify([
+            { videoId, rIdx: 0 }, { videoId: next.videoId, rIdx: 0 },
+        ]));
+        localStorage.setItem('roxy_lastTime', '199.9');
+        ({ application } = await import('./app.js'));
+        await vi.advanceTimersByTimeAsync(0);
+        events.onReady();
+        currentTime = 199.9;
+        playerState = 1;
+        events.onStateChange({ data: 1 });
+        await vi.advanceTimersByTimeAsync(100);
+        playerState = 0;
+        events.onStateChange({ data: 0 });
+        expect(player.loadVideoById).toHaveBeenCalledTimes(1);
+
+        currentTime = 200.041;
+        await vi.advanceTimersByTimeAsync(4000);
+        expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+        expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: next.videoId }));
+    });
+
     it.each([
         { hidden: false, memberMode: false },
         { hidden: true, memberMode: false },
