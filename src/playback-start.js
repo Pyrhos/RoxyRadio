@@ -7,7 +7,7 @@ const START_CONFIRMATION_MS = 1000;
 // A load or seek owns the playback position until it is confirmed, replaced,
 // cancelled by an error, or released at the deadline.
 // This monitor has no timer; the existing playback tick supplies observations.
-export function createStartPositionMonitor({ onCorrection }) {
+export function createStartPositionMonitor({ onCorrection, onConfirmed }) {
     let request = null;
 
     function begin(videoId, startSeconds, { seekIssued = false } = {}) {
@@ -42,14 +42,8 @@ export function createStartPositionMonitor({ onCorrection }) {
     function reconcile(player, time, { ended = false } = {}) {
         const pending = request;
         if (!pending) return true;
-
-        const now = Date.now();
-        if (pending.startedAt === null) pending.startedAt = now;
-        if (!ended && now - pending.startedAt >= START_CORRECTION_TIMEOUT_MS) {
-            console.warn(`[Playback] Start position not confirmed for ${pending.videoId} at ${pending.startSeconds}`);
-            request = null;
-            return true;
-        }
+        // An old ENDED event cannot start the new load's confirmation clock.
+        if (ended && !pending.confirmation) return false;
 
         if (!matchesVideo(player)) {
             pending.confirmation = null;
@@ -58,6 +52,14 @@ export function createStartPositionMonitor({ onCorrection }) {
         if (!Number.isFinite(time)) {
             pending.confirmation = null;
             return false;
+        }
+
+        const now = Date.now();
+        if (pending.startedAt === null) pending.startedAt = now;
+        if (!ended && now - pending.startedAt >= START_CORRECTION_TIMEOUT_MS) {
+            console.warn(`[Playback] Start position not confirmed for ${pending.videoId} at ${pending.startSeconds}`);
+            request = null;
+            return true;
         }
 
         // The video ID may update before the old video's time does. A position
@@ -74,11 +76,11 @@ export function createStartPositionMonitor({ onCorrection }) {
         if (!beyondStart && time >= pending.startSeconds - START_CORRECTION_TOLERANCE_SECONDS) {
             // A short segment can finish before the confirmation interval.
             // Its end confirms progress only after a valid PLAYING sample.
-            if (ended && !pending.confirmation) return false;
             if (!pending.confirmation) pending.confirmation = { time, at: now };
             if ((ended || now - pending.confirmation.at >= START_CONFIRMATION_MS) && time > pending.confirmation.time
                 && (!pending.seekIssued || time >= pending.startSeconds)) {
                 request = null;
+                onConfirmed?.(pending.videoId);
             }
             // A plausible sample may still be the previous request's clock.
             // Only confirmed progress can drive navigation for this request.

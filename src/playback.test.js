@@ -40,6 +40,16 @@ describe('createPlaybackController', () => {
         vi.unstubAllGlobals();
     });
 
+    function confirmPlayback(videoId = 'abc', time = 10) {
+        ctrl.playVideoAt({ videoId }, time);
+        mockPlayer.getCurrentTime.mockReturnValue(time);
+        ctrl.reconcileStartOnPlaying();
+        ctrl.evaluateTickLoop();
+        mockPlayer.getCurrentTime.mockReturnValue(time + 1.2);
+        vi.advanceTimersByTime(1200);
+        vi.clearAllMocks();
+    }
+
     describe('seekToSafe', () => {
         it('calls onSeek, not onTick', () => {
             ctrl.seekToSafe(30);
@@ -54,6 +64,7 @@ describe('createPlaybackController', () => {
         });
 
         it('delegates to player.seekTo with sanitized time', () => {
+            confirmPlayback();
             deps.sanitizeStartTime.mockReturnValue(25);
             ctrl.seekToSafe(25);
 
@@ -130,16 +141,12 @@ describe('createPlaybackController', () => {
             // A may still be reported even after B's command was sent. An old
             // ENDED must not advance the newly requested A before it starts.
             expect(ctrl.reconcileStartOnEnded()).toBe(false);
-            if (sent) {
-                expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(3);
-                expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
-                    videoId: 'a', startSeconds: 50,
-                }));
-            } else {
-                expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
-                expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(50, true);
-                expect(mockPlayer.playVideo).toHaveBeenCalledOnce();
-            }
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(sent ? 3 : 2);
+            expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'a', startSeconds: 50,
+            }));
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            expect(mockPlayer.playVideo).not.toHaveBeenCalled();
             mockPlayer.getPlayerState.mockReturnValue(1);
             mockPlayer.getCurrentTime.mockReturnValue(50);
             ctrl.reconcileStartOnPlaying();
@@ -157,8 +164,12 @@ describe('createPlaybackController', () => {
             ctrl.playVideoAt({ videoId: 'a' }, 30);
             mockPlayer.getCurrentTime.mockReturnValue(30);
             vi.advanceTimersByTime(1000);
-            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
-            expect(mockPlayer.seekTo).toHaveBeenCalledExactlyOnceWith(30, true);
+            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'a', startSeconds: 30,
+            }));
+            expect(mockPlayer.loadVideoById.mock.calls.every(([payload]) => payload.videoId === 'a')).toBe(true);
+            expect(mockPlayer.seekTo).not.toHaveBeenCalled();
         });
 
         it('loads only the latest requested video after the existing cooldown', () => {
@@ -182,9 +193,16 @@ describe('createPlaybackController', () => {
             if (operation === 'seek') ctrl.seekToSafe(50, { videoId: 'a' });
             else ctrl.destroy();
             vi.advanceTimersByTime(1000);
-            expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
-            if (operation === 'dispose') expect(vi.getTimerCount()).toBe(0);
-            else expect(ctrl.isLoadPending()).toBe(false);
+            if (operation === 'dispose') {
+                expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(1);
+                expect(vi.getTimerCount()).toBe(0);
+            } else {
+                expect(mockPlayer.loadVideoById).toHaveBeenCalledTimes(2);
+                expect(mockPlayer.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                    videoId: 'a', startSeconds: 50,
+                }));
+                expect(mockPlayer.seekTo).not.toHaveBeenCalled();
+            }
         });
 
         it.each([70, 120])('replaces an in-flight load with selection at %s without waiting for PLAYING', time => {
@@ -268,6 +286,7 @@ describe('createPlaybackController', () => {
 
     describe('start confirmation across player updates', () => {
         it('keeps a nearby old end time from confirming a selected song', () => {
+            confirmPlayback();
             mockPlayer.getCurrentTime.mockReturnValue(19.9);
             ctrl.seekToSafe(20.1);
             vi.advanceTimersByTime(800);
@@ -279,6 +298,7 @@ describe('createPlaybackController', () => {
         });
 
         it.each(['load', 'seek'])('accepts a short segment ending after a confirmed position from %s', operation => {
+            if (operation === 'seek') confirmPlayback();
             if (operation === 'load') ctrl.playVideoAt({ videoId: 'abc' }, 50);
             else ctrl.seekToSafe(50);
             mockPlayer.getCurrentTime.mockReturnValue(50);

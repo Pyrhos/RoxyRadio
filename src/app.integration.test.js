@@ -127,6 +127,7 @@ describe('Radio application', () => {
         });
 
         it('selects a result through the actual row handler and closes', () => {
+            confirmPlayback();
             const rows = search('Song B');
             rows.find(row => row.textContent.includes('Song B')).click();
             expect(isOpen('modal-overlay')).toBe(false);
@@ -147,6 +148,7 @@ describe('Radio application', () => {
         });
 
         it('Enter selects the highlighted result', () => {
+            confirmPlayback();
             search('Song B');
             pressKey('Enter');
             expect(isOpen('modal-overlay')).toBe(false);
@@ -207,6 +209,7 @@ describe('Radio application', () => {
         });
 
         it('moves selection with arrows and selects using Enter', () => {
+            confirmPlayback();
             shortcut('A');
             pressKey('ArrowDown');
             expect(element('status-song-list').querySelector('.nav-focus').dataset.songIndex).toBe('1');
@@ -216,6 +219,7 @@ describe('Radio application', () => {
         });
 
         it('uses separate Enter presses to open from the focused song bar and select', () => {
+            confirmPlayback();
             element('status').focus();
             pressKeyOn(element('status'), 'Enter');
             expect(isOpen('status-panel')).toBe(true);
@@ -227,6 +231,7 @@ describe('Radio application', () => {
         });
 
         it('clicking a song selects its timestamp and closes the panel', () => {
+            confirmPlayback();
             shortcut('A');
             element('status-song-list').children[2].click();
             expect(player.seekTo).toHaveBeenLastCalledWith(50, true);
@@ -278,6 +283,7 @@ describe('Radio application', () => {
         });
 
         it('starts a song selected while the iframe is paused', () => {
+            confirmPlayback();
             player.getPlayerState.mockReturnValue(2);
             shortcut('A');
             element('status-song-list').children[1].click();
@@ -307,6 +313,55 @@ describe('Radio application', () => {
             vi.advanceTimersByTime(60000);
             expect(player.loadVideoById).toHaveBeenCalledTimes(3);
         });
+
+        it.each([false, true].flatMap(yapMode => [49, 50, 60000].map(delay => ({ yapMode, delay }))))(
+            'loads a song picked across an early video ID update (Yap=$yapMode, delay=$delay)',
+            async ({ yapMode, delay }) => {
+                application.dispose();
+                localStorage.setItem('roxy_yapMode', String(yapMode));
+                let videoId = 'aaaaaaaaaaa';
+                player.getVideoUrl = vi.fn(() => `https://www.youtube.com/watch?v=${videoId}`);
+                await start();
+                confirmPlayback();
+                player.loadVideoById.mockClear();
+
+                element('next-stream').click();
+                expect(player.loadVideoById).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+                    videoId: 'bbbbbbbbbbb', startSeconds: 70,
+                }));
+                player.getPlayerState.mockReturnValue(3);
+                events.onStateChange({ data: 3 });
+                setTimeout(() => {
+                    videoId = 'bbbbbbbbbbb';
+                    player.currentTime = 0;
+                    events.onStateChange({ data: 0 }); // Stale end, before playback starts.
+                }, 50);
+                vi.advanceTimersByTime(delay);
+                shortcut('A');
+                element('status-song-list').children[1].click();
+                vi.advanceTimersByTime(300);
+                expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+                expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                    videoId: 'bbbbbbbbbbb', startSeconds: 90,
+                }));
+                expect(player.seekTo).not.toHaveBeenCalled();
+                expect(player.playVideo).not.toHaveBeenCalled();
+
+                // Network delay produces no commands. Playback can confirm
+                // the replacement when the iframe eventually starts it.
+                vi.advanceTimersByTime(60000);
+                expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+                expect(element('status-text').textContent).toContain('Song D');
+                confirmPlayback(90);
+                expect(element('status-text').textContent).toContain('Song D');
+                player.getPlayerState.mockReturnValue(2);
+                shortcut('A');
+                element('status-song-list').children[0].click();
+                expect(player.seekTo).toHaveBeenCalledExactlyOnceWith(70, true);
+                expect(player.playVideo).toHaveBeenCalledOnce();
+                expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+            },
+        );
 
         it('cycles all loop states and persists them', () => {
             for (const [mode, text] of [[1, 'Track'], [2, 'Stream'], [0, 'None']]) {
@@ -356,6 +411,7 @@ describe('Radio application', () => {
         });
 
         it('next/previous song buttons invoke production navigation', () => {
+            confirmPlayback();
             element('next-song').click();
             expect(player.seekTo).toHaveBeenLastCalledWith(30, true);
             player.currentTime = 31;
@@ -378,9 +434,11 @@ describe('Radio application', () => {
             vi.advanceTimersByTime(50);
             element('prev-stream').click();
             vi.advanceTimersByTime(1000);
-            expect(player.loadVideoById).toHaveBeenCalledTimes(1);
-            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'aaaaaaaaaaa' }));
-            expect(player.seekTo).toHaveBeenLastCalledWith(10, true);
+            expect(player.loadVideoById).toHaveBeenCalledTimes(2);
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({
+                videoId: 'aaaaaaaaaaa', startSeconds: 10,
+            }));
+            expect(player.seekTo).not.toHaveBeenCalled();
             expect(localStorage.getItem('roxy_videoId')).toBe('aaaaaaaaaaa');
         });
 
@@ -869,6 +927,7 @@ describe('Radio application', () => {
             await start();
             expect(element('status-panel')).toBe(panel);
             expect(isOpen('status-panel')).toBe(false);
+            confirmPlayback();
 
             shortcut('A');
             pressKey('ArrowDown');

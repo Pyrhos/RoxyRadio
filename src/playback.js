@@ -21,7 +21,11 @@ export function createPlaybackController({
     const lifecycle = createLifecycle();
     let tickHandle = null;
     let lastKnownTime = 0;
-    const startPosition = createStartPositionMonitor({ onCorrection: time => { lastKnownTime = time; } });
+    let confirmedVideoId = null;
+    const startPosition = createStartPositionMonitor({
+        onCorrection: time => { lastKnownTime = time; },
+        onConfirmed: videoId => { confirmedVideoId = videoId; },
+    });
     let requestedVideoId = null;
     let requestedEndSeconds;
     let lastVideoLoadTime = 0;
@@ -31,6 +35,11 @@ export function createPlaybackController({
     function cancelPendingLoad() {
         lifecycle.cancelTimeout(pendingLoad?.handle);
         pendingLoad = null;
+    }
+
+    function canSeek(player, videoId) {
+        return !!videoId && confirmedVideoId === videoId && requestedVideoId === videoId
+            && startPosition.matchesVideo(player, videoId);
     }
 
     function seekToSafe(time, stream) {
@@ -44,10 +53,11 @@ export function createPlaybackController({
             // A song pick within the selected video replaces its pending start;
             // seeking the iframe here would seek in the previous video instead.
             playVideoAt(resolvedStream, safeStart, previousLoad.endSeconds, previousLoad.forceReload);
-        } else if (requestedVideoId === resolvedStream?.videoId && !startPosition.matchesVideo(player, resolvedStream.videoId)) {
-            // Replace the in-flight command itself. Waiting to seek on arrival
-            // loses the user's request if the previous load never starts.
-            playVideoAt(resolvedStream, safeStart, requestedEndSeconds, true);
+        } else if (!canSeek(player, resolvedStream?.videoId)) {
+            // The iframe can report the new ID before its media is ready. A
+            // selection replaces an unconfirmed load instead of seeking into it.
+            const endSeconds = requestedVideoId === resolvedStream?.videoId ? requestedEndSeconds : undefined;
+            playVideoAt(resolvedStream, safeStart, endSeconds, true);
         } else {
             startPosition.begin(resolvedStream?.videoId, safeStart, { seekIssued: true });
             if (player && player.seekTo) player.seekTo(safeStart, true);
@@ -60,8 +70,8 @@ export function createPlaybackController({
 
     function getSafeCurrentTime({ allowZero = false } = {}) {
         // Navigation already addresses the selected stream during the delay.
-        // Its requested position remains authoritative until the iframe reports
-        // that video, including the interval after the load command is sent.
+        // Its requested position remains authoritative until playback confirms
+        // that start, including the interval after the load command is sent.
         if (pendingLoad) return pendingLoad.startSeconds;
         const player = getPlayer();
         const pendingTime = startPosition.getPendingTime();
@@ -101,8 +111,7 @@ export function createPlaybackController({
         const player = getPlayer();
         if (!player || !player.loadVideoById) return;
 
-        const isSameVideo = requestedVideoId === stream.videoId;
-        if (isSameVideo && !forceReload && startPosition.matchesVideo(player, stream.videoId)) {
+        if (!forceReload && canSeek(player, stream.videoId)) {
             seekToSafe(safeStart, stream);
             return;
         }
@@ -128,6 +137,7 @@ export function createPlaybackController({
         lastKnownTime = safeStart;
         requestedVideoId = stream.videoId;
         requestedEndSeconds = safeEnd;
+        confirmedVideoId = null;
 
         const payload = {
             videoId: stream.videoId,
@@ -219,6 +229,7 @@ export function createPlaybackController({
 
     function resetLoadedVideoId() {
         requestedVideoId = null;
+        confirmedVideoId = null;
         startPosition.cancel();
     }
 
@@ -227,6 +238,7 @@ export function createPlaybackController({
         seekToSafe,
         getSafeCurrentTime,
         playVideoAt,
+        // Video identity permits event attribution, not same-video seeking.
         isLoadPending: () => pendingLoad !== null || !startPosition.matchesVideo(getPlayer()),
         reconcileStartOnEnded: () => {
             const player = getPlayer();
