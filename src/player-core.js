@@ -419,6 +419,16 @@ export class PlayerCore {
       this._saveState();
   }
 
+  // Entries have already been resolved against the active segment catalogue.
+  importQueue(items, { replace = false, currentTime = 0 } = {}) {
+      if (!items.length) return;
+      const incoming = items.map(({ videoId, rIdx }) => ({ videoId, rIdx }));
+      this.queue = replace ? incoming : [...this.queue, ...incoming];
+      if (replace) this._clearQueueCursor();
+      this.yapMode = false;
+      this._saveState(currentTime);
+  }
+
   // Snap every queued item to a valid song index for the current playlist — a
   // persisted queue can outlive a segments.json change that shortened a stream.
   // Items whose stream isn't in the playlist (e.g. a member-only stream while

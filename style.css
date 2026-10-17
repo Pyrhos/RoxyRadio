@@ -887,9 +887,14 @@ button.active {
   }
 }
 
-/* Import Playlist Modal */
+/* Import Modal */
 #import-wrapper {
   position: relative;
+}
+
+#import-box,
+#more-box {
+  box-sizing: border-box;
 }
 
 #import-wrapper .modal-jamstone {
@@ -902,7 +907,10 @@ button.active {
   text-align: center;
   margin-bottom: 16px;
   line-height: 1.4;
-  min-height: 1.4em;
+}
+
+#import-status:empty {
+  margin-bottom: 0;
 }
 
 #import-status.error {
@@ -915,16 +923,9 @@ button.active {
   font-weight: bold;
 }
 
-#import-buttons {
-  display: flex;
-  gap: 16px;
-}
-
-#import-buttons button {
-  flex: 1;
-  width: 100%;
-  font-size: 1.2em;
-  padding: 14px 20px;
+#import-status.warning {
+  color: var(--color-bg);
+  font-weight: bold;
 }
 
 /* More Overlay */
@@ -936,13 +937,15 @@ button.active {
   right: 20px;
 }
 
-#more-buttons {
+#more-buttons,
+#import-buttons {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-#more-buttons button {
+#more-buttons button,
+#import-buttons button {
   width: 100%;
   font-size: 1.1em;
   padding: 16px 20px;
@@ -953,8 +956,15 @@ button.active {
   color: var(--color-bg);
 }
 
-#more-close-btn {
+#more-close-btn,
+#import-close-btn {
   background: var(--color-muted);
+  color: var(--color-bright);
+}
+
+#import-reset-btn {
+  margin-block: 8px;
+  background: var(--color-danger);
   color: var(--color-bright);
 }
 

@@ -8,6 +8,7 @@ import { createImportAndMoreController } from './import-ui.js';
 import { createQueueModalController } from './queue-modal.js';
 import { createPlaybackController } from './playback.js';
 import { validateSegmentData } from './import-helpers.js';
+import { encodeQueue, resolveQueue } from './queue-transfer.js';
 import { resolveUrlOverride, computeActiveSegments, classifyMissing, looksLikeVideoId } from './url-override.js';
 import { flashEnqueue } from './enqueue-flash.js';
 import {
@@ -207,6 +208,24 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         moreOverlay, moreMemberBtn, moreBtn, moreCopyBtn, moreImportBtn, moreCloseBtn,
         importReplaceBtn, importAppendBtn,
         importResetBtn: document.getElementById('import-reset-btn'),
+        importExportQueueBtn: document.getElementById('import-export-queue-btn'),
+        importCloseBtn: document.getElementById('import-close-btn'),
+        getQueueLength: () => core.getQueue().length,
+        getQueueExport: () => encodeQueue(core.getQueue(), activeSegments),
+        onQueueImport: (items, { replace }) => {
+            const { queue, skipped } = resolveQueue(items, activeSegments);
+            if (!queue.length) {
+                importCtrl.setImportStatus(`No matching songs found; skipped ${skipped}. Queue unchanged.`, 'error');
+                return;
+            }
+            core.importQueue(queue, {
+                replace,
+                currentTime: playbackCtrl.getSafeCurrentTime({ allowZero: true }),
+            });
+            updateQueueControls();
+            if (queueCtrl.isOpen()) queueCtrl.render();
+            importCtrl.setImportStatus(`Imported ${queue.length} song${queue.length === 1 ? '' : 's'}; skipped ${skipped} missing song${skipped === 1 ? '' : 's'}`, skipped ? 'warning' : 'ok');
+        },
         onImportReplace: (data) => {
             if (!applyImportedSegments(data, 'Import produced an empty playlist')) return;
             persistCustomSegments(data);
@@ -693,6 +712,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         }
 
         importCtrl.updateMoreMemberBtn();
+        importCtrl.updateExportQueueButton();
     }
 
     function updateQueueControls() {

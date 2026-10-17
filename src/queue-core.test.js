@@ -31,6 +31,55 @@ describe('Queue (§13)', () => {
   });
 
   describe('Queue manipulation methods', () => {
+    it('bulk imports without changing playback position and saves the current time', () => {
+      core.vIdx = 0;
+      core.rIdx = 1;
+      core.yapMode = true;
+      core.shuffleMode = true;
+      core.loopMode = LOOP_TRACK;
+      core.importQueue([{ videoId: 'v3', rIdx: 0 }], { replace: true, currentTime: 25.5 });
+
+      expect(core.getQueue()).toEqual([{ videoId: 'v3', rIdx: 0 }]);
+      expect([core.vIdx, core.rIdx]).toEqual([0, 1]);
+      expect(core.yapMode).toBe(false);
+      expect(core.shuffleMode).toBe(true);
+      expect(core.loopMode).toBe(LOOP_TRACK);
+      expect(callbacks.saveSettings).toHaveBeenLastCalledWith(expect.objectContaining({ lastTime: '25.50' }));
+    });
+
+    it('extends a looping queue without moving its current position', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v3', 0);
+      core.selectQueueItem(1);
+      core.importQueue([{ videoId: 'v1', rIdx: 1 }, { videoId: 'v1', rIdx: 1 }]);
+      expect(core.getNowPlayingQueueIndex()).toBe(1);
+      core.nextSong(5);
+      expect([core.vIdx, core.rIdx]).toEqual([0, 1]);
+      expect(core.getNowPlayingQueueIndex()).toBe(2);
+      expect(core.getQueue()).toHaveLength(4);
+    });
+
+    it('replaces a looping queue and starts its next selection at the beginning', () => {
+      core.loopMode = LOOP_STREAM;
+      core.enqueue('v1', 0);
+      core.enqueue('v3', 0);
+      core.selectQueueItem(1);
+      core.importQueue([{ videoId: 'v1', rIdx: 1 }, { videoId: 'v3', rIdx: 0 }], { replace: true });
+      expect(core.getNowPlayingQueueIndex()).toBe(-1);
+      core.nextSong(5);
+      expect([core.vIdx, core.rIdx]).toEqual([0, 1]);
+      expect(core.getNowPlayingQueueIndex()).toBe(0);
+    });
+
+    it('leaves the queue unchanged when an import contains no matching entries', () => {
+      core.enqueue('v1', 0);
+      callbacks.saveSettings.mockClear();
+      core.importQueue([], { replace: true });
+      expect(core.getQueue()).toEqual([{ videoId: 'v1', rIdx: 0 }]);
+      expect(callbacks.saveSettings).not.toHaveBeenCalled();
+    });
+
     it('enqueue adds item to the back', () => {
       core.enqueue('v1', 0);
       core.enqueue('v3', 0);

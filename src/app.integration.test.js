@@ -56,6 +56,7 @@ describe('Radio application', () => {
         clearStorage();
         history.replaceState(null, '', '/');
         vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.stubGlobal('confirm', vi.fn(() => true));
         player = {
             currentTime: 15,
             getCurrentTime: vi.fn(() => player.currentTime),
@@ -839,7 +840,212 @@ describe('Radio application', () => {
         });
     });
 
+    describe('queue transfer', () => {
+        const encodeItems = items => btoa(JSON.stringify({ type: 'rourin-radio-queue', version: 1, items }));
+
+        async function importQueue(items, mode = 'replace') {
+            navigator.clipboard.readText.mockResolvedValue(encodeItems(items));
+            if (!isOpen('import-overlay')) shortcut('I');
+            element(`import-${mode}-btn`).click();
+            await vi.advanceTimersByTimeAsync(0);
+        }
+
+        it('disables empty queue export and closes through the Close button', () => {
+            shortcut('I');
+            expect(element('import-export-queue-btn').disabled).toBe(true);
+            element('import-export-queue-btn').click();
+            expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+            element('import-close-btn').click();
+            expect(isOpen('import-overlay')).toBe(false);
+            expect(element('import-overlay').inert).toBe(true);
+        });
+
+        it('exports and restores the queue without interrupting playback', async () => {
+            const savedQueue = [
+                { videoId: 'aaaaaaaaaaa', rIdx: 1 },
+                { videoId: 'bbbbbbbbbbb', rIdx: 0 },
+                { videoId: 'aaaaaaaaaaa', rIdx: 1 },
+            ];
+            application.dispose();
+            localStorage.setItem('roxy_queue', JSON.stringify(savedQueue));
+            await start();
+            confirmPlayback();
+            shortcut('I');
+            expect(element('import-export-queue-btn').disabled).toBe(false);
+            element('import-export-queue-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            const exported = navigator.clipboard.writeText.mock.lastCall[0];
+            expect(JSON.parse(atob(exported)).items).toEqual([
+                { videoId: 'aaaaaaaaaaa', range: [30, 40] },
+                { videoId: 'bbbbbbbbbbb', range: [70, 80] },
+                { videoId: 'aaaaaaaaaaa', range: [30, 40] },
+            ]);
+            expect(queue()).toEqual(savedQueue);
+            element('import-close-btn').click();
+            shortcut('Q');
+            element('queue-clear-btn').click();
+            shortcut('I');
+            navigator.clipboard.readText.mockResolvedValue(exported);
+            player.currentTime = 15.25;
+            player.loadVideoById.mockClear();
+            player.seekTo.mockClear();
+            element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(queue()).toEqual(savedQueue);
+            expect(player.loadVideoById).not.toHaveBeenCalled();
+            expect(player.seekTo).not.toHaveBeenCalled();
+            expect(window.confirm).toHaveBeenCalledWith('Replace your current queue with the imported queue?');
+            expect(localStorage.getItem('roxy_lastTime')).toBe('15.25');
+            expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+            expect(element('import-status').textContent).toBe('Imported 3 songs; skipped 0 missing songs');
+
+            application.dispose();
+            await start();
+            expect(queue()).toEqual(savedQueue);
+        });
+
+        it.each(['replace', 'extend'])('%s skips missing songs and preserves imported order and duplicates', async mode => {
+            shortcut('E');
+            const original = queue();
+            await importQueue([
+                { videoId: 'aaaaaaaaaaa', range: [30, 40] },
+                { videoId: 'missing', range: [10, 20] },
+                { videoId: 'aaaaaaaaaaa', range: [10, 21] },
+                { videoId: 'aaaaaaaaaaa', range: [30, 40] },
+            ], mode);
+            const imported = [{ videoId: 'aaaaaaaaaaa', rIdx: 1 }, { videoId: 'aaaaaaaaaaa', rIdx: 1 }];
+            expect(queue()).toEqual(mode === 'extend' ? [...original, ...imported] : imported);
+            expect(element('import-status').textContent).toBe('Imported 2 songs; skipped 2 missing songs');
+            expect(element('import-status').className).toBe('warning');
+            expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+            if (mode === 'extend') expect(window.confirm).not.toHaveBeenCalled();
+        });
+
+        it('keeps the existing queue when no imported songs match', async () => {
+            shortcut('E');
+            const original = queue();
+            await importQueue([{ videoId: 'missing', range: null }]);
+            expect(queue()).toEqual(original);
+            expect(element('import-status').textContent).toContain('Queue unchanged');
+        });
+
+        it('matches against combined default and custom segments without adding sources', async () => {
+            const custom = [{ videoId: 'ccccccccccc', name: 'Custom stream', songs: [
+                { name: 'Custom song', range: [100, 150] },
+            ] }, { videoId: 'ddddddddddd', name: 'Whole video' }];
+            application.dispose();
+            localStorage.setItem('roxy_customSegments', JSON.stringify(custom));
+            await start();
+            await importQueue([
+                { videoId: 'ccccccccccc', range: [100, 150] },
+                { videoId: 'ddddddddddd', range: null },
+                { videoId: 'aaaaaaaaaaa', range: [30, 40] },
+            ]);
+            expect(queue()).toEqual([
+                { videoId: 'ccccccccccc', rIdx: 0 },
+                { videoId: 'ddddddddddd', rIdx: 0 },
+                { videoId: 'aaaaaaaaaaa', rIdx: 1 },
+            ]);
+            expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual(custom);
+            expect(localStorage.getItem('roxy_segmentsMode')).toBeNull();
+        });
+
+        it('does not import built-in songs excluded by a replacement playlist', async () => {
+            application.dispose();
+            localStorage.setItem('roxy_customSegments', JSON.stringify([{ videoId: 'ccccccccccc' }]));
+            localStorage.setItem('roxy_segmentsMode', 'replaced');
+            await start();
+            await importQueue([
+                { videoId: 'aaaaaaaaaaa', range: [10, 20] },
+                { videoId: 'ccccccccccc', range: null },
+            ]);
+            expect(queue()).toEqual([{ videoId: 'ccccccccccc', rIdx: 0 }]);
+            expect(localStorage.getItem('roxy_segmentsMode')).toBe('replaced');
+            expect(element('import-status').textContent).toBe('Imported 1 song; skipped 1 missing song');
+        });
+
+        it.each([
+            'not a queue export!',
+            btoa(JSON.stringify({ type: 'rourin-radio-queue', version: 99, items: [] })),
+            btoa(JSON.stringify({ type: 'rourin-radio-queue', version: 1, items: [{ videoId: 'aaaaaaaaaaa' }] })),
+        ])('rejects invalid input without changing the queue or playlist: %s', async text => {
+            shortcut('E');
+            const original = queue();
+            navigator.clipboard.readText.mockResolvedValue(text);
+            shortcut('I');
+            element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(queue()).toEqual(original);
+            expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+            expect(element('import-status').className).toBe('error');
+            expect(window.confirm).not.toHaveBeenCalled();
+        });
+
+        it('reports clipboard export failure and enables retry', async () => {
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+            shortcut('E');
+            const original = queue();
+            navigator.clipboard.writeText.mockRejectedValueOnce(new Error('Permission denied'));
+            shortcut('I');
+            element('import-export-queue-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe('Couldn’t copy queue to clipboard');
+            expect(element('import-export-queue-btn').disabled).toBe(false);
+            expect(queue()).toEqual(original);
+            element('import-export-queue-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe('Copied 1 queued song');
+        });
+
+        it('ignores a pending queue import after disposal', async () => {
+            let resolveClipboard;
+            navigator.clipboard.readText.mockReturnValue(new Promise(resolve => { resolveClipboard = resolve; }));
+            shortcut('I');
+            element('import-replace-btn').click();
+            application.dispose();
+            resolveClipboard(encodeItems([{ videoId: 'aaaaaaaaaaa', range: [10, 20] }]));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(queue()).toEqual([]);
+            expect(vi.getTimerCount()).toBe(0);
+        });
+    });
+
     describe('sharing and imports', () => {
+        it.each([
+            { format: 'queue', type: 'queue', text: btoa(JSON.stringify({
+                type: 'rourin-radio-queue', version: 1,
+                items: [{ videoId: 'aaaaaaaaaaa', range: [30, 40] }],
+            })) },
+            { format: 'playlist JSON', type: 'playlist', text: JSON.stringify([{ videoId: 'CmMimqir5z0' }]) },
+            { format: 'YouTube links', type: 'playlist', text: 'https://youtu.be/CmMimqir5z0' },
+        ])('preserves the playlist, queue, and playback when replacing from $format is cancelled', async ({ type, text }) => {
+            application.dispose();
+            localStorage.setItem('roxy_customSegments', JSON.stringify([{ videoId: 'ccccccccccc' }]));
+            await start();
+            confirmPlayback();
+            shortcut('E');
+            const savedCustom = localStorage.getItem('roxy_customSegments');
+            const savedMode = localStorage.getItem('roxy_segmentsMode');
+            const savedQueue = queue();
+            const savedVideo = localStorage.getItem('roxy_videoId');
+            player.loadVideoById.mockClear();
+            player.seekTo.mockClear();
+            window.confirm.mockReturnValue(false);
+            navigator.clipboard.readText.mockResolvedValue(text);
+            shortcut('I'); element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+
+            expect(window.confirm).toHaveBeenCalledExactlyOnceWith(`Replace your current ${type} with the imported ${type}?`);
+            expect(localStorage.getItem('roxy_customSegments')).toBe(savedCustom);
+            expect(localStorage.getItem('roxy_segmentsMode')).toBe(savedMode);
+            expect(queue()).toEqual(savedQueue);
+            expect(localStorage.getItem('roxy_videoId')).toBe(savedVideo);
+            expect(player.loadVideoById).not.toHaveBeenCalled();
+            expect(player.seekTo).not.toHaveBeenCalled();
+            expect(isOpen('import-overlay')).toBe(true);
+        });
+
         it.each(['shortcut', 'more'])('copies the same floored URL through %s', async method => {
             confirmPlayback();
             player.currentTime = 15.99;
@@ -860,7 +1066,40 @@ describe('Radio application', () => {
             await vi.advanceTimersByTimeAsync(0);
             expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual([{ videoId: 'CmMimqir5z0' }]);
             shortcut('I'); element('import-reset-btn').click();
+            expect(window.confirm).toHaveBeenCalledOnce();
             expect(localStorage.getItem('roxy_customSegments')).toBeNull();
+        });
+
+        it('preserves the playlist, queue, and playback when reset is cancelled', async () => {
+            navigator.clipboard.readText.mockResolvedValue('https://youtu.be/CmMimqir5z0');
+            shortcut('I'); element('import-extend-btn').click();
+            await vi.advanceTimersByTimeAsync(300);
+            shortcut('E');
+            const savedCustom = localStorage.getItem('roxy_customSegments');
+            const savedQueue = queue();
+            const savedVideo = localStorage.getItem('roxy_videoId');
+            player.loadVideoById.mockClear();
+            player.seekTo.mockClear();
+            window.confirm.mockReturnValue(false);
+            element('import-reset-btn').click();
+
+            expect(window.confirm).toHaveBeenCalledOnce();
+            expect(localStorage.getItem('roxy_customSegments')).toBe(savedCustom);
+            expect(queue()).toEqual(savedQueue);
+            expect(localStorage.getItem('roxy_videoId')).toBe(savedVideo);
+            expect(player.loadVideoById).not.toHaveBeenCalled();
+            expect(player.seekTo).not.toHaveBeenCalled();
+            expect(isOpen('import-overlay')).toBe(true);
+        });
+
+        it('replaces the playlist from YouTube links', async () => {
+            navigator.clipboard.readText.mockResolvedValue('https://youtu.be/CmMimqir5z0');
+            shortcut('I'); element('import-replace-btn').click();
+            await vi.advanceTimersByTimeAsync(300);
+            expect(window.confirm).toHaveBeenCalledWith('Replace your current playlist with the imported playlist?');
+            expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual([{ videoId: 'CmMimqir5z0' }]);
+            expect(localStorage.getItem('roxy_segmentsMode')).toBe('replaced');
+            expect(player.loadVideoById).toHaveBeenLastCalledWith(expect.objectContaining({ videoId: 'CmMimqir5z0' }));
         });
 
         it('replaces the catalogue from JSON and rejects invalid replacements', async () => {
