@@ -7,7 +7,7 @@ import { createStatusPanelController } from './status-panel.js';
 import { createImportAndMoreController } from './import-ui.js';
 import { createQueueModalController } from './queue-modal.js';
 import { createPlaybackController } from './playback.js';
-import { validateSegmentData } from './import-helpers.js';
+import { validateSegmentData, selectCustomSegments } from './import-helpers.js';
 import { encodeQueue, resolveQueue } from './queue-transfer.js';
 import { resolveUrlOverride, computeActiveSegments, classifyMissing, looksLikeVideoId } from './url-override.js';
 import { flashEnqueue } from './enqueue-flash.js';
@@ -209,9 +209,11 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         importReplaceBtn, importAppendBtn,
         importResetBtn: document.getElementById('import-reset-btn'),
         importExportQueueBtn: document.getElementById('import-export-queue-btn'),
+        importExportPlaylistBtn: document.getElementById('import-export-playlist-btn'),
         importCloseBtn: document.getElementById('import-close-btn'),
         getQueueLength: () => core.getQueue().length,
         getQueueExport: () => encodeQueue(core.getQueue(), activeSegments),
+        getCustomSegments: () => selectCustomSegments(activeSegments, canonicalBase),
         onQueueImport: (items, { replace }) => {
             const { queue, skipped } = resolveQueue(items, activeSegments);
             if (!queue.length) {
@@ -241,8 +243,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
 
             if (!applyImportedSegments(merged, 'Merge produced an empty playlist')) return;
             // Defaults always load fresh. Persist non-default custom entries
-            const defaultIds = new Set(canonicalBase.map(e => e.videoId));
-            persistCustomSegments(merged.filter(e => !defaultIds.has(e.videoId)));
+            persistCustomSegments(selectCustomSegments(merged, canonicalBase));
             localStorage.removeItem(SEGMENTS_MODE_STORAGE_KEY);
 
             completeImport(`Extended - ${core.playlist.length} streams total`, false);
@@ -712,7 +713,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         }
 
         importCtrl.updateMoreMemberBtn();
-        importCtrl.updateExportQueueButton();
+        importCtrl.updateExportButtons();
     }
 
     function updateQueueControls() {
@@ -828,8 +829,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
                     if (localStorage.getItem(SEGMENTS_MODE_STORAGE_KEY) === SEGMENTS_MODE_REPLACED) {
                         persistCustomSegments(activeSegments);
                     } else {
-                        const defaultIds = new Set(canonicalBase.map(e => e.videoId));
-                        persistCustomSegments(activeSegments.filter(e => !defaultIds.has(e.videoId)));
+                        persistCustomSegments(selectCustomSegments(activeSegments, canonicalBase));
                     }
                 }
             }

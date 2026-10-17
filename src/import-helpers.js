@@ -1,6 +1,17 @@
 const VALID_ID = /^[a-zA-Z0-9_-]{11}$/;
 
 /**
+ * Select additions by video ID; built-in streams always come from the radio.
+ * @param {Segment[]} segments
+ * @param {Segment[]} base
+ * @returns {Segment[]}
+ */
+export function selectCustomSegments(segments, base) {
+    const baseIds = new Set(base.map(entry => entry.videoId));
+    return segments.filter(entry => !baseIds.has(entry.videoId));
+}
+
+/**
  * @typedef {Object} SegmentSong
  * @property {string} name
  * @property {[number, number]} range

@@ -18,6 +18,7 @@ import { decodeQueue } from './queue-transfer.js';
  * @param {HTMLElement} deps.importAppendBtn
  * @param {HTMLElement} deps.importResetBtn
  * @param {HTMLElement} deps.importExportQueueBtn
+ * @param {HTMLElement} deps.importExportPlaylistBtn
  * @param {HTMLElement} deps.importCloseBtn
  * @param {(validatedData: Segment[]) => void} deps.onImportReplace
  * @param {(validatedData: Segment[]) => void} deps.onImportAppend
@@ -25,6 +26,7 @@ import { decodeQueue } from './queue-transfer.js';
  * @param {(items: Array, options: {replace: boolean}) => void} deps.onQueueImport
  * @param {() => {text: string, count: number, skipped: number}} deps.getQueueExport
  * @param {() => number} deps.getQueueLength
+ * @param {() => Segment[]} deps.getCustomSegments
  * @param {() => void} deps.onMemberToggle
  * @param {(buttonEl: HTMLElement) => void} deps.onCopyShareUrl
  * @param {() => boolean} deps.isMemberMode
@@ -32,13 +34,13 @@ import { decodeQueue } from './queue-transfer.js';
 export function createImportAndMoreController({
     importModal, importStatus,
     moreOverlay, moreMemberBtn, moreBtn, moreCopyBtn, moreImportBtn, moreCloseBtn,
-    importReplaceBtn, importAppendBtn, importResetBtn, importExportQueueBtn, importCloseBtn,
+    importReplaceBtn, importAppendBtn, importResetBtn, importExportQueueBtn, importExportPlaylistBtn, importCloseBtn,
     onImportReplace, onImportAppend, onImportReset,
-    onQueueImport, getQueueExport, getQueueLength,
+    onQueueImport, getQueueExport, getQueueLength, getCustomSegments,
     onMemberToggle, onCopyShareUrl, isMemberMode,
 }) {
     const lifecycle = createLifecycle();
-    let exportingQueue = false;
+    let exporting = false;
     function setImportStatus(msg, type) {
         if (!importStatus) return;
         importStatus.textContent = msg || '';
@@ -100,13 +102,16 @@ export function createImportAndMoreController({
         importModal.inert = !isOpen;
         if (isOpen) {
             setImportStatus();
-            updateExportQueueButton();
+            updateExportButtons();
         }
     }
 
-    function updateExportQueueButton() {
+    function updateExportButtons() {
         if (importExportQueueBtn) {
-            importExportQueueBtn.disabled = exportingQueue || getQueueLength() === 0;
+            importExportQueueBtn.disabled = exporting || getQueueLength() === 0;
+        }
+        if (importExportPlaylistBtn) {
+            importExportPlaylistBtn.disabled = exporting || getCustomSegments().length === 0;
         }
     }
 
@@ -160,28 +165,36 @@ export function createImportAndMoreController({
     });
     lifecycle.listen(importCloseBtn, 'click', () => toggleImportModal());
 
-    lifecycle.listen(importExportQueueBtn, 'click', async () => {
-        if (exportingQueue || !getQueueLength()) return;
-        exportingQueue = true;
-        updateExportQueueButton();
+    /** @param {'queue' | 'playlist'} type */
+    async function exportToClipboard(type) {
+        if (exporting) return;
+        exporting = true;
+        updateExportButtons();
         try {
-            const { text, count, skipped } = getQueueExport();
+            const custom = type === 'playlist' ? getCustomSegments() : null;
+            const { text, count, skipped = 0 } = custom
+                ? { text: JSON.stringify(custom), count: custom.length }
+                : getQueueExport();
             if (!count) {
-                setImportStatus('No queued songs found in your playlist', 'error');
+                setImportStatus(type === 'playlist' ? 'No custom streams to export' : 'No queued songs found in your playlist', 'error');
                 return;
             }
             await navigator.clipboard.writeText(text);
             if (lifecycle.signal.aborted) return;
-            setImportStatus(`Copied ${count} queued song${count === 1 ? '' : 's'}${skipped ? `; skipped ${skipped} missing` : ''}`, skipped ? 'warning' : 'ok');
+            const item = type === 'playlist' ? 'custom stream' : 'queued song';
+            setImportStatus(`Copied ${count} ${item}${count === 1 ? '' : 's'}${skipped ? `; skipped ${skipped} missing` : ''}`, skipped ? 'warning' : 'ok');
         } catch (err) {
             if (lifecycle.signal.aborted) return;
-            setImportStatus('Couldn\u2019t copy queue to clipboard', 'error');
-            console.warn('[Import] Failed to export queue:', err.message);
+            setImportStatus(`Couldn’t copy ${type} to clipboard`, 'error');
+            console.warn(`[Import] Failed to export ${type}:`, err.message);
         } finally {
-            exportingQueue = false;
-            if (!lifecycle.signal.aborted) updateExportQueueButton();
+            exporting = false;
+            if (!lifecycle.signal.aborted) updateExportButtons();
         }
-    });
+    }
+
+    lifecycle.listen(importExportQueueBtn, 'click', () => exportToClipboard('queue'));
+    lifecycle.listen(importExportPlaylistBtn, 'click', () => exportToClipboard('playlist'));
 
     lifecycle.listen(moreOverlay, 'click', (e) => {
         if (e.target === moreOverlay) {
@@ -209,7 +222,7 @@ export function createImportAndMoreController({
         toggleImportModal,
         toggleMoreOverlay,
         updateMoreMemberBtn,
-        updateExportQueueButton,
+        updateExportButtons,
         setImportStatus,
         isImportOpen,
         isMoreOpen,

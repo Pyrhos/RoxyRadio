@@ -3,7 +3,7 @@
 // cached bundle doesn't know yet (resolved by re-checking against freshly-fetched
 // canonical data; see app.js). No window/fetch here: the caller injects raw values.
 
-import { validateSegmentData } from './import-helpers.js';
+import { validateSegmentData, selectCustomSegments } from './import-helpers.js';
 import { SEGMENTS_MODE_REPLACED } from './storage-keys.js';
 
 /** @typedef {import('./import-helpers.js').Segment} Segment */
@@ -69,8 +69,7 @@ export function computeActiveSegments(base, custom) {
 
   if (mode === SEGMENTS_MODE_REPLACED) return { segments: parsed, invalidCustom: false };
 
-  const baseIds = new Set(base.map((e) => e.videoId));
-  const customOnly = parsed.filter((e) => !baseIds.has(e.videoId));
+  const customOnly = selectCustomSegments(parsed, base);
   return { segments: [...base, ...customOnly], invalidCustom: false };
 }
 

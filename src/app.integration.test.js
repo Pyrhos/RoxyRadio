@@ -1011,6 +1011,98 @@ describe('Radio application', () => {
         });
     });
 
+    describe('playlist export', () => {
+        const custom = [
+            { videoId: 'ccccccccccc', name: '日本語 💜', songs: [
+                { name: 'Custom song', range: [12.5, 30], theme: 2 },
+            ] },
+            { videoId: 'ddddddddddd', name: 'Custom member stream', memberOnly: true },
+        ];
+
+        async function extendPlaylist(entries = custom) {
+            navigator.clipboard.readText.mockResolvedValue(JSON.stringify(entries));
+            if (!isOpen('import-overlay')) shortcut('I');
+            element('import-extend-btn').click();
+            await vi.advanceTimersByTimeAsync(300);
+        }
+
+        it('disables export when the playlist contains only built-in streams', () => {
+            shortcut('I');
+            expect(element('import-export-playlist-btn').disabled).toBe(true);
+            element('import-export-playlist-btn').click();
+            expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+        });
+
+        it('exports only additions with all their metadata, ready to extend another playlist', async () => {
+            await extendPlaylist([{ ...SEGMENTS[0], name: 'Changed built-in title' }, ...custom]);
+            shortcut('E');
+            const savedQueue = queue();
+            const savedCustom = localStorage.getItem('roxy_customSegments');
+            player.loadVideoById.mockClear();
+            player.seekTo.mockClear();
+
+            element('import-export-playlist-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            const exported = navigator.clipboard.writeText.mock.lastCall[0];
+            expect(JSON.parse(exported)).toEqual(custom);
+            expect(element('import-status').textContent).toBe('Copied 2 custom streams');
+            expect(queue()).toEqual(savedQueue);
+            expect(localStorage.getItem('roxy_customSegments')).toBe(savedCustom);
+            expect(player.loadVideoById).not.toHaveBeenCalled();
+            expect(player.seekTo).not.toHaveBeenCalled();
+            expect(window.confirm).not.toHaveBeenCalled();
+
+            element('import-reset-btn').click();
+            shortcut('I');
+            expect(element('import-export-playlist-btn').disabled).toBe(true);
+            navigator.clipboard.readText.mockResolvedValue(exported);
+            element('import-extend-btn').click();
+            await vi.advanceTimersByTimeAsync(300);
+            expect(JSON.parse(localStorage.getItem('roxy_customSegments'))).toEqual(custom);
+            expect(element('import-export-playlist-btn').disabled).toBe(false);
+            element('import-close-btn').click();
+            expect(search('Song B').some(row => row.textContent.includes('Song B'))).toBe(true);
+            expect(search('Custom song').some(row => row.textContent.includes('Custom song'))).toBe(true);
+        });
+
+        it('prevents concurrent exports and allows retry after clipboard failure', async () => {
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+            await extendPlaylist();
+            shortcut('E');
+            let rejectWrite;
+            navigator.clipboard.writeText.mockImplementationOnce(() => new Promise((resolve, reject) => { rejectWrite = reject; }));
+            element('import-export-playlist-btn').click();
+            expect(element('import-export-playlist-btn').disabled).toBe(true);
+            expect(element('import-export-queue-btn').disabled).toBe(true);
+            element('import-export-queue-btn').click();
+            expect(navigator.clipboard.writeText).toHaveBeenCalledOnce();
+            rejectWrite(new Error('Permission denied'));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe('Couldn’t copy playlist to clipboard');
+            expect(element('import-export-playlist-btn').disabled).toBe(false);
+            expect(element('import-export-queue-btn').disabled).toBe(false);
+            element('import-export-playlist-btn').click();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(JSON.parse(navigator.clipboard.writeText.mock.lastCall[0])).toEqual(custom);
+            expect(element('import-status').textContent).toBe('Copied 2 custom streams');
+        });
+
+        it('does not update a new application when an old export finishes', async () => {
+            await extendPlaylist();
+            let resolveWrite;
+            navigator.clipboard.writeText.mockImplementationOnce(() => new Promise(resolve => { resolveWrite = resolve; }));
+            element('import-export-playlist-btn').click();
+            application.dispose();
+            await start();
+            if (isOpen('import-overlay')) element('import-close-btn').click();
+            shortcut('I');
+            resolveWrite();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(element('import-status').textContent).toBe('');
+            expect(element('import-export-playlist-btn').disabled).toBe(false);
+        });
+    });
+
     describe('sharing and imports', () => {
         it.each([
             { format: 'queue', type: 'queue', text: btoa(JSON.stringify({
