@@ -1,70 +1,38 @@
-﻿# Rourin Radio
+# Rourin Radio
 
-Rourin Radio is a web player that turns karaoke VODs into a timestamped “radio” of songs.
+A web player for YouTube karaoke recordings, with songs played continuously and conversation skipped by default.
 
-## Features
+[Come take a listen!](https://rourin.am/)
 
-- **Song-only vs. full-stream playback**
-    - **Standard mode (Yap Off)** – plays only marked song segments and skips everything in between.
-    - **Yap Mode (On)** – plays the full stream continuously with gaps and talk present.
+## Listening
 
-- **Loop & shuffle**
-    - **Loop Track** – repeat the current song indefinitely.
-    - **Loop Stream** – loop all songs in the current stream.
-    - **Shuffle** – randomizes the next stream; previous-stream button uses a session history so you can backtrack shuffled picks.
+- **Playback:** **Yap Off** plays marked songs; **Yap On** plays full streams, including conversation. Loop a track or stream, or shuffle streams.
+- **Find songs:** Search accepts approximate matches. The **🎵** button appears when other versions of the current song are available; click it to search them. Click the status bar for the current stream’s song list; select any song to play it.
+- **Queue:** Add songs from search, the song list, or current playback. Queued songs take priority until the queue is empty. Use **Queue** to manage entries or play one immediately. **Loop Stream** becomes **Loop Queue** to repeat queued songs; **Previous Song** steps backward through the loop. Shuffle picks queued songs randomly, avoiding immediate repeats when possible.
+- **Remembered state:** Yap, Loop, Shuffle, Member Mode, and the last stream and timestamp persist across visits. **Previous Stream** retraces shuffled playback history while the tab remains open.
 
-- **Session history & persistence**
-    - Remembers your **Yap**, **Loop**, **Shuffle** settings and the last played stream + timecode across sessions.
-    - Keeps a short **session-only history**, so you can jump back through previously played streams while the tab is open.
+## More options
 
-- **Search & duplicates**
-    - Fuzzy search across all available songs.
-    - Multiples detection – a note button appears when the current song has other versions across streams; clicking it opens search pre-filled with the song name.
-
-- **Song list panel**
-    - Click the status bar to expand a scrollable song list for the current stream.
-    - Click or keyboard-navigate (Arrow keys + Enter) to jump to any song.
-
-- **Sharing & URL parameters**
-    - Share a direct link to the current stream and timecode with **Shift+C** (copies a `?v=…&t=…` URL to clipboard).
-    - Opening a shared link jumps straight to that stream and timestamp.
-
-- **Member-only streams**
-    - Some streams are marked as member-only and hidden by default.
-    - **Shift+M** toggles member mode on/off (persisted across sessions). Playback requires an active YouTube membership and third-party cookies.
-
-- **Playlist import**
-    - **Shift+I** opens the import modal. Paste a valid segments JSON into your clipboard, then choose **Replace** (swap the entire playlist) or **Extend** (merge with the built-in data).
-
-- **Queue**
-    - Build a custom play order by adding songs from search results, the song list panel, or the currently playing song.
-    - The queue overrides normal navigation — the next song always comes from the queue until it's empty.
-    - **Loop Queue** – when Loop Stream is active with a queue, played items cycle back to the end instead of being removed, so the queue repeats indefinitely. Previous song walks backwards through the loop.
-    - **Shuffle** is respected within the queue — a random item is picked instead of the front, avoiding the currently playing song when possible.
-    - Manage the queue via **Shift+Q** or the Queue button. Click any item to play it immediately.
-
-- **Message bar**
-    - A rotating announcement bar shows community messages between the player and the controls.
-    - Choose **Restore running messages** in **More options** to show dismissed messages again.
+- **Copy Stream URL:** Share the current stream and timestamp (`?v=…&t=…`); opening the link starts there.
+- **Member Mode:** Show members-only streams, hidden by default. Playback requires an active YouTube membership and third-party cookies.
+- **Import:** **Replace** or **Extend** automatically accepts playlist JSON, raw YouTube links or an exported queue from the clipboard. Queue imports skip songs missing from your playlist. **Export queue** copies the current queue as Base64; **Reset playlist** restores the defaults.
+- **Restore running messages:** Bring back dismissed, rotating community announcements below the player.
 
 ## Keyboard shortcuts
 
 | Key | Action |
 |-----|--------|
-| **Shift+S** | Open / close search |
-| **Double-tap Shift** | Open / close search (alternative) |
-| **Shift+A** | Open / close song list panel |
-| **Shift+C** | Copy shareable URL to clipboard |
-| **Shift+M** | Toggle member-only streams |
-| **Shift+I** | Open / close playlist import |
-| **Shift+Q** | Open / close queue manager |
-| **Shift+E** | Add to queue (highlighted item in a modal, or current song) |
-| **Escape** | Close the topmost open panel or modal |
-| **Arrow Up / Down** | Navigate search results or song list |
-| **Enter** | Select the highlighted search result or song |
-| **Shift+click Previous Stream** | Bypass shuffle history and go to the actual previous stream |
-
----
+| **Shift+S** or **double-tap Shift** | Toggle search |
+| **Shift+A** | Toggle song list |
+| **Shift+C** | Copy stream URL and timestamp |
+| **Shift+M** | Toggle Member Mode |
+| **Shift+I** | Toggle import menu |
+| **Shift+Q** | Toggle queue |
+| **Shift+E** | Queue the highlighted search/list song, or current song |
+| **Escape** | Close the topmost panel |
+| **↑ / ↓** | Navigate search results or song list |
+| **Enter** | Play the highlighted song |
+| **Shift+click Previous Stream** | Go to the previous stream in playlist order, bypassing history |
 
 ## Disclaimer
 
