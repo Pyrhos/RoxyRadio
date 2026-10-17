@@ -45,6 +45,7 @@ Rourin Radio is a web player that turns karaoke VODs into a timestamped “radio
 
 - **Message bar**
     - A rotating announcement bar shows community messages between the player and the controls.
+    - Choose **Restore running messages** in **More options** to show dismissed messages again.
 
 ## Keyboard shortcuts
 

@@ -298,6 +298,7 @@ export function createRadioApplication({ segmentsData, messagesData = [] }) {
         messageBar: document.getElementById('message-bar'),
         messageText: document.getElementById('message-text'),
         messageClose: document.getElementById('message-close'),
+        messageRestore: document.getElementById('more-restore-messages-btn'),
         messagesData,
     });
 

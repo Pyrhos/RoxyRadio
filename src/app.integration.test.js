@@ -815,6 +815,30 @@ describe('Radio application', () => {
         });
     });
 
+    describe('running messages', () => {
+        it.each(['more-cell', 'more-btn'])('restores dismissed messages through %s', async moreButton => {
+            application.dispose();
+            application = createRadioApplication({
+                segmentsData: structuredClone(SEGMENTS),
+                messagesData: ['First announcement', 'Second announcement'],
+            });
+            await vi.advanceTimersByTimeAsync(500);
+            await vi.waitFor(() => expect(element('message-bar').hidden).toBe(false));
+            expect(element('more-restore-messages-btn').hidden).toBe(true);
+            element('message-close').click();
+            expect(element('message-bar').hidden).toBe(true);
+
+            element(moreButton).click();
+            expect(isOpen('more-overlay')).toBe(true);
+            expect(element('more-restore-messages-btn').hidden).toBe(false);
+            element('more-restore-messages-btn').click();
+
+            expect(element('message-bar').hidden).toBe(false);
+            expect(element('more-restore-messages-btn').hidden).toBe(true);
+            expect(localStorage.getItem('roxy_dismissedMessagesHash')).toBeNull();
+        });
+    });
+
     describe('sharing and imports', () => {
         it.each(['shortcut', 'more'])('copies the same floored URL through %s', async method => {
             confirmPlayback();

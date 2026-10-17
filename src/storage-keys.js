@@ -5,5 +5,6 @@ export const SESSION_STORAGE_PREFIX = 'roxy_session_';
 
 export const CUSTOM_SEGMENTS_STORAGE_KEY = `${LOCAL_STORAGE_PREFIX}customSegments`;
 export const SEGMENTS_MODE_STORAGE_KEY = `${LOCAL_STORAGE_PREFIX}segmentsMode`;
+export const DISMISSED_MESSAGES_HASH_STORAGE_KEY = `${LOCAL_STORAGE_PREFIX}dismissedMessagesHash`;
 
 export const SEGMENTS_MODE_REPLACED = 'replaced';

@@ -41,6 +41,12 @@ export function validateMessages(messages) {
     return messages.filter(m => typeof m === 'string' && m.trim().length > 0);
 }
 
+export async function hashMessages(messages) {
+    const bytes = new TextEncoder().encode(JSON.stringify(messages));
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export class MessageQueue {
     constructor(messages, { wpm, minSeconds }) {
         this.timings = buildTimingMap(messages, { wpm, minSeconds });
