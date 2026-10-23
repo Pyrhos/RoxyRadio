@@ -240,11 +240,26 @@ button {
   contain: layout style; /* Prevent internal changes from triggering parent reflow */
 }
 
-/*Extended hit area - absorbs translate travel so the cursor never leaves the hover zone mid-transition*/
-button::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
+/* A stationary hover boundary encloses every translated position of the control.
+   Negative margins preserve the existing visible spacing; padding is hit-testable. */
+.control-container {
+  display: inline-flex;
+  align-items: stretch;
+  position: relative;
+  min-width: 0;
+  padding: 4px;
+  margin: -4px;
+  vertical-align: bottom; /* line-box placement of the unwrapped control (#start) */
+}
+
+.control-container > :is(button, #status, .wanted-contact-link) {
+  flex: 1;
+}
+
+/* Visibility stays owned by the original control, including runtime changes. */
+.control-container:has(> [hidden]),
+.control-container:has(> [style*="display: none"]) {
+  display: none !important;
 }
 
 .has-icon {
@@ -293,33 +308,33 @@ button::after {
 
 /* Hover effects only for devices that support hover (not touch-only) */
 @media (hover: hover) {
-  .has-icon:hover .button-icon {
+  .control-container:hover > .has-icon .button-icon {
     transform: scale(1.15);
   }
 
-  .has-icon:hover .button-icon.button-icon-flip {
+  .control-container:hover > .has-icon .button-icon.button-icon-flip {
     transform: scaleX(-1) scale(1.15);
   }
 
-  #yap-btn:hover .button-icon,
-  #loop-btn:hover .button-icon,
-  #shuffle-btn:hover .button-icon {
+  .control-container:hover > #yap-btn .button-icon,
+  .control-container:hover > #loop-btn .button-icon,
+  .control-container:hover > #shuffle-btn .button-icon {
     transform: scale(1.17);
   }
 
-  button:hover {
+  :where(.control-container:hover) > button:not(:disabled) {
       background: var(--color-bright);
       translate: -2px -2px;
       box-shadow: 6px 6px 0 var(--color-ink);
   }
 
-  #yap-btn:not(.active):hover .button-icon {
+  .control-container:hover > #yap-btn:not(.active):not(:disabled) .button-icon {
       animation: yap-chatter 0.3s ease-in-out 2;
   }
 }
 
 /* Status-row buttons are exempt: their translate would extend the viewport edge and flash the scrollbar */
-button:active:not(#queue-cell):not(#more-cell) {
+:where(.control-container:active) > button:not(:disabled):not(#queue-cell):not(#more-cell) {
     translate: 2px 2px;
     box-shadow: 0 0 0 var(--color-ink);
 }
@@ -337,10 +352,14 @@ button.active {
 }
 
 /* Floating search icon button (bottom-right, desktop + mobile) */
-#search-btn {
+.control-container:has(> #search-btn) {
   position: fixed;
   bottom: 16px;
   right: 16px;
+  z-index: 900;
+}
+
+#search-btn {
   width: 48px;
   height: 48px;
   min-width: 48px;
@@ -353,10 +372,10 @@ button.active {
   z-index: 900; /* Below modal overlay */
 }
 
-#more-btn { display: none; }
+.control-container:has(> #more-btn) { display: none; }
 
 @media (pointer: coarse) {
-  #more-btn { display: block; }
+  .control-container:has(> #more-btn) { display: inline-flex; }
 }
 
 #debug-container {
@@ -380,10 +399,17 @@ button.active {
 }
 
 /* Duplicate-song note button, sits to the left of the search icon */
-#duplicates-btn {
+.control-container:has(> #duplicates-btn) {
   position: fixed;
   bottom: 16px;
   right: 72px; /* Search (16px) + button width (48px) + small gap (8px) */
+  z-index: 900;
+  display: none;
+}
+
+.control-container:has(> #duplicates-btn[style*="flex"]) { display: inline-flex; }
+
+#duplicates-btn {
   width: 48px;
   height: 48px;
   min-width: 48px;
@@ -418,19 +444,24 @@ button.active {
     max-width: none;
   }
 
-  #prev-stream { grid-row: 1; grid-column: 1; }
-  #next-stream { grid-row: 1; grid-column: 2; }
-  #prev-song   { grid-row: 2; grid-column: 1; }
-  #next-song   { grid-row: 2; grid-column: 2; }
-  #loop-btn    { grid-row: 3; grid-column: 1; min-width: 0; }
-  #shuffle-btn { grid-row: 3; grid-column: 2; }
-  #yap-btn     { grid-row: 4; grid-column: 1; }
+  .control-container:has(> #prev-stream) { grid-row: 1; grid-column: 1; }
+  .control-container:has(> #next-stream) { grid-row: 1; grid-column: 2; }
+  .control-container:has(> #prev-song)   { grid-row: 2; grid-column: 1; }
+  .control-container:has(> #next-song)   { grid-row: 2; grid-column: 2; }
+  .control-container:has(> #loop-btn)    { grid-row: 3; grid-column: 1; min-width: 0; }
+  .control-container:has(> #shuffle-btn) { grid-row: 3; grid-column: 2; }
+  .control-container:has(> #yap-btn)     { grid-row: 4; grid-column: 1; }
+
+  .control-container:has(> #duplicates-btn),
+  .control-container:has(> #search-btn) {
+    grid-row: 4;
+    grid-column: 2;
+    position: relative;
+    inset: auto;
+  }
 
   #duplicates-btn,
   #search-btn {
-    grid-row: 4;
-    grid-column: 2;
-    position: static;
     width: 100%;
     min-width: unset;
     height: auto !important;
@@ -439,15 +470,17 @@ button.active {
   }
 
   /* When duplicates is visible, both share the cell side by side */
-  #duplicates-btn {
+  .control-container:has(> #duplicates-btn) {
     justify-self: start;
     width: calc(50% - 5px);
+    box-sizing: content-box;
   }
 
   /* Shrink search when duplicates is present */
-  #buttons:has(#duplicates-btn[style*="flex"]) #search-btn {
+  #buttons:has(#duplicates-btn[style*="flex"]) .control-container:has(> #search-btn) {
     justify-self: end;
     width: calc(50% - 5px);
+    box-sizing: content-box;
   }
 
   /* Make buttons fill their grid cells */
@@ -457,23 +490,21 @@ button.active {
     padding: 10px 16px;
   }
 
-  #more-btn {
+  .control-container:has(> #more-btn) {
     grid-row: 5;
     grid-column: 1;
-    display: block;
-    width: 100%;
+    display: inline-flex;
   }
 
-  #mobile-queue-btn {
+  .control-container:has(> #mobile-queue-btn) {
     grid-row: 5;
     grid-column: 2;
-    display: block !important;
-    width: 100%;
+    display: inline-flex !important;
   }
 
   /* Hide desktop status-row cells on mobile */
-  #queue-cell,
-  #more-cell { display: none !important; }
+  .control-container:has(> #queue-cell),
+  .control-container:has(> #more-cell) { display: none !important; }
 
   #controls-container {
     padding: 12px;
@@ -482,11 +513,11 @@ button.active {
 
 /* On larger screens (above grid breakpoint), float icons and constrain button width */
 @media (min-width: 961px) {
-  #search-btn {
+  .control-container:has(> #search-btn) {
     bottom: 61px;
   }
 
-  #duplicates-btn {
+  .control-container:has(> #duplicates-btn) {
     bottom: 61px;
   }
 
@@ -546,12 +577,6 @@ button.active {
     display: block;
 }
 
-/*Anti-flicker*/
-#status::after {
-    position: absolute;
-    inset: -4px;
-}
-
 #queue-cell,
 #more-cell {
     background: var(--color-bg);
@@ -577,8 +602,8 @@ button.active {
     letter-spacing: -3px;
 }
 
-#queue-cell:hover,
-#more-cell:hover {
+.control-container:hover > #queue-cell,
+.control-container:hover > #more-cell {
     color: var(--color-accent-soft);
 }
 
@@ -589,12 +614,12 @@ button.active {
     transition: transform 0.2s ease;
 }
 
-#status:hover {
+.control-container:hover > #status {
     translate: -2px -2px;
     box-shadow: 6px 6px 0 var(--color-ink);
 }
 
-#status:hover .status-icon {
+.control-container:hover > #status .status-icon {
     transform: translateY(-2px);
     color: var(--color-focus);
 }
@@ -1059,6 +1084,11 @@ button.active {
   font-style: italic;
 }
 
+.control-container:has(> .queue-item-remove),
+.control-container:has(> .enqueue-btn) {
+  flex-shrink: 0;
+}
+
 .queue-item-remove {
   width: 32px;
   height: 32px;
@@ -1074,7 +1104,8 @@ button.active {
 
 /* Coarse pointer: remove box hidden until a long-press arms it as a red ✕ */
 @media (pointer: coarse) {
-  .queue-item-remove { display: none; }
+  .control-container:has(> .queue-item-remove) { display: none; }
+  .queue-item.armed .control-container:has(> .queue-item-remove) { display: inline-flex; }
   .queue-item.armed .queue-item-remove {
     display: flex;
     background: var(--color-danger);
@@ -1098,16 +1129,17 @@ button.active {
 }
 
 /* In result items, position the button on the right without disrupting text layout */
-.result-item > button {
+.result-item > .control-container {
   position: absolute;
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
+  margin-block: 0;
 }
 .result-item:has(.enqueue-btn) { padding-right: 50px; }
 
 /* In status songs, button sits inline after the song name */
-.status-song .enqueue-btn { margin-left: auto; }
+.status-song .control-container:has(> .enqueue-btn) { margin-left: auto; }
 
 /* Checkmark flash after enqueue */
 .enqueue-btn.enqueue-ok {
@@ -1117,9 +1149,9 @@ button.active {
 
 /* Coarse pointer: + box hidden until a long-press arms it; tinted when already queued */
 @media (pointer: coarse) {
-  .enqueue-btn { display: none; }
-  .result-item.armed .enqueue-btn,
-  .status-song.armed .enqueue-btn { display: flex; }
+  .control-container:has(> .enqueue-btn) { display: none; }
+  .result-item.armed .control-container:has(> .enqueue-btn),
+  .status-song.armed .control-container:has(> .enqueue-btn) { display: inline-flex; }
   .result-item.armed.in-queue .enqueue-btn,
   .status-song.armed.in-queue .enqueue-btn {
     background: var(--color-accent-soft);
@@ -1140,7 +1172,7 @@ button.active {
 }
 
 /* Desktop: hide mobile queue button */
-#mobile-queue-btn { display: none; }
+.control-container:has(> #mobile-queue-btn) { display: none; }
 
 /* Disabled button state (used for yap when queue active) */
 button:disabled {
@@ -1153,12 +1185,15 @@ button:disabled {
 ::-webkit-scrollbar-thumb { background: var(--color-surface); border: 2px solid var(--color-ink); }
 
 /* ====== Wanted Trigger ====== */
-#bolt-trigger {
+.control-container:has(> #bolt-trigger) {
   display: none;
   position: fixed;
   bottom: 8px;
   left: 10px;
   z-index: 50;
+}
+
+#bolt-trigger {
   font-size: 0.75em;
   line-height: 1;
   padding: 4px 8px;
@@ -1171,12 +1206,12 @@ button:disabled {
 }
 
 @media (min-width: 600px) {
-  #bolt-trigger {
-    display: block;
+  .control-container:has(> #bolt-trigger) {
+    display: inline-flex;
   }
 }
 
-#bolt-trigger:hover {
+.control-container:hover > #bolt-trigger {
   color: var(--color-bright);
   background: var(--color-surface);
 }
@@ -1356,6 +1391,8 @@ button:disabled {
   gap: 8px;
 }
 
+.wanted-contact-split > .control-container { flex: 1; }
+
 .wanted-contact-split .wanted-contact-link {
   flex: 1;
   display: flex;
@@ -1392,19 +1429,13 @@ button:disabled {
   font-weight: bold;
 }
 
-.wanted-contact-link::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-}
-
-.wanted-contact-link:hover {
+.control-container:hover > .wanted-contact-link {
   background: var(--color-bright);
   translate: -2px -2px;
   box-shadow: 4px 4px 0 var(--color-ink);
 }
 
-.wanted-contact-link:active {
+.control-container:active > .wanted-contact-link {
   translate: 1px 1px;
   box-shadow: 1px 1px 0 var(--color-ink);
 }
@@ -1421,14 +1452,19 @@ button:disabled {
   text-shadow: 1px 1px 0 var(--color-ink);
 }
 
-#wanted-close {
+.control-container:has(> #wanted-close) {
   display: none;
 }
 
 @media (max-width: 700px) {
+  .control-container:has(> #wanted-close) {
+    display: flex;
+    width: fit-content;
+    margin: 12px auto -4px;
+  }
+
   #wanted-close {
     display: block;
-    margin: 16px auto 0;
     padding: 8px 24px;
     font-size: 1em;
     color: var(--color-bg);

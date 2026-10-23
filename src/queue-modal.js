@@ -1,4 +1,5 @@
 import { createLifecycle } from './lifecycle.js';
+import { wrapControl } from './control-container.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
 import { attachLongPress, arm, disarm } from './long-press-arm.js';
 
@@ -135,7 +136,7 @@ export function createQueueModalController({
                 disarm();
                 onRemoveItem(idx);
             });
-            div.appendChild(removeBtn);
+            div.appendChild(wrapControl(removeBtn));
 
             // Coarse pointer: long-press reveals the remove box as a red ✕; tapping it
             // removes. Registered before the select handler below so its trailing-click

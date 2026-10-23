@@ -21,11 +21,13 @@ import {
 
 import { createLifecycle } from './lifecycle.js';
 import { disarm } from './long-press-arm.js';
+import { initializeControlContainers } from './control-container.js';
 
 /** @typedef {import('./import-helpers.js').Segment} Segment */
 
 export function createRadioApplication({ segmentsData, messagesData = [] }) {
     const lifecycle = createLifecycle();
+    initializeControlContainers();
     // ======== CONFIG ========
     const TICK_MS = 200;
     const TITLE_REFRESH_MS = 2000;

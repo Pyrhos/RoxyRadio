@@ -231,6 +231,31 @@ describe('Radio application', () => {
             expect(isOpen('status-panel')).toBe(false);
         });
 
+        it('preserves song text selection without opening the panel', () => {
+            const text = element('status-text');
+            const range = document.createRange();
+            range.selectNodeContents(text);
+            const selection = window.getSelection();
+            selection.addRange(range);
+            const selectedText = selection.toString();
+
+            element('status').click();
+            element('status').parentElement.click();
+
+            expect(isOpen('status-panel')).toBe(false);
+            expect(selection.toString()).toBe(selectedText);
+            selection.removeAllRanges();
+        });
+
+        it('closes the open panel when clicking the stationary status padding', () => {
+            element('status').click();
+            expect(isOpen('status-panel')).toBe(true);
+            const container = element('status').parentElement;
+            container.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+            container.click();
+            expect(isOpen('status-panel')).toBe(false);
+        });
+
         it('clicking a song selects its timestamp and closes the panel', () => {
             confirmPlayback();
             shortcut('A');

@@ -1,4 +1,5 @@
 import { createLifecycle } from './lifecycle.js';
+import { wrapControl } from './control-container.js';
 import Fuse from 'fuse.js';
 import { normalizeSongBaseName, buildSearchIndexFromPlaylist, buildDuplicateNameIndex, sortSearchResultsByCurrentStream, FUSE_CONFIG } from './search-helpers.js';
 import { resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT } from './list-navigation.js';
@@ -94,7 +95,7 @@ export function createSearchController({
                     e.stopPropagation();
                     doEnqueue();
                 });
-                div.appendChild(enqueueBtn);
+                div.appendChild(wrapControl(enqueueBtn));
 
                 // Coarse pointer: long-press reveals the + box (tinted if already queued);
                 // tapping it enqueues. Registered before the select handler below so its

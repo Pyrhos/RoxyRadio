@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { attachLongPress, arm, disarm, isArmed, LONG_PRESS_MS } from './long-press-arm.js';
+import { wrapControl } from './control-container.js';
 
 // Stub matchMedia so we can toggle coarse-pointer mode deterministically (happy-dom's
 // default is fine-pointer). The module reads window.matchMedia fresh on each call.
@@ -213,6 +214,30 @@ describe('long-press-arm', () => {
             expect(btnClick).toHaveBeenCalledTimes(1);
             expect(click.defaultPrevented).toBe(false);
             expect(isArmed()).toBe(true); // module leaves disarm() to the button's handler
+        });
+
+        it('activates an armed action through its container padding without selecting the row', () => {
+            const item = makeItem(true);
+            const button = item.querySelector('.enqueue-btn');
+            const container = wrapControl(button);
+            const activate = vi.fn((event) => {
+                event.stopPropagation();
+                disarm();
+            });
+            button.addEventListener('click', activate);
+            attachLongPress(item, () => arm(item));
+            const select = vi.fn();
+            item.addEventListener('click', select);
+
+            fire(item, 'pointerdown');
+            vi.advanceTimersByTime(LONG_PRESS_MS);
+            fire(item, 'click');
+            fire(container, 'pointerdown');
+            fire(container, 'click');
+
+            expect(activate).toHaveBeenCalledTimes(1);
+            expect(select).not.toHaveBeenCalled();
+            expect(isArmed()).toBe(false);
         });
     });
 });

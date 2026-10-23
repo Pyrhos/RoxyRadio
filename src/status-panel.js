@@ -1,4 +1,5 @@
 import { createLifecycle } from './lifecycle.js';
+import { hasControlTextSelection, wrapControl } from './control-container.js';
 import {resolveListNavigation, NAV_ACTION_MOVE, NAV_ACTION_SELECT} from './list-navigation.js';
 import {flashEnqueue as _flashEnqueue} from './enqueue-flash.js';
 import {attachLongPress, arm, disarm} from './long-press-arm.js';
@@ -218,7 +219,7 @@ export function createStatusPanelController({
                     e.stopPropagation();
                     doEnqueue();
                 });
-                item.appendChild(enqueueBtn);
+                item.appendChild(wrapControl(enqueueBtn));
 
                 // Coarse pointer: long-press reveals the + box (tinted if already queued);
                 // tapping it enqueues. Registered before the pick handler below so its
@@ -304,13 +305,16 @@ export function createStatusPanelController({
 
     function handleGlobalPointerDown(event) {
         if (!statusPanelOpen || !statusPanel || !statusEl) return;
-        if (statusPanel.contains(event.target) || statusEl.contains(event.target)) return;
+        const statusContainer = statusEl.closest('.control-container') || statusEl;
+        if (statusPanel.contains(event.target) || statusContainer.contains(event.target)) return;
         toggle(false);
     }
 
     // Wire up event listeners
     if (statusEl) {
-        lifecycle.listen(statusEl, 'click', () => toggle());
+        lifecycle.listen(statusEl, 'click', () => {
+            if (!hasControlTextSelection(statusEl)) toggle();
+        });
         lifecycle.listen(statusEl, 'keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();

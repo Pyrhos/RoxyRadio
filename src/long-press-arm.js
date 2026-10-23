@@ -114,7 +114,8 @@ function onDocClick(e) {
         return;
     }
     const btn = getArmedActionButton();
-    if (btn && (e.target === btn || btn.contains(e.target))) {
+    const actionContainer = btn?.closest('.control-container') || btn;
+    if (actionContainer?.contains(e.target)) {
         // Tap on the armed action button: let its own handler run the action (it calls
         // disarm() afterward). Don't consume.
         return;
